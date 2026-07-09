@@ -1,0 +1,58 @@
+export const employees = [
+  {
+    id: "EMP001",
+    name: "Rajesh Kumar",
+    department: "Production",
+    shift: "Morning",
+    status: "Present",
+  },
+  {
+    id: "EMP002",
+    name: "Amit Singh",
+    department: "Assembly",
+    shift: "Evening",
+    status: "Present",
+  },
+  {
+    id: "EMP003",
+    name: "Rohit Sharma",
+    department: "Quality",
+    shift: "Night",
+    status: "Absent",
+  },
+  {
+    id: "EMP004",
+    name: "Vikas Verma",
+    department: "Packaging",
+    shift: "Morning",
+    status: "Present",
+  },
+  {
+    id: "EMP005",
+    name: "Sanjay Kumar",
+    department: "Production",
+    shift: "Evening",
+    status: "Present",
+  },
+  {
+    id: "EMP006",
+    name: "Deepak Singh",
+    department: "Maintenance",
+    shift: "Night",
+    status: "Absent",
+  },
+  {
+    id: "EMP007",
+    name: "Rahul Verma",
+    department: "Quality",
+    shift: "Morning",
+    status: "Present",
+  },
+  {
+    id: "EMP008",
+    name: "Mohit Sharma",
+    department: "Assembly",
+    shift: "Evening",
+    status: "Present",
+  },
+];

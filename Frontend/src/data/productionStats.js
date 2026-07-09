@@ -1,0 +1,60 @@
+import { HiOutlineFlag, HiOutlineCube, HiOutlineExclamationTriangle, HiOutlineBolt, HiOutlinePlay, HiOutlinePause, HiOutlineUsers, HiOutlineChartBar } from "react-icons/hi2";
+
+export const productionStats = [
+  {
+    id: 1,
+    title: "Target",
+    value: "28,500",
+    icon: HiOutlineFlag,
+    color: "text-blue-600",
+    bg: "bg-blue-100",
+  },
+  {
+    id: 2,
+    title: "Actual",
+    value: "27,860",
+    icon: HiOutlineCube,
+    color: "text-green-600",
+    bg: "bg-green-100",
+  },
+  {
+    id: 3,
+    title: "Rejection",
+    value: "142",
+    icon: HiOutlineExclamationTriangle,
+    color: "text-red-600",
+    bg: "bg-red-100",
+  },
+  {
+    id: 4,
+    title: "Efficiency",
+    value: "97.8%",
+    icon: HiOutlineBolt,
+    color: "text-amber-600",
+    bg: "bg-amber-100",
+  },
+  {
+    id: 5,
+    title: "Running",
+    value: "83",
+    icon: HiOutlinePlay,
+    color: "text-green-600",
+    bg: "bg-green-100",
+  },
+  {
+    id: 6,
+    title: "Stopped",
+    value: "02",
+    icon: HiOutlinePause,
+    color: "text-red-600",
+    bg: "bg-red-100",
+  },
+  {
+    id: 8,
+    title: "OEE",
+    value: "89%",
+    icon: HiOutlineChartBar,
+    color: "text-purple-600",
+    bg: "bg-purple-100",
+  },
+];
