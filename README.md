@@ -170,9 +170,9 @@ This project is licensed under the MIT License.
 
 **Your Name**
 
-GitHub: https://github.com/yourusername
+GitHub: https://github.com/yaten24
 
-Email: [your@email.com](mailto:your@email.com)
+Email: [your@email.com](mailto:yaten2404@email.com)
 
 ```
 ```
