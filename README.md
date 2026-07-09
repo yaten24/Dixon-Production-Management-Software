@@ -172,7 +172,7 @@ This project is licensed under the MIT License.
 
 GitHub: https://github.com/yaten24
 
-Email: [your@email.com](mailto:yaten2404@email.com)
+Email: [yaten2404@email.com](mailto:yaten2404@email.com)
 
 ```
 ```
