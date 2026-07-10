@@ -377,7 +377,7 @@ const ReportsPage = () => {
     <div className="flex flex-1 flex-col overflow-hidden mt-12">
       <Header title="Reports" subtitle="Daily Production Reports" />
 
-      <main className="flex-1 overflow-y-auto p-2 md:p-3">
+      <main className="flex-1 overflow-y-auto p-1">
         {/* ================= FILTERS ================= */}
 
         <div className="border border-[#E2E4E9] bg-white rounded-sm p-2 md:p-3 mb-2">
