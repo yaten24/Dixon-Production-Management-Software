@@ -16,7 +16,6 @@ import MouldChangeSection from "../compenents/productionEntry/MouldChangeSection
 import MouldRejectBreakup from "../compenents/productionEntry/MouldRejectBreakup";
 import LossTimeBreakup from "../compenents/productionEntry/LossTimeBreakup";
 import FooterActions from "../compenents/productionEntry/FooterActions";
-import HomeHeader from "../compenents/userHome/HomeHeader";
 import useClock from "../hooks/useClock";
 import Header from "../compenents/dashboard/Header";
 

@@ -13,9 +13,13 @@ import OverviewCard from "./OverviewCard";
 import useDashboardOverview from "../../hooks/useDashboardOverview";
 
 // ==========================================================
-// Static presentation config (icon + colors) per metric.
+// Static presentation config (icon only) per metric.
+// Color has been intentionally removed here — every KPI card
+// uses the same single brand accent (see OverviewCard) so the
+// section reads as one consistent, professional surface instead
+// of a rainbow of per-metric colors.
 // The actual numeric `value` / `subtitle` gets injected at render
-// time from the live API response instead of the old static file.
+// time from the live API response.
 // ==========================================================
 const buildOverviewData = (data) => {
   if (!data) return [];
@@ -27,9 +31,7 @@ const buildOverviewData = (data) => {
       value: data.totalTarget.toLocaleString(),
       subtitle: `Shift A: ${data.shiftBreakdown.A.target.toLocaleString()} · Shift B: ${data.shiftBreakdown.B.target.toLocaleString()}`,
       icon: HiOutlineFlag,
-      iconBg: "bg-blue-600",
-      valueColor: "text-blue-700",
-      subtitleColor: "text-slate-500",
+      tone: "blue",
     },
     {
       id: "production",
@@ -37,9 +39,7 @@ const buildOverviewData = (data) => {
       value: data.totalActual.toLocaleString(),
       subtitle: `Efficiency: ${data.efficiency}%`,
       icon: HiOutlineTrendingUp,
-      iconBg: "bg-emerald-600",
-      valueColor: "text-emerald-700",
-      subtitleColor: "text-emerald-600",
+      tone: "green",
     },
     {
       id: "rejection",
@@ -47,9 +47,7 @@ const buildOverviewData = (data) => {
       value: data.totalReject.toLocaleString(),
       subtitle: `Rejection Rate: ${data.rejectionRate}%`,
       icon: HiOutlineExclamationCircle,
-      iconBg: "bg-red-600",
-      valueColor: "text-red-700",
-      subtitleColor: "text-red-500",
+      tone: "red",
     },
     {
       id: "machines",
@@ -57,9 +55,7 @@ const buildOverviewData = (data) => {
       value: `${data.machinesRunning}/${data.machinesTotal}`,
       subtitle: `${data.machinesIdle} idle · Current Shift: ${data.currentShift}`,
       icon: HiOutlineCog,
-      iconBg: "bg-indigo-600",
-      valueColor: "text-indigo-700",
-      subtitleColor: "text-slate-500",
+      tone: "amber",
     },
     {
       id: "loss",
@@ -67,9 +63,7 @@ const buildOverviewData = (data) => {
       value: `${data.totalLossMinutes} min`,
       subtitle: `Across ${data.totalEntries} entries today`,
       icon: HiOutlineClock,
-      iconBg: "bg-orange-600",
-      valueColor: "text-orange-700",
-      subtitleColor: "text-slate-500",
+      tone: "red",
     },
   ];
 };
@@ -84,19 +78,15 @@ const OverviewSection = ({ hall }) => {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="relative mt-1 overflow-hidden rounded border border-slate-200 bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/60 p-2 shadow-sm lg:mt-2 lg:p-2"
+      className="relative mt-1 rounded-sm border border-slate-200 bg-white p-2 shadow-sm lg:mt-2 lg:p-3"
     >
-      {/* Decorative background blobs */}
-      <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded bg-blue-200/30 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded bg-indigo-200/30 blur-3xl" />
-
       {/* Header */}
-      <div className="relative mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="relative mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold text-slate-800 lg:text-xl">
+          <h2 className="text-sm font-bold text-slate-900">
             Today's Overview
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs font-medium text-slate-600">
             {data
               ? `Live production statistics for ${data.date}${hall ? ` · Hall ${hall}` : " · All Halls"}`
               : "Live production statistics from all manufacturing halls"}
@@ -106,9 +96,8 @@ const OverviewSection = ({ hall }) => {
         <motion.button
           onClick={refresh}
           disabled={loading}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.96 }}
-          className="flex items-center gap-1.5 rounded border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition hover:border-blue-500 hover:text-blue-600 disabled:opacity-60"
+          whileTap={{ scale: 0.97 }}
+          className="flex h-8 items-center gap-1.5 rounded-sm border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:border-[#2563EB] hover:text-[#2563EB] disabled:opacity-60"
         >
           <motion.span
             animate={loading ? { rotate: 360 } : { rotate: 0 }}
@@ -127,32 +116,32 @@ const OverviewSection = ({ hall }) => {
 
       {/* ERROR STATE */}
       {error && !loading && (
-        <div className="relative mb-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+        <div className="relative mb-3 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
           {error}
         </div>
       )}
 
       {/* LOADING STATE (first load, no data yet) */}
       {loading && !data ? (
-        <div className="relative grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div className="relative grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-5">
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
-              className="h-32 animate-pulse rounded border border-slate-200 bg-slate-100"
+              className="h-28 animate-pulse rounded-sm border border-slate-200 bg-slate-100"
             />
           ))}
         </div>
       ) : (
         /* KPI Cards */
-        <div className="relative grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div className="relative grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-5">
           {overviewData.map((item, index) => (
             <motion.div
               key={item.id}
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
-                delay: index * 0.06,
-                duration: 0.3,
+                delay: index * 0.05,
+                duration: 0.25,
                 ease: "easeOut",
               }}
             >

@@ -2,11 +2,8 @@ import React from "react";
 
 
 import useClock from "../hooks/useClock";
-import HomeHeader from "../compenents/userHome/HomeHeader";
-import WelcomeBanner from "../compenents/userHome/WelcomeBanner";
 import OverviewSection from "../compenents/userHome/OverviewSection";
 import QuickAccess from "../compenents/userHome/QuickAccess";
-import Footer from "../compenents/userHome/Footer";
 import Header from "../compenents/dashboard/Header";
 
 const UserHome = () => {
