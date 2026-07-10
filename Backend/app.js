@@ -12,6 +12,7 @@ const productionEntryRoutes = require("./routes/productionEntryRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const hallDashboardRoutes = require("./routes/hallDashboardRoutes");
 const activityLogRoutes = require("./routes/activityLogRoutes");
+const reportRoutes = require("./routes/Reportroutes");
 const cookieParser = require("cookie-parser");
 
 const app = express();
@@ -36,5 +37,6 @@ app.use("/api/production-entries", productionEntryRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/hall-dashboard", hallDashboardRoutes);
 app.use("/api/activity-logs", activityLogRoutes);
+app.use("/api/reports", reportRoutes);
 
 module.exports = app;
