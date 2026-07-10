@@ -39,43 +39,10 @@ const HallCards = () => {
 
   return (
     <section>
-      {/* Header */}
-
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex w-full items-center justify-between rounded border border-slate-200 bg-white p-2 shadow-sm">
-          {/* Left */}
-
-          <div className="flex items-center gap-4">
-            <div>
-              <span className="text-[11px] font-semibold uppercase tracking-widest text-blue-600">
-                Manufacturing
-              </span>
-
-              <h2 className="text-2xl font-bold text-slate-800">
-                Production Halls
-              </h2>
-
-              <p className="text-sm text-slate-500">
-                Select a production hall to monitor production performance
-              </p>
-            </div>
-          </div>
-
-          {/* Right */}
-
-          <div className="rounded bg-blue-50 p-2 text-center">
-            <p className="text-4xl font-bold text-blue-700">
-              {runningCount}/{mergedHalls.length}
-            </p>
-
-            <p className="text-xs font-medium text-slate-600">Running Halls</p>
-          </div>
-        </div>
-      </div>
 
       {/* ERROR STATE */}
       {error && !loading && (
-        <div className="mb-2 flex items-center justify-between rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+        <div className="mb-2 flex items-center justify-between rounded border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs text-red-600">
           <span>{error}</span>
           <button
             onClick={refresh}
@@ -92,7 +59,7 @@ const HallCards = () => {
           {[...Array(8)].map((_, i) => (
             <div
               key={i}
-              className="h-64 animate-pulse rounded border border-slate-200 bg-slate-100"
+              className="h-40 animate-pulse rounded border border-slate-200 bg-slate-100"
             />
           ))}
         </div>
