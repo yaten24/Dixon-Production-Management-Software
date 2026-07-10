@@ -1,101 +1,249 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { FaIndustry } from "react-icons/fa";
-import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend, LabelList,
-} from "recharts";
 
-const CustomTooltip = ({ active, payload }) => {
-  if (!(active && payload?.length)) return null;
-  const row = payload[0].payload;
+const ROW_HEIGHT = 52; // per-machine row (name + 3 bars) in px — reduced from 76
+const MAX_VISIBLE_ROWS = 5;
+const HEADER_SPACE = 6;
 
-  return (
-    <div className="min-w-[170px] rounded border border-slate-200 bg-white p-3 shadow-xl">
-      <h4 className="mb-2 border-b pb-2 text-sm font-bold text-slate-800">{row.machine}</h4>
-      <div className="space-y-2 text-xs">
-        <div className="flex items-center justify-between rounded bg-blue-50 px-2 py-1">
-          <span className="font-medium text-slate-600">Target</span>
-          <span className="rounded bg-blue-600 px-2 py-0.5 font-bold text-white">{row.target.toLocaleString()}</span>
-        </div>
-        <div className="flex items-center justify-between rounded bg-green-50 px-2 py-1">
-          <span className="font-medium text-slate-600">Actual</span>
-          <span className="rounded bg-green-600 px-2 py-0.5 font-bold text-white">{row.actual.toLocaleString()}</span>
-        </div>
-        <div className="flex items-center justify-between rounded bg-red-50 px-2 py-1">
-          <span className="font-medium text-slate-600">Reject</span>
-          <span className="rounded bg-red-600 px-2 py-0.5 font-bold text-white">{row.rejection}</span>
-        </div>
-        <div className="flex items-center justify-between rounded bg-orange-50 px-2 py-1">
-          <span className="font-medium text-slate-600">Achievement</span>
-          <span className="rounded bg-orange-500 px-2 py-0.5 font-bold text-white">{row.achievement}%</span>
-        </div>
-      </div>
-    </div>
-  );
+const BAR_CONFIG = [
+  {
+    key: "target",
+    label: "Target",
+    bar: "bg-blue-600",
+    text: "text-blue-700",
+    chip: "bg-blue-50",
+  },
+  {
+    key: "actual",
+    label: "Actual",
+    bar: "bg-green-600",
+    text: "text-green-700",
+    chip: "bg-green-50",
+  },
+  {
+    key: "rejection",
+    label: "Reject",
+    bar: "bg-red-500",
+    text: "text-red-700",
+    chip: "bg-red-50",
+  },
+];
+
+const oeeTier = (oee) => {
+  if (oee === undefined || oee === null)
+    return { text: "text-slate-400", bg: "bg-slate-100" };
+  if (oee >= 85) return { text: "text-emerald-700", bg: "bg-emerald-100" };
+  if (oee >= 60) return { text: "text-amber-700", bg: "bg-amber-100" };
+  return { text: "text-red-700", bg: "bg-red-100" };
 };
 
-// data: [{ machine, target, actual, rejection, achievement }]
-const Hall1MachineChart = ({ hallCode, data = [], loading }) => {
+// data: [{ machine, target, actual, rejection, achievement, oee? }]
+// machines: [{ machine_code, machine_name }] — same list Hall1Stats ke dropdown mein use hoti hai
+const Hall1MachineChart = ({ hallCode, data = [], machines = [], loading }) => {
+  const [hovered, setHovered] = useState(null);
+
+  const nameByCode = useMemo(() => {
+    const map = {};
+    machines.forEach((m) => {
+      map[m.machine_code] = m.machine_name || m.machine_code;
+    });
+    return map;
+  }, [machines]);
+
+  const enrichedData = useMemo(
+    () =>
+      data.map((row) => ({
+        ...row,
+        machineName: nameByCode[row.machine] || row.machine,
+      })),
+    [data, nameByCode],
+  );
+
+  const maxValue = useMemo(() => {
+    let max = 0;
+    enrichedData.forEach((row) => {
+      max = Math.max(max, row.target || 0, row.actual || 0, row.rejection || 0);
+    });
+    return max || 1;
+  }, [enrichedData]);
+
+  const machineCount = enrichedData.length;
+  const isScrollable = machineCount > MAX_VISIBLE_ROWS;
+  const visibleHeight = Math.max(
+    ROW_HEIGHT + HEADER_SPACE,
+    Math.min(machineCount, MAX_VISIBLE_ROWS) * ROW_HEIGHT + HEADER_SPACE,
+  );
+
+  const formatVal = (v) =>
+    v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toLocaleString();
+
   return (
-    <div className="w-full rounded border border-slate-200 bg-white p-2 shadow-sm">
-      <div className="mb-1 rounded border border-blue-200 bg-gradient-to-r from-blue-50 via-white to-slate-50 p-2 shadow-sm">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-md">
-              <FaIndustry className="text-xl text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold tracking-wide text-slate-800">Machine Performance Dashboard</h2>
-              <p className="mt-1 text-xs text-slate-500">Live Target • Actual • Rejection Analysis</p>
-            </div>
+    <div className="w-full rounded border border-slate-200 bg-white p-1.5 shadow-sm">
+      {/* Header — extra compact */}
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-1.5 rounded border border-blue-200 bg-gradient-to-r from-blue-50 via-white to-slate-50 px-2 py-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-blue-600 shadow-sm">
+            <FaIndustry className="text-[10px] text-white" />
           </div>
-          <div className="flex items-center gap-2">
-            <div className="rounded border border-blue-200 bg-blue-100 px-3 py-1">
-              <span className="text-xs font-bold text-blue-700">Hall-{hallCode}</span>
-            </div>
-            <div className="rounded border border-emerald-200 bg-emerald-100 px-3 py-1">
-              <span className="text-xs font-bold text-emerald-700">● Live</span>
-            </div>
+          <div className="min-w-0">
+            <h2 className="truncate text-xs font-bold tracking-wide text-slate-800">
+              Machine Performance
+            </h2>
+            <p className="hidden truncate text-[9px] text-slate-500 sm:block">
+              Target • Actual • Rejection • OEE
+            </p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <div className="rounded border border-blue-200 bg-blue-100 px-1.5 py-0.5">
+            <span className="text-[9px] font-bold text-blue-700">
+              Hall-{hallCode}
+            </span>
+          </div>
+          <div className="rounded border border-emerald-200 bg-emerald-100 px-1.5 py-0.5">
+            <span className="text-[9px] font-bold text-emerald-700">
+              ● Live
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="rounded border border-slate-200 p-2">
-        {loading && !data.length ? (
-          <div className="flex h-[330px] items-center justify-center text-xs text-slate-400">Loading...</div>
-        ) : !data.length ? (
-          <div className="flex h-[330px] items-center justify-center text-xs text-slate-400">No data for this range.</div>
-        ) : (
-          <ResponsiveContainer width="100%" height={330}>
-            <BarChart data={data} margin={{ top: 28, right: 8, left: -12, bottom: 18 }} barGap={2} barCategoryGap="18%">
-              <CartesianGrid stroke="#E2E8F0" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="machine" interval={0} height={45} angle={-35} textAnchor="end" tickMargin={5}
-                tick={{ fontSize: 9, fontWeight: 600, fill: "#475569" }} axisLine={false} tickLine={false} />
-              <YAxis width={42} tick={{ fontSize: 9, fill: "#64748B" }}
-                tickFormatter={(v) => v.toLocaleString()} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend verticalAlign="top" align="right" iconType="circle" iconSize={8} height={22}
-                wrapperStyle={{ fontSize: 10, paddingBottom: 4, fontWeight: 600 }} />
+      {/* Legend — tighter */}
+      {!loading && enrichedData.length > 0 && (
+        <div className="mb-1 flex flex-wrap items-center justify-end gap-2 px-1">
+          {BAR_CONFIG.map((cfg) => (
+            <div key={cfg.key} className="flex items-center gap-1">
+              <span className={`h-1.5 w-1.5 rounded ${cfg.bar}`} />
+              <span className="text-[8px] font-semibold text-slate-500">
+                {cfg.label}
+              </span>
+            </div>
+          ))}
+          <div className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded bg-purple-600" />
+            <span className="text-[8px] font-semibold text-slate-500">OEE</span>
+          </div>
+        </div>
+      )}
 
-              <Bar dataKey="target" name="Target" fill="#2563EB" radius={[2, 2, 0, 0]} barSize={8} animationDuration={800}>
-                <LabelList dataKey="target" position="top" content={({ x, y, width, value }) => (
-                  <text x={x + width / 2} y={y - 8} textAnchor="middle" fontSize="7" fontWeight="700" fill="#1D4ED8">{value}</text>
-                )} />
-              </Bar>
-              <Bar dataKey="actual" name="Actual" fill="#16A34A" radius={[2, 2, 0, 0]} barSize={8} animationDuration={800}>
-                <LabelList dataKey="actual" position="top" content={({ x, y, width, value }) => (
-                  <text x={x + width / 2} y={y - 8} textAnchor="middle" fontSize="7" fontWeight="700" fill="#15803D">{value}</text>
-                )} />
-              </Bar>
-              <Bar dataKey="rejection" name="Reject" fill="#DC2626" radius={[2, 2, 0, 0]} barSize={8} animationDuration={800}>
-                <LabelList dataKey="rejection" position="top" content={({ x, y, width, value }) => (
-                  <text x={x + width / 2} y={y - 8} textAnchor="middle" fontSize="7" fontWeight="700" fill="#B91C1C">{value}</text>
-                )} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Body */}
+      <div className="rounded border border-slate-200 p-1">
+        {loading && !enrichedData.length ? (
+          <div className="flex h-[130px] items-center justify-center text-xs text-slate-400">
+            Loading...
+          </div>
+        ) : !enrichedData.length ? (
+          <div className="flex h-[130px] items-center justify-center text-xs text-slate-400">
+            No data for this range.
+          </div>
+        ) : (
+          <div
+            className={`hall1-machine-scroll ${isScrollable ? "overflow-y-auto pr-1" : ""}`}
+            style={{ maxHeight: visibleHeight }}
+          >
+            <div className="divide-y divide-slate-100">
+              {enrichedData.map((row) => {
+                const tier = oeeTier(row.oee?.oee);
+                const isHovered = hovered === row.machine;
+
+                return (
+                  <div
+                    key={row.machine}
+                    onMouseEnter={() => setHovered(row.machine)}
+                    onMouseLeave={() =>
+                      setHovered((h) => (h === row.machine ? null : h))
+                    }
+                    className={`relative rounded px-1 py-1 transition-colors ${isHovered ? "bg-slate-50" : ""}`}
+                    style={{ minHeight: ROW_HEIGHT }}
+                  >
+                    {/* Row header: full machine name + achievement + OEE badge */}
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <p
+                        className="min-w-0 truncate text-[10px] font-semibold text-slate-700"
+                        title={row.machineName}
+                      >
+                        {row.machineName}
+                      </p>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <span className="text-[8px] font-medium text-slate-400">
+                          Ach. {row.achievement}%
+                        </span>
+                        {row.oee && (
+                          <span
+                            className={`rounded px-1 py-[1px] text-[8px] font-bold ${tier.bg} ${tier.text}`}
+                          >
+                            OEE {row.oee.oee}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 3 grouped horizontal bars — thinner, tighter gap */}
+                    <div className="space-y-0.5">
+                      {BAR_CONFIG.map((cfg) => {
+                        const value = row[cfg.key] || 0;
+                        const pct = Math.max(
+                          2,
+                          Math.min(100, (value / maxValue) * 100),
+                        );
+                        return (
+                          <div
+                            key={cfg.key}
+                            className="flex items-center gap-1.5"
+                          >
+                            <span className="w-8 shrink-0 text-[7px] font-semibold uppercase text-slate-400">
+                              {cfg.label}
+                            </span>
+                            <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded bg-slate-100">
+                              <div
+                                className={`h-full rounded ${cfg.bar} transition-all duration-500 ease-out`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span
+                              className={`w-9 shrink-0 text-right text-[8px] font-bold ${cfg.text}`}
+                            >
+                              {formatVal(value)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Hover detail strip */}
+                    {isHovered && row.oee && (
+                      <p className="mt-0.5 text-[7px] text-slate-400">
+                        A {row.oee.availability}% · P {row.oee.performance}% · Q{" "}
+                        {row.oee.quality}%
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
+
+      <style>{`
+        .hall1-machine-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #CBD5E1 transparent;
+        }
+        .hall1-machine-scroll::-webkit-scrollbar {
+          width: 5px;
+        }
+        .hall1-machine-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .hall1-machine-scroll::-webkit-scrollbar-thumb {
+          background-color: #CBD5E1;
+          border-radius: 999px;
+        }
+        .hall1-machine-scroll::-webkit-scrollbar-thumb:hover {
+          background-color: #94A3B8;
+        }
+      `}</style>
     </div>
   );
 };

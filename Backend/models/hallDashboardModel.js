@@ -1,11 +1,8 @@
 const db = require("../config/db");
-const DashboardModel = require("./dashboardModel"); // reuse getShiftContext
+const DashboardModel = require("./dashboardModel");
 
-// ==========================================================
-// Build a WHERE clause fragment + params for the common filters:
-// hall (required), date range (from/to), machine (machine_code)
-// ==========================================================
-const buildFilters = ({ hall, from, to, machineCode }) => {
+// FIX + FEATURE: ab shift filter bhi supported hai (A / B / All)
+const buildFilters = ({ hall, from, to, machineCode, shift }) => {
   const conditions = ["pe.hall = ?"];
   const params = [hall];
 
@@ -21,13 +18,14 @@ const buildFilters = ({ hall, from, to, machineCode }) => {
     conditions.push("m.machine_code = ?");
     params.push(machineCode);
   }
+  if (shift && shift !== "All") {
+    conditions.push("pe.shift = ?");
+    params.push(shift);
+  }
 
   return { where: conditions.join(" AND "), params };
 };
 
-// ==========================================================
-// KPI STATS — Target / Actual / Reject / Achievement for a hall
-// ==========================================================
 exports.getStats = async (filters) => {
   const { where, params } = buildFilters(filters);
 
@@ -49,10 +47,7 @@ exports.getStats = async (filters) => {
   return rows[0];
 };
 
-// ==========================================================
-// MACHINE-WISE — per-machine target/actual/reject/achievement
-// (feeds the bar chart)
-// ==========================================================
+// FIX: loss_minutes ab per-machine bhi select ho raha hai (OEE ke liye required)
 exports.getMachineWise = async (filters) => {
   const { where, params } = buildFilters(filters);
 
@@ -62,7 +57,8 @@ exports.getMachineWise = async (filters) => {
       m.machine_code AS machine,
       COALESCE(SUM(pe.target_qty), 0) AS target,
       COALESCE(SUM(pe.actual_qty), 0) AS actual,
-      COALESCE(SUM(pe.reject_qty), 0) AS rejection
+      COALESCE(SUM(pe.reject_qty), 0) AS rejection,
+      COALESCE(SUM(pe.loss_minutes), 0) AS loss_minutes
     FROM production_entries pe
     INNER JOIN machines m ON pe.machine_id = m.id
     WHERE ${where}
@@ -80,23 +76,24 @@ exports.getMachineWise = async (filters) => {
       target,
       actual,
       rejection: Number(r.rejection) || 0,
+      lossMinutes: Number(r.loss_minutes) || 0,
       achievement: target ? Number(((actual / target) * 100).toFixed(1)) : 0,
     };
   });
 };
 
-// ==========================================================
-// HOURLY / TIME-SLOT TREND — for a SINGLE day (date required)
-// Groups by time_slot string (e.g. "08:00 - 10:00") since that's
-// how ProductionEntry stores the shift slot.
-// ==========================================================
-exports.getHourlyTrend = async ({ hall, date, machineCode }) => {
+// FIX: shift filter yahan bhi honor hoga
+exports.getHourlyTrend = async ({ hall, date, machineCode, shift }) => {
   const conditions = ["pe.hall = ?", "pe.entry_date = ?"];
   const params = [hall, date];
 
   if (machineCode && machineCode !== "All Machines") {
     conditions.push("m.machine_code = ?");
     params.push(machineCode);
+  }
+  if (shift && shift !== "All") {
+    conditions.push("pe.shift = ?");
+    params.push(shift);
   }
 
   const [rows] = await db.query(
@@ -113,7 +110,6 @@ exports.getHourlyTrend = async ({ hall, date, machineCode }) => {
     params,
   );
 
-  // Sort by the slot's starting time (e.g. "08:00 - 10:00" -> "08:00")
   const sorted = rows.sort((a, b) => {
     const aStart = a.hour?.split(" - ")[0] || "";
     const bStart = b.hour?.split(" - ")[0] || "";
@@ -132,9 +128,6 @@ exports.getHourlyTrend = async ({ hall, date, machineCode }) => {
   });
 };
 
-// ==========================================================
-// SHIFT SUMMARY — Shift A vs Shift B totals for a date range
-// ==========================================================
 exports.getShiftSummary = async (filters) => {
   const { where, params } = buildFilters(filters);
 
@@ -166,9 +159,6 @@ exports.getShiftSummary = async (filters) => {
   return result;
 };
 
-// ==========================================================
-// TOP REJECTS — machines with highest reject qty (default top 5)
-// ==========================================================
 exports.getTopRejects = async (filters, limit = 5) => {
   const { where, params } = buildFilters(filters);
 
@@ -196,9 +186,6 @@ exports.getTopRejects = async (filters, limit = 5) => {
   }));
 };
 
-// ==========================================================
-// MACHINES for a hall (used to populate the machine filter dropdown)
-// ==========================================================
 exports.getMachinesForHall = async (hall) => {
   const [rows] = await db.query(
     `SELECT id, machine_code, machine_name FROM machines WHERE hall = ? ORDER BY machine_code ASC`,

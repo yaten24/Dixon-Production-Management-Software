@@ -1,14 +1,8 @@
 const HallDashboardModel = require("../models/hallDashboardModel");
+const { calculateOEE } = require("../utils/oeeCalculator");
 
-// ==========================================================
-// Shared query-param parsing.
-// - hall: required (e.g. "C-1")
-// - from/to: optional date range, defaults to today's business date
-//   for BOTH (i.e. "today only" unless the user picks a range)
-// - machine: optional machine_code filter, "All Machines" = no filter
-// ==========================================================
 const parseCommonFilters = (req) => {
-  const { hall, from, to, machine } = req.query;
+  const { hall, from, to, machine, shift } = req.query;
   const { businessDate } = HallDashboardModel.getShiftContext();
 
   return {
@@ -16,6 +10,7 @@ const parseCommonFilters = (req) => {
     from: from || businessDate,
     to: to || businessDate,
     machineCode: machine,
+    shift: shift || "All",
   };
 };
 
@@ -32,9 +27,7 @@ const validateHall = (hall, res) => {
   return true;
 };
 
-// ==========================================================
-// GET /api/hall-dashboard/stats
-// ==========================================================
+// FEATURE: hall-level OEE ab response mein aata hai (data.oee)
 exports.getStats = async (req, res) => {
   try {
     const filters = parseCommonFilters(req);
@@ -45,6 +38,18 @@ exports.getStats = async (req, res) => {
     const target = Number(stats.total_target) || 0;
     const actual = Number(stats.total_actual) || 0;
     const reject = Number(stats.total_reject) || 0;
+    const lossMinutes = Number(stats.total_loss_minutes) || 0;
+    const machinesReporting = Number(stats.machines_reporting) || 0;
+
+    const oee = calculateOEE({
+      target,
+      actual,
+      reject,
+      lossMinutes,
+      machineCount: machinesReporting,
+      from: filters.from,
+      to: filters.to,
+    });
 
     return res.status(200).json({
       success: true,
@@ -53,11 +58,10 @@ exports.getStats = async (req, res) => {
         target,
         actual,
         reject,
-        lossMinutes: Number(stats.total_loss_minutes) || 0,
-        achievement: target
-          ? Number(((actual / target) * 100).toFixed(1))
-          : 0,
-        machinesReporting: Number(stats.machines_reporting) || 0,
+        lossMinutes,
+        achievement: target ? Number(((actual / target) * 100).toFixed(1)) : 0,
+        machinesReporting,
+        oee, // { availability, performance, quality, oee }
       },
       error: null,
     });
@@ -72,9 +76,7 @@ exports.getStats = async (req, res) => {
   }
 };
 
-// ==========================================================
-// GET /api/hall-dashboard/machine-wise
-// ==========================================================
+// FEATURE: har machine ke saath uska individual OEE bhi return hota hai
 exports.getMachineWise = async (req, res) => {
   try {
     const filters = parseCommonFilters(req);
@@ -82,10 +84,23 @@ exports.getMachineWise = async (req, res) => {
 
     const data = await HallDashboardModel.getMachineWise(filters);
 
+    const withOee = data.map((m) => ({
+      ...m,
+      oee: calculateOEE({
+        target: m.target,
+        actual: m.actual,
+        reject: m.rejection,
+        lossMinutes: m.lossMinutes,
+        machineCount: 1,
+        from: filters.from,
+        to: filters.to,
+      }),
+    }));
+
     return res.status(200).json({
       success: true,
       message: "Machine-wise data fetched successfully.",
-      data,
+      data: withOee,
       error: null,
     });
   } catch (err) {
@@ -99,13 +114,9 @@ exports.getMachineWise = async (req, res) => {
   }
 };
 
-// ==========================================================
-// GET /api/hall-dashboard/hourly-trend
-// (single-day only — uses `date`, not a range)
-// ==========================================================
 exports.getHourlyTrend = async (req, res) => {
   try {
-    const { hall, date, machine } = req.query;
+    const { hall, date, machine, shift } = req.query;
     if (!validateHall(hall, res)) return;
 
     const { businessDate } = HallDashboardModel.getShiftContext();
@@ -115,6 +126,7 @@ exports.getHourlyTrend = async (req, res) => {
       hall,
       date: entryDate,
       machineCode: machine,
+      shift,
     });
 
     return res.status(200).json({
@@ -134,9 +146,6 @@ exports.getHourlyTrend = async (req, res) => {
   }
 };
 
-// ==========================================================
-// GET /api/hall-dashboard/shift-summary
-// ==========================================================
 exports.getShiftSummary = async (req, res) => {
   try {
     const filters = parseCommonFilters(req);
@@ -161,9 +170,6 @@ exports.getShiftSummary = async (req, res) => {
   }
 };
 
-// ==========================================================
-// GET /api/hall-dashboard/top-rejects
-// ==========================================================
 exports.getTopRejects = async (req, res) => {
   try {
     const filters = parseCommonFilters(req);
@@ -189,10 +195,6 @@ exports.getTopRejects = async (req, res) => {
   }
 };
 
-// ==========================================================
-// GET /api/hall-dashboard/machines
-// (populates the machine filter dropdown for this hall)
-// ==========================================================
 exports.getMachinesForHall = async (req, res) => {
   try {
     const { hall } = req.query;

@@ -8,13 +8,6 @@ import {
   getHallMachines,
 } from "../api/hallDashboardApi";
 
-// ==========================================================
-// Fetches everything the Hall Dashboard needs in one place.
-// `filters` = { from, to, machine } — from/to used by stats,
-// machine-wise, shift-summary, top-rejects. Hourly trend always
-// uses `to` (or today) as the single day it charts, since an
-// hour-by-hour view only makes sense for one day at a time.
-// ==========================================================
 const useHallDashboard = (hallCode, filters) => {
   const [stats, setStats] = useState(null);
   const [machineWise, setMachineWise] = useState([]);
@@ -37,59 +30,55 @@ const useHallDashboard = (hallCode, filters) => {
       from: filters.from,
       to: filters.to,
       machine: filters.machine,
+      shift: filters.shift,
     };
 
-    try {
-      const [
-        statsRes,
-        machineWiseRes,
-        hourlyRes,
-        shiftRes,
-        rejectsRes,
-        machinesRes,
-      ] = await Promise.all([
-        getHallStats(commonParams),
-        getHallMachineWise(commonParams),
-        getHallHourlyTrend({
-          hall: hallCode,
-          date: filters.to,
-          machine: filters.machine,
-        }),
-        getHallShiftSummary(commonParams),
-        getHallTopRejects({ ...commonParams, limit: 5 }),
-        getHallMachines({ hall: hallCode }),
-      ]);
+    // FIX: Promise.allSettled — ek endpoint fail hone se baaki data
+    // discard nahi hota, jitna successful hai utna dikhta rahega
+    const results = await Promise.allSettled([
+      getHallStats(commonParams),
+      getHallMachineWise(commonParams),
+      getHallHourlyTrend({ hall: hallCode, date: filters.to, machine: filters.machine, shift: filters.shift }),
+      getHallShiftSummary(commonParams),
+      getHallTopRejects({ ...commonParams, limit: 5 }),
+      getHallMachines({ hall: hallCode }),
+    ]);
 
-      if (statsRes.success) setStats(statsRes.data);
-      if (machineWiseRes.success) setMachineWise(machineWiseRes.data);
-      if (hourlyRes.success) setHourlyTrend(hourlyRes.data.trend);
-      if (shiftRes.success) setShiftSummary(shiftRes.data);
-      if (rejectsRes.success) setTopRejects(rejectsRes.data);
-      if (machinesRes.success) setMachines(machinesRes.data);
-    } catch (err) {
-      console.error("useHallDashboard fetch failed:", err);
-      setError(
-        err?.response?.data?.message || err.message || "Failed to load hall dashboard.",
-      );
-    } finally {
-      setLoading(false);
+    const [statsRes, machineWiseRes, hourlyRes, shiftRes, rejectsRes, machinesRes] = results;
+    const failures = [];
+
+    if (statsRes.status === "fulfilled" && statsRes.value.success) setStats(statsRes.value.data);
+    else failures.push("stats");
+
+    if (machineWiseRes.status === "fulfilled" && machineWiseRes.value.success) setMachineWise(machineWiseRes.value.data);
+    else failures.push("machine-wise");
+
+    if (hourlyRes.status === "fulfilled" && hourlyRes.value.success) setHourlyTrend(hourlyRes.value.data.trend);
+    else failures.push("hourly-trend");
+
+    if (shiftRes.status === "fulfilled" && shiftRes.value.success) setShiftSummary(shiftRes.value.data);
+    else failures.push("shift-summary");
+
+    if (rejectsRes.status === "fulfilled" && rejectsRes.value.success) setTopRejects(rejectsRes.value.data);
+    else failures.push("top-rejects");
+
+    if (machinesRes.status === "fulfilled" && machinesRes.value.success) setMachines(machinesRes.value.data);
+    else failures.push("machines");
+
+    if (failures.length) {
+      setError(`Kuch sections load nahi ho paaye: ${failures.join(", ")}`);
     }
-  }, [hallCode, filters.from, filters.to, filters.machine]);
+
+    setLoading(false);
+  }, [hallCode, filters.from, filters.to, filters.machine, filters.shift]);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
 
   return {
-    stats,
-    machineWise,
-    hourlyTrend,
-    shiftSummary,
-    topRejects,
-    machines,
-    loading,
-    error,
-    refresh: fetchAll,
+    stats, machineWise, hourlyTrend, shiftSummary, topRejects, machines,
+    loading, error, refresh: fetchAll,
   };
 };
 
