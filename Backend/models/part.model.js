@@ -38,8 +38,8 @@ const Part = {
   },
 
   async searchParts(keyword) {
-  const [rows] = await db.query(
-    `SELECT
+    const [rows] = await db.query(
+      `SELECT
         id,
         part_name,
         part_number,
@@ -51,11 +51,11 @@ const Part = {
      WHERE part_name LIKE ?
      ORDER BY part_name
      LIMIT 10`,
-    [`%${keyword}%`]
-  );
+      [`%${keyword}%`],
+    );
 
-  return rows;
-},
+    return rows;
+  },
 
   async findById(id) {
     const [rows] = await db.execute(
@@ -114,6 +114,33 @@ const Part = {
       "DELETE FROM parts WHERE id=?",
 
       [id],
+    );
+
+    return result;
+  },
+
+  async createPart(part) {
+    const {
+      part_number,
+      part_name,
+      product_category,
+      source,
+      customer,
+      standard_cycle_time,
+    } = part;
+
+    const [result] = await db.query(
+      `INSERT INTO parts
+      (part_number, part_name, product_category, source, customer, standard_cycle_time, status)
+     VALUES (?, ?, ?, ?, ?, ?, 'Active')`,
+      [
+        part_number,
+        part_name,
+        product_category,
+        source,
+        customer,
+        standard_cycle_time,
+      ],
     );
 
     return result;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { getOperatorByCode } from "../api/operatorApi";
-import { searchParts } from "../api/partApi";
+import { getOperatorByCode, createOperator } from "../api/operatorApi";
+import { searchParts, createPart } from "../api/partApi";
 
 import { FaIndustry } from "react-icons/fa";
 
@@ -88,14 +88,36 @@ const AdvProductionEntry = () => {
 
   const currentTime = useClock();
 
+  // ------------------------------------------------------
+  // OPERATOR lookup / add-new state
+  // ------------------------------------------------------
   const [operatorDetails, setOperatorDetails] = useState(null);
+  const [operatorNotFound, setOperatorNotFound] = useState(false);
+  const [addingOperator, setAddingOperator] = useState(false);
+
+  // ------------------------------------------------------
+  // PART (main entry) lookup / add-new state
+  // ------------------------------------------------------
   const [partSuggestions, setPartSuggestions] = useState([]);
+  const [noPartResults, setNoPartResults] = useState(false);
+  const [addingPart, setAddingPart] = useState(false);
+
+  // ------------------------------------------------------
+  // PART (mould-change "new part") lookup / add-new state
+  // ------------------------------------------------------
+  const [mouldPartSuggestions, setMouldPartSuggestions] = useState([]);
+  const [noMouldPartResults, setNoMouldPartResults] = useState(false);
+  const [addingMouldPart, setAddingMouldPart] = useState(false);
 
   const [submitResult, setSubmitResult] = useState(null);
 
+  // ========================================================
+  // OPERATOR
+  // ========================================================
   const fetchOperator = async (operatorCode) => {
     if (!operatorCode) {
       setOperatorDetails(null);
+      setOperatorNotFound(false);
       handleChange({ target: { name: "operator_id", value: null } });
       return;
     }
@@ -105,63 +127,201 @@ const AdvProductionEntry = () => {
 
       if (res.success) {
         setOperatorDetails(res.data);
+        setOperatorNotFound(false);
         // FIX: capture the numeric operator id — needed as the FK for the
         // backend (production_entries.operator_id). Previously this was
         // never stored, only the display details were.
         handleChange({ target: { name: "operator_id", value: res.data.id } });
       } else {
         setOperatorDetails(null);
+        setOperatorNotFound(true);
         handleChange({ target: { name: "operator_id", value: null } });
       }
     } catch (error) {
+      // A 404 from the backend usually rejects the promise rather than
+      // resolving with { success: false } — treat it the same way:
+      // operator genuinely not found, so offer the "add operator" flow.
       console.error(error);
       setOperatorDetails(null);
+      setOperatorNotFound(true);
       handleChange({ target: { name: "operator_id", value: null } });
     }
   };
 
-  const fetchPartSuggestions = async (keyword) => {
-    if (!keyword || keyword.trim().length < 2) {
-      setPartSuggestions([]);
-      return;
-    }
+  // Called from ProductionForm's inline "Add Operator" mini-form.
+  // Creates the operator on the backend, then wires the new numeric id
+  // into formData exactly like a successful lookup would.
+  const handleAddOperator = async (newOperator) => {
+    setAddingOperator(true);
 
     try {
-      const res = await searchParts(keyword);
+      const res = await createOperator(newOperator);
 
       if (res.success) {
-        setPartSuggestions(res.data);
-      } else {
-        setPartSuggestions([]);
+        const created = { id: res.insertId, ...newOperator };
+
+        setOperatorDetails(created);
+        setOperatorNotFound(false);
+
+        handleChange({ target: { name: "operator_id", value: res.insertId } });
+        handleChange({
+          target: { name: "operatorId", value: newOperator.operator_code },
+        });
+
+        return { success: true };
       }
+
+      return {
+        success: false,
+        message: res.message || "Failed to add operator.",
+      };
     } catch (error) {
       console.error(error);
-
-      setPartSuggestions([]);
+      return {
+        success: false,
+        message:
+          error?.response?.data?.message ||
+          error.message ||
+          "Failed to add operator.",
+      };
+    } finally {
+      setAddingOperator(false);
     }
   };
 
-  // Add alongside your existing partSuggestions state:
-  const [mouldPartSuggestions, setMouldPartSuggestions] = useState([]);
-
-  // Add alongside your existing fetchPartSuggestions:
-  const fetchMouldPartSuggestions = async (keyword) => {
+  // ========================================================
+  // PART — main production entry
+  // ========================================================
+  const fetchPartSuggestions = async (keyword) => {
     if (!keyword || keyword.trim().length < 2) {
-      setMouldPartSuggestions([]);
+      setPartSuggestions([]);
+      setNoPartResults(false);
       return;
     }
 
     try {
       const res = await searchParts(keyword);
 
+      if (res.success && res.data.length) {
+        setPartSuggestions(res.data);
+        setNoPartResults(false);
+      } else {
+        setPartSuggestions([]);
+        setNoPartResults(true);
+      }
+    } catch (error) {
+      console.error(error);
+      setPartSuggestions([]);
+      setNoPartResults(true);
+    }
+  };
+
+  const handleAddPart = async (newPart) => {
+    setAddingPart(true);
+
+    try {
+      const res = await createPart(newPart);
+
       if (res.success) {
+        handleChange({ target: { name: "part", value: newPart.part_name } });
+        handleChange({ target: { name: "part_id", value: res.insertId } });
+        handleChange({
+          target: {
+            name: "standardCycleTime",
+            value: newPart.standard_cycle_time,
+          },
+        });
+
+        setPartSuggestions([]);
+        setNoPartResults(false);
+
+        return { success: true };
+      }
+
+      return { success: false, message: res.message || "Failed to add part." };
+    } catch (error) {
+      console.error(error);
+      return {
+        success: false,
+        message:
+          error?.response?.data?.message ||
+          error.message ||
+          "Failed to add part.",
+      };
+    } finally {
+      setAddingPart(false);
+    }
+  };
+
+  // ========================================================
+  // PART — mould-change "new part"
+  // ========================================================
+  const fetchMouldPartSuggestions = async (keyword) => {
+    if (!keyword || keyword.trim().length < 2) {
+      setMouldPartSuggestions([]);
+      setNoMouldPartResults(false);
+      return;
+    }
+
+    try {
+      const res = await searchParts(keyword);
+
+      if (res.success && res.data.length) {
         setMouldPartSuggestions(res.data);
+        setNoMouldPartResults(false);
       } else {
         setMouldPartSuggestions([]);
+        setNoMouldPartResults(true);
       }
     } catch (error) {
       console.error(error);
       setMouldPartSuggestions([]);
+      setNoMouldPartResults(true);
+    }
+  };
+
+  const handleAddMouldPart = async (newPart) => {
+    setAddingMouldPart(true);
+
+    try {
+      const res = await createPart(newPart);
+
+      if (res.success) {
+        handleChange({
+          target: { name: "mouldPart", value: newPart.part_name },
+        });
+        handleChange({
+          target: {
+            name: "mouldStandardCycleTime",
+            value: newPart.standard_cycle_time,
+          },
+        });
+        handleChange({ target: { name: "new_part_id", value: res.insertId } });
+        handleChange({
+          target: {
+            name: "new_part_number",
+            value: newPart.part_number || newPart.part_name,
+          },
+        });
+
+        setMouldPartSuggestions([]);
+        setNoMouldPartResults(false);
+
+        return { success: true };
+      }
+
+      return { success: false, message: res.message || "Failed to add part." };
+    } catch (error) {
+      console.error(error);
+      return {
+        success: false,
+        message:
+          error?.response?.data?.message ||
+          error.message ||
+          "Failed to add part.",
+      };
+    } finally {
+      setAddingMouldPart(false);
     }
   };
 
@@ -323,9 +483,15 @@ const AdvProductionEntry = () => {
               efficiency={efficiency}
               fetchOperator={fetchOperator}
               operatorDetails={operatorDetails}
+              operatorNotFound={operatorNotFound}
+              onAddOperator={handleAddOperator}
+              addingOperator={addingOperator}
               fetchPartSuggestions={fetchPartSuggestions}
               partSuggestions={partSuggestions}
               setPartSuggestions={setPartSuggestions}
+              noPartResults={noPartResults}
+              onAddPart={handleAddPart}
+              addingPart={addingPart}
             />
 
             {/* REJECT BREAKUP */}
@@ -349,6 +515,9 @@ const AdvProductionEntry = () => {
               fetchMouldPartSuggestions={fetchMouldPartSuggestions}
               mouldPartSuggestions={mouldPartSuggestions}
               setMouldPartSuggestions={setMouldPartSuggestions}
+              noMouldPartResults={noMouldPartResults}
+              onAddMouldPart={handleAddMouldPart}
+              addingMouldPart={addingMouldPart}
             >
               <MouldRejectBreakup
                 mouldReject={formData.mouldReject}
@@ -371,7 +540,6 @@ const AdvProductionEntry = () => {
               totalLossMinutes={totalLossMinutes}
             />
 
-            {/* REMARKS */}
             {/* REMARKS */}
 
             <div

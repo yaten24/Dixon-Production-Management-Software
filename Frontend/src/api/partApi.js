@@ -24,3 +24,8 @@ export const searchParts = async (keyword) => {
   const response = await api.get(`/parts/search?keyword=${keyword}`);
   return response.data;
 };
+
+export const createPart = async (part) => {
+  const res = await api.post("/parts", part);
+  return res.data;
+};

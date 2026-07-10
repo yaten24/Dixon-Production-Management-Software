@@ -48,6 +48,7 @@ const getOperator = async (req, res) => {
 const addOperator = async (req, res) => {
   try {
     const result = await Operator.createOperator(req.body);
+    console.log("Operator created with ID:", result.insertId);
 
     res.status(201).json({
       success: true,

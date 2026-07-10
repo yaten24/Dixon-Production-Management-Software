@@ -1,4 +1,5 @@
 const express = require("express");
+const authMiddleware = require("../middlewares/authMiddleware");
 
 const {
   getOperators,
@@ -11,16 +12,14 @@ const {
 
 const router = express.Router();
 
+// FIX: these routes had no auth check at all — anyone could hit them.
+router.use(authMiddleware);
+
 router.get("/", getOperators);
-
+router.get("/code/:operatorCode", getOperatorByCode); // more specific route BEFORE /:id
 router.get("/:id", getOperator);
-
 router.post("/", addOperator);
-
 router.put("/:id", editOperator);
-
 router.delete("/:id", removeOperator);
-
-router.get("/code/:operatorCode", getOperatorByCode);
 
 module.exports = router;

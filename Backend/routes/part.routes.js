@@ -10,7 +10,9 @@ const {
   deletePart,
   searchParts,
 } = require("../controllers/part.controller");
+const authMiddleware = require("../middlewares/authMiddleware");
 
+router.use(authMiddleware);
 router.post("/", addPart);
 
 router.get("/", getAllParts);

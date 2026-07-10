@@ -10,6 +10,9 @@ const MouldChangeSection = ({
   fetchMouldPartSuggestions,
   mouldPartSuggestions = [],
   setMouldPartSuggestions,
+  noMouldPartResults,
+  onAddMouldPart,
+  addingMouldPart,
 }) => {
   const wrapperRef = useRef(null);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -45,12 +48,10 @@ const MouldChangeSection = ({
   `;
 
   // ===========================
-  // FIX: OLD PART auto-fill
+  // OLD PART auto-fill
   // Old part = the part currently selected in the main ProductionForm
   // (formData.part / formData.part_id), since that's what was running on
-  // this machine before the mould change. Previously old_part_id /
-  // old_part_number were never set anywhere, so they stayed null/"" and
-  // got sent to the backend empty.
+  // this machine before the mould change.
   // Runs whenever the mould section is opened OR the main part changes,
   // but only overwrites if it's actually different — so it doesn't fight
   // a manually-corrected value on every render.
@@ -114,6 +115,54 @@ const MouldChangeSection = ({
   }, [formData.mouldTarget, formData.mouldActual]);
 
   // ===========================
+  // PART — inline "Add Part" mini-form (for the NEW part)
+  // ===========================
+  const [showAddPart, setShowAddPart] = useState(false);
+  const [newPart, setNewPart] = useState({
+    part_number: "",
+    part_name: "",
+    product_category: "",
+    source: "",
+    customer: "",
+    standard_cycle_time: "",
+  });
+  const [addPartError, setAddPartError] = useState(null);
+
+  const submitNewPart = async () => {
+    if (
+      !newPart.part_number.trim() ||
+      !newPart.part_name.trim() ||
+      !Number(newPart.standard_cycle_time)
+    ) {
+      setAddPartError(
+        "Part number, part name and standard cycle time are required.",
+      );
+      return;
+    }
+
+    setAddPartError(null);
+
+    const result = await onAddMouldPart({
+      ...newPart,
+      standard_cycle_time: Number(newPart.standard_cycle_time),
+    });
+
+    if (result.success) {
+      setShowAddPart(false);
+      setNewPart({
+        part_number: "",
+        part_name: "",
+        product_category: "",
+        source: "",
+        customer: "",
+        standard_cycle_time: "",
+      });
+    } else {
+      setAddPartError(result.message);
+    }
+  };
+
+  // ===========================
   // PART SEARCH (this is the NEW part)
   // ===========================
 
@@ -122,14 +171,27 @@ const MouldChangeSection = ({
 
     const value = e.target.value;
 
+    // BUG FIX: typing over an already-linked part must invalidate the
+    // previously resolved new_part_id / new_part_number / cycle time —
+    // otherwise a stale part id could get submitted for a completely
+    // different part name shown on screen (e.g. user picks Part A,
+    // new_part_id=5, then retypes "Part B" without selecting from the
+    // list — old code kept new_part_id=5 and silently saved the wrong
+    // part against the mould change).
+    handleChange({ target: { name: "new_part_id", value: null } });
+    handleChange({ target: { name: "new_part_number", value: "" } });
+    handleChange({ target: { name: "mouldStandardCycleTime", value: "" } });
+
     if (value.trim().length < 2) {
       setMouldPartSuggestions([]);
       setSelectedIndex(-1);
+      setShowAddPart(false);
       return;
     }
 
     fetchMouldPartSuggestions(value);
     setSelectedIndex(-1);
+    setShowAddPart(false);
   };
 
   const selectMouldPart = (part) => {
@@ -152,6 +214,7 @@ const MouldChangeSection = ({
 
     setMouldPartSuggestions([]);
     setSelectedIndex(-1);
+    setShowAddPart(false);
   };
 
   const handleMouldKeyDown = (e) => {
@@ -296,6 +359,7 @@ const MouldChangeSection = ({
                     className={inputClass}
                   />
 
+                  {/* SUGGESTIONS FOUND */}
                   {mouldPartSuggestions.length > 0 && (
                     <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E2E4E9] rounded-sm shadow-lg z-50 max-h-72 overflow-y-auto">
                       {mouldPartSuggestions.map((part, index) => (
@@ -320,6 +384,132 @@ const MouldChangeSection = ({
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* NO RESULTS — offer to add */}
+                  {noMouldPartResults && !formData.new_part_id && (
+                    <div className="absolute left-0 right-0 mt-1 bg-white border border-amber-200 rounded-sm shadow-lg z-50 p-2">
+                      {!showAddPart ? (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] text-amber-700 font-medium">
+                            No part found for "{formData.mouldPart}".
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewPart((p) => ({
+                                ...p,
+                                part_name: formData.mouldPart,
+                              }));
+                              setShowAddPart(true);
+                            }}
+                            className="h-6 px-2 shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-semibold rounded-sm"
+                          >
+                            + Add Part
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-1.5">
+                          <input
+                            type="text"
+                            placeholder="Part Number"
+                            value={newPart.part_number}
+                            onChange={(e) =>
+                              setNewPart((p) => ({
+                                ...p,
+                                part_number: e.target.value,
+                              }))
+                            }
+                            className={inputClass}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Part Name"
+                            value={newPart.part_name}
+                            onChange={(e) =>
+                              setNewPart((p) => ({
+                                ...p,
+                                part_name: e.target.value,
+                              }))
+                            }
+                            className={inputClass}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Product Category"
+                            value={newPart.product_category}
+                            onChange={(e) =>
+                              setNewPart((p) => ({
+                                ...p,
+                                product_category: e.target.value,
+                              }))
+                            }
+                            className={inputClass}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Source"
+                            value={newPart.source}
+                            onChange={(e) =>
+                              setNewPart((p) => ({
+                                ...p,
+                                source: e.target.value,
+                              }))
+                            }
+                            className={inputClass}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Customer"
+                            value={newPart.customer}
+                            onChange={(e) =>
+                              setNewPart((p) => ({
+                                ...p,
+                                customer: e.target.value,
+                              }))
+                            }
+                            className={inputClass}
+                          />
+                          <input
+                            type="number"
+                            placeholder="Standard Cycle Time (sec)"
+                            value={newPart.standard_cycle_time}
+                            {...numberInputProps}
+                            onChange={(e) =>
+                              setNewPart((p) => ({
+                                ...p,
+                                standard_cycle_time: e.target.value,
+                              }))
+                            }
+                            className={`${inputClass} font-mono`}
+                          />
+
+                          {addPartError && (
+                            <p className="text-[10px] text-red-600">
+                              {addPartError}
+                            </p>
+                          )}
+
+                          <div className="flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={submitNewPart}
+                              disabled={addingMouldPart}
+                              className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-sm disabled:opacity-50"
+                            >
+                              {addingMouldPart ? "Saving..." : "Save & Use"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowAddPart(false)}
+                              className="h-7 px-2 bg-slate-200 hover:bg-slate-300 text-slate-600 text-[11px] rounded-sm"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
