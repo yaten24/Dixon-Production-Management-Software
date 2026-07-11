@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { getOperatorByCode, createOperator } from "../api/operatorApi";
-import { searchParts, createPart } from "../api/partApi";
+import { searchParts, addPart } from "../api/partApi";
 
 import { FaIndustry } from "react-icons/fa";
 
@@ -219,7 +219,7 @@ const AdvProductionEntry = () => {
     setAddingPart(true);
 
     try {
-      const res = await createPart(newPart);
+      const res = await addPart(newPart);
 
       if (res.success) {
         handleChange({ target: { name: "part", value: newPart.part_name } });

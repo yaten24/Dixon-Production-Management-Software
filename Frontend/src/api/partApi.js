@@ -1,31 +1,43 @@
-import api from "./axios";
+import axios from "axios";
 
-export const getAllParts = async () => {
-  const response = await api.get("/parts");
-  return response.data;
-};
+// NOTE: if you already have a shared axios instance (the one AuthContext
+// uses, with withCredentials + httpOnly cookie handling baked in), import
+// and use THAT instead of creating a new one here — reusing it avoids
+// repeating the "hardcoded localhost URL" bug you fixed earlier.
+// Set VITE_API_BASE_URL in your .env for prod builds.
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
-export const addPart = async (data) => {
-  const response = await api.post("/parts", data);
-  return response.data;
-};
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+});
 
-export const updatePart = async (id, data) => {
-  const response = await api.put(`/parts/${id}`, data);
-  return response.data;
-};
+// GET /parts?page=&limit=&search=&category=&customer=&source=&status=
+// -> { success, count, total, page, limit, totalPages, data }
+// filters = { search, category, customer, source, status }
+export const getAllParts = (page = 1, limit = 100, filters = {}) =>
+  api
+    .get("/parts", { params: { page, limit, ...filters } })
+    .then((res) => res.data);
 
-export const deletePart = async (id) => {
-  const response = await api.delete(`/parts/${id}`);
-  return response.data;
-};
+// GET /parts/filter-options -> { success, data: { categories, customers, sources } }
+export const getFilterOptions = () =>
+  api.get("/parts/filter-options").then((res) => res.data);
 
-export const searchParts = async (keyword) => {
-  const response = await api.get(`/parts/search?keyword=${keyword}`);
-  return response.data;
-};
+export const getPartById = (id) =>
+  api.get(`/parts/${id}`).then((res) => res.data);
 
-export const createPart = async (part) => {
-  const res = await api.post("/parts", part);
-  return res.data;
-};
+export const searchParts = (keyword) =>
+  api.get("/parts/search", { params: { keyword } }).then((res) => res.data);
+
+export const addPart = (payload) =>
+  api.post("/parts", payload).then((res) => res.data);
+
+export const updatePart = (id, payload) =>
+  api.put(`/parts/${id}`, payload).then((res) => res.data);
+
+export const deletePart = (id) =>
+  api.delete(`/parts/${id}`).then((res) => res.data);
+
+export default api;

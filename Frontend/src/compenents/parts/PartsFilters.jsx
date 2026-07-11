@@ -1,7 +1,10 @@
-import React, { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 import { Search, RotateCcw, Plus } from "lucide-react";
 
+// UPDATED: categories/customers/sources are now passed in as props
+// (fetched from GET /parts/filter-options, covering the WHOLE table)
+// instead of being derived from the `parts` prop, which only ever
+// reflected whatever single page of 100 rows was currently loaded.
 const PartsFilters = ({
   search,
   setSearch,
@@ -13,22 +16,11 @@ const PartsFilters = ({
   setSource,
   status,
   setStatus,
-  parts = [],
+  categories = [],
+  customers = [],
+  sources = [],
+  onAddPart,
 }) => {
-  const navigate = useNavigate();
-
-  const categories = useMemo(() => {
-    return [...new Set(parts.map((part) => part.product_category))];
-  }, [parts]);
-
-  const customers = useMemo(() => {
-    return [...new Set(parts.map((part) => part.customer))];
-  }, [parts]);
-
-  const sources = useMemo(() => {
-    return [...new Set(parts.map((part) => part.source))];
-  }, [parts]);
-
   const resetFilters = () => {
     setSearch("");
     setCategory("All");
@@ -37,12 +29,8 @@ const PartsFilters = ({
     setStatus("All");
   };
 
-  // FIX: Add Part now navigates to its own route instead of relying on an
-  // onAddPart callback prop (which required the parent to render some kind
-  // of modal/form). ASSUMPTION: the add-part route is "/parts/add" — update
-  // this path if your router defines it differently.
   const handleAddPart = () => {
-    navigate("/parts/add");
+    onAddPart?.();
   };
 
   const selectClass =
@@ -52,13 +40,11 @@ const PartsFilters = ({
     <div className="rounded-sm border border-[#E2E4E9] bg-white p-1.5">
       <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center">
         {/* Search */}
-
         <div className="relative w-full lg:max-w-xs">
           <Search
             size={13}
             className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
           />
-
           <input
             type="text"
             value={search}
@@ -69,14 +55,12 @@ const PartsFilters = ({
         </div>
 
         {/* Category */}
-
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           className={`${selectClass} lg:w-32`}
         >
           <option value="All">All Categories</option>
-
           {categories.map((item) => (
             <option key={item} value={item}>
               {item}
@@ -85,14 +69,12 @@ const PartsFilters = ({
         </select>
 
         {/* Customer */}
-
         <select
           value={customer}
           onChange={(e) => setCustomer(e.target.value)}
           className={`${selectClass} lg:w-32`}
         >
           <option value="All">All Customers</option>
-
           {customers.map((item) => (
             <option key={item} value={item}>
               {item}
@@ -101,14 +83,12 @@ const PartsFilters = ({
         </select>
 
         {/* Source */}
-
         <select
           value={source}
           onChange={(e) => setSource(e.target.value)}
           className={`${selectClass} lg:w-32`}
         >
           <option value="All">All Sources</option>
-
           {sources.map((item) => (
             <option key={item} value={item}>
               {item}
@@ -117,7 +97,6 @@ const PartsFilters = ({
         </select>
 
         {/* Status */}
-
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
@@ -129,7 +108,6 @@ const PartsFilters = ({
         </select>
 
         {/* Buttons */}
-
         <div className="flex w-full gap-1.5 lg:ml-auto lg:w-auto">
           <button
             onClick={resetFilters}
@@ -139,7 +117,6 @@ const PartsFilters = ({
             Reset
           </button>
 
-          {/* ADD PART — modern gradient pill button, navigates to /parts/add */}
           <button
             onClick={handleAddPart}
             className="
