@@ -1,5 +1,5 @@
 import React from "react";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaSave } from "react-icons/fa";
 
 const FooterActions = ({
   currentMachineIndex,
@@ -43,59 +43,66 @@ const FooterActions = ({
           Previous
         </button>
 
-        {/* NEXT */}
-        <button
-          type="button"
-          onClick={nextMachine}
-          disabled={isLastMachine || submitting}
-          className="
-            h-9
-            rounded-full
-            bg-blue-600
-            hover:bg-blue-700
-            text-white
-            text-sm
-            font-medium
-            disabled:bg-slate-300
-            disabled:cursor-not-allowed
-            transition-colors
-            duration-150
-            flex
-            items-center
-            justify-center
-            gap-1.5
-          "
-        >
-          Save & Next
-          <FaChevronRight className="text-xs" />
-        </button>
-      </div>
+        {/* NEXT — hidden on the last machine, replaced by Save Entry below */}
+        {!isLastMachine && (
+          <button
+            type="button"
+            onClick={nextMachine}
+            disabled={submitting}
+            className="
+              h-9
+              rounded-full
+              bg-blue-600
+              hover:bg-blue-700
+              text-white
+              text-sm
+              font-medium
+              disabled:bg-slate-300
+              disabled:cursor-not-allowed
+              transition-colors
+              duration-150
+              flex
+              items-center
+              justify-center
+              gap-1.5
+            "
+          >
+            Save & Next
+            <FaChevronRight className="text-xs" />
+          </button>
+        )}
 
-      {/* SUBMIT BUTTON */}
-      {isLastMachine && (
-        <button
-          type="button"
-          onClick={finalSubmit}
-          disabled={submitting}
-          className="
-            w-full
-            h-10
-            mt-2
-            rounded-full
-            bg-green-600
-            hover:bg-green-700
-            text-white
-            font-semibold
-            text-sm
-            disabled:bg-green-300
-            disabled:cursor-not-allowed
-            transition-colors
-            duration-150
-          "
-        >
-          {submitting ? "Submitting..." : "Submit All Entries"}
-        </button>
-      )}
+        {/* SAVE ENTRY — only on the last machine, saves just THIS entry.
+            No more looping back over every previously-saved machine — 
+            each one already saved itself via "Save & Next". */}
+        {isLastMachine && (
+          <button
+            type="button"
+            onClick={finalSubmit}
+            disabled={submitting}
+            className="
+              h-9
+              rounded-full
+              bg-green-600
+              hover:bg-green-700
+              text-white
+              text-sm
+              font-semibold
+              disabled:bg-green-300
+              disabled:cursor-not-allowed
+              transition-colors
+              duration-150
+              flex
+              items-center
+              justify-center
+              gap-1.5
+            "
+          >
+            <FaSave className="text-xs" />
+            {submitting ? "Saving..." : "Save Entry"}
+          </button>
+        )}
+      </div>
 
       {/* STATUS */}
       <div className="mt-2 text-center text-xs text-slate-500">

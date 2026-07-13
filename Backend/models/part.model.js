@@ -62,17 +62,6 @@ const Part = {
     return result;
   },
 
-  // UPDATED: findAll now applies search/category/customer/source/status
-  // filters directly in SQL, against the ENTIRE table — not just whatever
-  // page happens to be loaded in the frontend. This is what makes "apply
-  // a filter -> see all matching parts" actually work, instead of only
-  // filtering within the current 100-row page.
-  //
-  // LIMIT/OFFSET are still interpolated (not bound as `?`) because of
-  // mysql2 execute() limitations with LIMIT/OFFSET placeholders — they're
-  // coerced through Number() + Number.isFinite() first, so this stays
-  // injection-safe. Actual filter values (search/category/etc.) ARE bound
-  // as normal `?` params.
   async findAll({
     limit = 100,
     offset = 0,
@@ -101,9 +90,6 @@ const Part = {
     return rows;
   },
 
-  // UPDATED: count() now respects the same filters as findAll() so
-  // totalPages/total in the API response reflect the FILTERED result set,
-  // not the whole table.
   async count({
     search = "",
     category = "All",
@@ -127,10 +113,6 @@ const Part = {
     return rows[0].total;
   },
 
-  // NEW: distinct values for the filter dropdowns, pulled from the WHOLE
-  // table. Previously the dropdowns only showed values found in whatever
-  // 100 rows happened to be loaded — so a category on page 3 was invisible
-  // to the filter on page 1.
   async getFilterOptions() {
     const [categories] = await db.execute(
       "SELECT DISTINCT product_category FROM parts WHERE product_category IS NOT NULL AND product_category <> '' ORDER BY product_category"
@@ -149,6 +131,8 @@ const Part = {
     };
   },
 
+  // Search by BOTH part_name and part_number — already covers this,
+  // kept as-is (verify: increased LIMIT slightly for busier lookups)
   async searchParts(keyword) {
     const [rows] = await db.query(
       `SELECT
@@ -210,6 +194,41 @@ const Part = {
       id,
     ]);
 
+    return result;
+  },
+
+  // Called from productionEntryController whenever a production entry (or
+  // mould-change new part) is saved with an actual_cycle_time — keeps the
+  // parts table's actual_cycle_time in sync with what's actually being
+  // observed on the floor, without touching any other column.
+  //
+  // FIX: this now REQUIRES the caller's active transaction `connection` as
+  // the first argument, instead of running on a fresh connection pulled
+  // from the pool via `db.execute`.
+  //
+  // Why: production_entries.part_id (and mould_change_entries old/new
+  // part ids) reference parts.id via foreign key. While the caller's
+  // transaction is open (row not yet committed), InnoDB holds a lock on
+  // that parts row for the duration of the transaction. Running this
+  // UPDATE on a *separate* pooled connection meant that second connection
+  // had to wait for a lock held by the first — which itself was paused
+  // awaiting this call to finish before it could commit and release the
+  // lock. That's a self-deadlock, and it surfaces as exactly the error
+  // seen: "Lock wait timeout exceeded; try restarting transaction".
+  // Running it on the SAME connection/transaction avoids the conflict
+  // entirely and also means it correctly rolls back if the transaction
+  // rolls back.
+  async updateActualCycleTime(connection, id, actualCycleTime) {
+    if (!id || actualCycleTime === undefined || actualCycleTime === null) {
+      return null;
+    }
+    const ct = Number(actualCycleTime);
+    if (!Number.isFinite(ct) || ct <= 0) return null;
+
+    const [result] = await connection.query(
+      "UPDATE parts SET actual_cycle_time = ? WHERE id = ?",
+      [ct, id]
+    );
     return result;
   },
 

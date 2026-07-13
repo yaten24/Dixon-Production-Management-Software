@@ -49,12 +49,6 @@ const MouldChangeSection = ({
 
   // ===========================
   // OLD PART auto-fill
-  // Old part = the part currently selected in the main ProductionForm
-  // (formData.part / formData.part_id), since that's what was running on
-  // this machine before the mould change.
-  // Runs whenever the mould section is opened OR the main part changes,
-  // but only overwrites if it's actually different — so it doesn't fight
-  // a manually-corrected value on every render.
   // ===========================
   useEffect(() => {
     if (!showMouldSection) return;
@@ -74,17 +68,23 @@ const MouldChangeSection = ({
   }, [showMouldSection, formData.part_id, formData.part]);
 
   // ===========================
-  // TARGET — auto-calculated from Actual Cycle Time
+  // TARGET — now EDITABLE, same pattern as main ProductionForm.
+  // Only auto-sets from Actual Cycle Time when the field is empty, so it
+  // no longer stomps on a value you manually reduced/increased.
   // ===========================
-  useEffect(() => {
+  const calculatedMouldTarget = useMemo(() => {
     const ct = Number(formData.mouldActualCycleTime);
-    const computedTarget = ct > 0 ? Math.round(3600 / ct) : "";
+    return ct > 0 ? Math.round(3600 / ct) : "";
+  }, [formData.mouldActualCycleTime]);
 
-    if (formData.mouldTarget !== computedTarget) {
-      handleChange({ target: { name: "mouldTarget", value: computedTarget } });
+  useEffect(() => {
+    if (formData.mouldTarget === "" && calculatedMouldTarget) {
+      handleChange({
+        target: { name: "mouldTarget", value: calculatedMouldTarget },
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.mouldActualCycleTime]);
+  }, [calculatedMouldTarget]);
 
   // ===========================
   // LOSS TIME (minutes)
@@ -171,13 +171,6 @@ const MouldChangeSection = ({
 
     const value = e.target.value;
 
-    // BUG FIX: typing over an already-linked part must invalidate the
-    // previously resolved new_part_id / new_part_number / cycle time —
-    // otherwise a stale part id could get submitted for a completely
-    // different part name shown on screen (e.g. user picks Part A,
-    // new_part_id=5, then retypes "Part B" without selecting from the
-    // list — old code kept new_part_id=5 and silently saved the wrong
-    // part against the mould change).
     handleChange({ target: { name: "new_part_id", value: null } });
     handleChange({ target: { name: "new_part_number", value: "" } });
     handleChange({ target: { name: "mouldStandardCycleTime", value: "" } });
@@ -203,7 +196,6 @@ const MouldChangeSection = ({
       },
     });
 
-    // NEW part id/number — separate from old_part_id/old_part_number above
     handleChange({ target: { name: "new_part_id", value: part.id } });
     handleChange({
       target: {
@@ -264,25 +256,6 @@ const MouldChangeSection = ({
     };
   }, [setMouldPartSuggestions]);
 
-  const summaryCards = [
-    {
-      label: "Standard CT",
-      value: formData.mouldStandardCycleTime || "-",
-      color: "text-slate-700",
-    },
-    {
-      label: "Target",
-      value: formData.mouldTarget === "" ? "-" : formData.mouldTarget,
-      color: "text-blue-600",
-    },
-    { label: "Loss (min)", value: mouldLossMinutes, color: "text-red-600" },
-    {
-      label: "Efficiency",
-      value: `${mouldEfficiency}%`,
-      color: "text-orange-600",
-    },
-  ];
-
   return (
     <div className="mt-3">
       {/* CHECKBOX */}
@@ -313,7 +286,7 @@ const MouldChangeSection = ({
               </h3>
 
               {/* ===========================
-                  OLD PART → NEW PART (read-only old, editable new)
+                  OLD PART → NEW PART
               =========================== */}
               <div className="grid grid-cols-2 gap-2.5 mb-2.5">
                 <div>
@@ -355,11 +328,10 @@ const MouldChangeSection = ({
                     onChange={handleMouldPartChange}
                     onKeyDown={handleMouldKeyDown}
                     autoComplete="off"
-                    placeholder="Search part..."
+                    placeholder="Search by name or number..."
                     className={inputClass}
                   />
 
-                  {/* SUGGESTIONS FOUND */}
                   {mouldPartSuggestions.length > 0 && (
                     <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E2E4E9] rounded-sm shadow-lg z-50 max-h-72 overflow-y-auto">
                       {mouldPartSuggestions.map((part, index) => (
@@ -387,7 +359,6 @@ const MouldChangeSection = ({
                     </div>
                   )}
 
-                  {/* NO RESULTS — offer to add */}
                   {noMouldPartResults && !formData.new_part_id && (
                     <div className="absolute left-0 right-0 mt-1 bg-white border border-amber-200 rounded-sm shadow-lg z-50 p-2">
                       {!showAddPart ? (
@@ -567,30 +538,65 @@ const MouldChangeSection = ({
               </div>
 
               {/* ===========================
-                  AUTO-CALCULATED (READ-ONLY) SUMMARY CARDS
+                  AUTO-CALCULATED + EDITABLE TARGET
               =========================== */}
 
               <div className="mt-3 pt-2.5 border-t border-[#E2E4E9]">
                 <p className="text-[10px] uppercase tracking-wide text-slate-400 font-medium mb-1.5">
-                  Auto-calculated
+                  Auto-calculated &amp; Editable
                 </p>
 
-                <div className="grid grid-cols-4 gap-2">
-                  {summaryCards.map((card) => (
-                    <div
-                      key={card.label}
-                      className="border border-[#E2E4E9] bg-white rounded-sm px-2 py-1.5"
-                    >
-                      <p className="text-[9px] uppercase tracking-wide text-slate-400 leading-none">
-                        {card.label}
-                      </p>
-                      <p
-                        className={`text-xs font-bold font-mono mt-1 ${card.color}`}
-                      >
-                        {card.value}
-                      </p>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-5 gap-2">
+                  <div className="border border-[#E2E4E9] bg-white rounded-sm px-2 py-1.5">
+                    <p className="text-[9px] uppercase tracking-wide text-slate-400 leading-none">
+                      Standard CT
+                    </p>
+                    <p className="text-xs font-bold font-mono mt-1 text-slate-700">
+                      {formData.mouldStandardCycleTime || "-"}
+                    </p>
+                  </div>
+
+                  <div className="border border-[#E2E4E9] bg-white rounded-sm px-2 py-1.5">
+                    <p className="text-[9px] uppercase tracking-wide text-slate-400 leading-none">
+                      Calc Target
+                    </p>
+                    <p className="text-xs font-bold font-mono mt-1 text-slate-500">
+                      {calculatedMouldTarget === "" ? "-" : calculatedMouldTarget}
+                    </p>
+                  </div>
+
+                  {/* Editable target — was read-only before */}
+                  <div className="border border-[#E2E4E9] bg-blue-50 rounded-sm px-2 py-1.5">
+                    <label className="text-[9px] uppercase tracking-wide text-blue-400 leading-none block">
+                      Target (editable)
+                    </label>
+                    <input
+                      type="number"
+                      name="mouldTarget"
+                      value={formData.mouldTarget}
+                      onChange={handleChange}
+                      {...numberInputProps}
+                      className="w-full h-5 px-1 text-xs font-bold font-mono text-blue-600 bg-transparent border-0 outline-none"
+                    />
+                  </div>
+
+                  <div className="border border-[#E2E4E9] bg-white rounded-sm px-2 py-1.5">
+                    <p className="text-[9px] uppercase tracking-wide text-red-400 leading-none">
+                      Loss (min)
+                    </p>
+                    <p className="text-xs font-bold font-mono mt-1 text-red-600">
+                      {mouldLossMinutes}
+                    </p>
+                  </div>
+
+                  <div className="border border-[#E2E4E9] bg-white rounded-sm px-2 py-1.5">
+                    <p className="text-[9px] uppercase tracking-wide text-orange-400 leading-none">
+                      Efficiency
+                    </p>
+                    <p className="text-xs font-bold font-mono mt-1 text-orange-600">
+                      {mouldEfficiency}%
+                    </p>
+                  </div>
                 </div>
               </div>
 

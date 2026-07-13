@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { getOperatorByCode, createOperator } from "../api/operatorApi";
-import { searchParts, addPart } from "../api/partApi";
+import { getOperatorByCode, createOperator, searchOperators } from "../api/operatorApi";
+import { searchParts, addPartQuick } from "../api/partApi";
 
 import { FaIndustry } from "react-icons/fa";
 
@@ -18,6 +18,21 @@ import LossTimeBreakup from "../compenents/productionEntry/LossTimeBreakup";
 import FooterActions from "../compenents/productionEntry/FooterActions";
 import useClock from "../hooks/useClock";
 import Header from "../compenents/dashboard/Header";
+
+// ==========================================================
+// FIX: generates a guaranteed-unique part number using the current
+// date + time (down to milliseconds).
+// ==========================================================
+const generatePartNumber = (base) => {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const datePart = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+  const timePart = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(
+    now.getSeconds(),
+  )}${pad(now.getMilliseconds())}`;
+  const cleanBase = (base || "PART").trim().toUpperCase().replace(/\s+/g, "-");
+  return `${cleanBase}-${datePart}-${timePart}`;
+};
 
 const AdvProductionEntry = () => {
   const {
@@ -78,7 +93,6 @@ const AdvProductionEntry = () => {
 
     finalSubmit,
 
-    // backend status flags
     loadingMaster,
     masterError,
     submitting,
@@ -88,11 +102,15 @@ const AdvProductionEntry = () => {
   const currentTime = useClock();
 
   // ------------------------------------------------------
-  // OPERATOR lookup / add-new state
+  // OPERATOR lookup / search / add-new state
   // ------------------------------------------------------
   const [operatorDetails, setOperatorDetails] = useState(null);
   const [operatorNotFound, setOperatorNotFound] = useState(false);
   const [addingOperator, setAddingOperator] = useState(false);
+
+  // NEW: operator search suggestions (like Part search)
+  const [operatorSuggestions, setOperatorSuggestions] = useState([]);
+  const [noOperatorResults, setNoOperatorResults] = useState(false);
 
   // ------------------------------------------------------
   // PART (main entry) lookup / add-new state
@@ -127,9 +145,6 @@ const AdvProductionEntry = () => {
       if (res.success) {
         setOperatorDetails(res.data);
         setOperatorNotFound(false);
-        // FIX: capture the numeric operator id — needed as the FK for the
-        // backend (production_entries.operator_id). Previously this was
-        // never stored, only the display details were.
         handleChange({ target: { name: "operator_id", value: res.data.id } });
       } else {
         setOperatorDetails(null);
@@ -137,9 +152,6 @@ const AdvProductionEntry = () => {
         handleChange({ target: { name: "operator_id", value: null } });
       }
     } catch (error) {
-      // A 404 from the backend usually rejects the promise rather than
-      // resolving with { success: false } — treat it the same way:
-      // operator genuinely not found, so offer the "add operator" flow.
       console.error(error);
       setOperatorDetails(null);
       setOperatorNotFound(true);
@@ -147,9 +159,42 @@ const AdvProductionEntry = () => {
     }
   };
 
-  // Called from ProductionForm's inline "Add Operator" mini-form.
-  // Creates the operator on the backend, then wires the new numeric id
-  // into formData exactly like a successful lookup would.
+  // NEW: search-as-you-type suggestions (code OR name)
+  const fetchOperatorSuggestions = async (keyword) => {
+    if (!keyword || keyword.trim().length < 2) {
+      setOperatorSuggestions([]);
+      setNoOperatorResults(false);
+      return;
+    }
+
+    try {
+      const res = await searchOperators(keyword);
+
+      if (res.success && res.data.length) {
+        setOperatorSuggestions(res.data);
+        setNoOperatorResults(false);
+      } else {
+        setOperatorSuggestions([]);
+        setNoOperatorResults(true);
+      }
+    } catch (error) {
+      console.error(error);
+      setOperatorSuggestions([]);
+      setNoOperatorResults(true);
+    }
+  };
+
+  // NEW: clicking a suggestion fills everything directly (no extra
+  // round-trip to fetchOperator) — same instant behaviour as picking a
+  // part from the part search dropdown.
+  const selectOperator = (op) => {
+    setOperatorDetails(op);
+    setOperatorNotFound(false);
+    setNoOperatorResults(false);
+    handleChange({ target: { name: "operatorId", value: op.operator_code } });
+    handleChange({ target: { name: "operator_id", value: op.id } });
+  };
+
   const handleAddOperator = async (newOperator) => {
     setAddingOperator(true);
 
@@ -215,19 +260,33 @@ const AdvProductionEntry = () => {
     }
   };
 
+  // FIX: now calls addPartQuick() -> POST /parts/quick-add, which only
+  // requires part_name + actual_cycle_time (matches what this mini-form
+  // actually collects) and returns insertId — the old flow called the
+  // full addPart() endpoint that required product_category/source/customer
+  // and never returned an insertId, so quick-add always silently failed.
   const handleAddPart = async (newPart) => {
     setAddingPart(true);
 
     try {
-      const res = await addPart(newPart);
+      const partPayload = {
+        part_name: newPart.part_name,
+        actual_cycle_time: newPart.actual_cycle_time,
+        part_number: generatePartNumber(newPart.part_name),
+      };
+
+      const res = await addPartQuick(partPayload);
 
       if (res.success) {
-        handleChange({ target: { name: "part", value: newPart.part_name } });
+        handleChange({
+          target: { name: "part", value: partPayload.part_name },
+        });
         handleChange({ target: { name: "part_id", value: res.insertId } });
         handleChange({
           target: {
             name: "standardCycleTime",
-            value: newPart.standard_cycle_time,
+            value:
+              res.data?.standard_cycle_time ?? partPayload.actual_cycle_time,
           },
         });
 
@@ -279,27 +338,39 @@ const AdvProductionEntry = () => {
     }
   };
 
+  // FIX: same quick-add fix as handleAddPart. This mini-form actually
+  // collects part_number/name/category/source/customer/standard_cycle_time
+  // (fuller form than the main one), so we send those directly to
+  // quick-add — it accepts part_number if provided instead of generating
+  // one, and standard_cycle_time overrides the default.
   const handleAddMouldPart = async (newPart) => {
     setAddingMouldPart(true);
 
     try {
-      const res = await createPart(newPart);
+      const partPayload = {
+        part_name: newPart.part_name,
+        part_number:
+          newPart.part_number || generatePartNumber(newPart.part_name),
+        actual_cycle_time: newPart.standard_cycle_time,
+      };
+
+      const res = await addPartQuick(partPayload);
 
       if (res.success) {
         handleChange({
-          target: { name: "mouldPart", value: newPart.part_name },
+          target: { name: "mouldPart", value: partPayload.part_name },
         });
         handleChange({
           target: {
             name: "mouldStandardCycleTime",
-            value: newPart.standard_cycle_time,
+            value: res.data?.standard_cycle_time ?? newPart.standard_cycle_time,
           },
         });
         handleChange({ target: { name: "new_part_id", value: res.insertId } });
         handleChange({
           target: {
             name: "new_part_number",
-            value: newPart.part_number || newPart.part_name,
+            value: partPayload.part_number,
           },
         });
 
@@ -324,7 +395,8 @@ const AdvProductionEntry = () => {
     }
   };
 
-  // Wrap finalSubmit so the page can show a success/failure summary
+  // CHANGED: finalSubmit now saves only the current (last) machine's
+  // entry — no more looping through every previously saved machine.
   const handleFinalSubmit = async () => {
     setSubmitResult(null);
     const results = await finalSubmit();
@@ -334,26 +406,22 @@ const AdvProductionEntry = () => {
       if (!failed.length) {
         setSubmitResult({
           type: "success",
-          message: "All production entries submitted successfully.",
+          message: "Entry saved successfully.",
         });
       } else {
         setSubmitResult({
           type: "error",
-          message: `Some entries failed: ${failed.map((f) => f.machine).join(", ")}`,
+          message: `Failed to save: ${failed.map((f) => f.error).join(", ")}`,
         });
       }
     } else {
       setSubmitResult({
         type: "error",
-        message:
-          "No machine data to submit. Please fill in at least one machine.",
+        message: "Could not save this entry. Please check the fields above.",
       });
     }
   };
 
-  // ------------------------------------------------------
-  // Loading master data (machines / reject / loss reasons)
-  // ------------------------------------------------------
   if (loadingMaster) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
@@ -366,76 +434,29 @@ const AdvProductionEntry = () => {
   }
 
   return (
-    <div
-      className="
-      min-h-screen
-      bg-slate-100
-      "
-    >
-      {/* HEADER */}
+    <div className="min-h-screen bg-slate-100">
       <Header />
 
-      {/* CONTENT */}
-
-      <div
-        className="
-        max-w-7xl
-        mx-auto
-        p-2
-        mt-11
-        "
-      >
-        {/* MASTER DATA ERROR BANNER */}
+      <div className="max-w-7xl mx-auto p-2 mt-11">
         {masterError && (
-          <div
-            className="
-            mb-4
-            bg-red-50
-            border
-            border-red-300
-            text-red-700
-            rounded
-            p-3
-            text-sm
-            "
-          >
+          <div className="mb-4 bg-red-50 border border-red-300 text-red-700 rounded p-3 text-sm">
             {masterError}
           </div>
         )}
 
-        {/* SUBMIT ERROR BANNER */}
         {submitError && (
-          <div
-            className="
-            mb-4
-            bg-red-50
-            border
-            border-red-300
-            text-red-700
-            rounded
-            p-3
-            text-sm
-            "
-          >
+          <div className="mb-4 bg-red-50 border border-red-300 text-red-700 rounded p-3 text-sm">
             {submitError}
           </div>
         )}
 
-        {/* SUBMIT RESULT BANNER */}
         {submitResult && (
           <div
-            className={`
-            mb-4
-            rounded
-            p-3
-            text-sm
-            border
-            ${
+            className={`mb-4 rounded p-3 text-sm border ${
               submitResult.type === "success"
                 ? "bg-green-50 border-green-300 text-green-700"
                 : "bg-red-50 border-red-300 text-red-700"
-            }
-            `}
+            }`}
           >
             {submitResult.message}
           </div>
@@ -453,8 +474,6 @@ const AdvProductionEntry = () => {
           />
         ) : (
           <>
-            {/* MACHINE NAVIGATOR */}
-
             <MachineNavigator
               filteredMachines={filteredMachines}
               machineEntries={machineEntries}
@@ -465,16 +484,12 @@ const AdvProductionEntry = () => {
               loadMachineData={loadMachineData}
             />
 
-            {/* SUMMARY */}
-
             <SummaryCards
               target={formData.target}
               actual={formData.actual}
               reject={totalRejectQty}
               efficiency={efficiency}
             />
-
-            {/* PRODUCTION FORM */}
 
             <ProductionForm
               formData={formData}
@@ -485,6 +500,11 @@ const AdvProductionEntry = () => {
               operatorNotFound={operatorNotFound}
               onAddOperator={handleAddOperator}
               addingOperator={addingOperator}
+              fetchOperatorSuggestions={fetchOperatorSuggestions}
+              operatorSuggestions={operatorSuggestions}
+              setOperatorSuggestions={setOperatorSuggestions}
+              noOperatorResults={noOperatorResults}
+              onSelectOperator={selectOperator}
               fetchPartSuggestions={fetchPartSuggestions}
               partSuggestions={partSuggestions}
               setPartSuggestions={setPartSuggestions}
@@ -492,8 +512,6 @@ const AdvProductionEntry = () => {
               onAddPart={handleAddPart}
               addingPart={addingPart}
             />
-
-            {/* REJECT BREAKUP */}
 
             <RejectBreakup
               reject={formData.reject}
@@ -503,8 +521,6 @@ const AdvProductionEntry = () => {
               addCustomRejectReason={addCustomRejectReason}
               removeCustomRejectReason={removeCustomRejectReason}
             />
-
-            {/* MOULD CHANGE */}
 
             <MouldChangeSection
               showMouldSection={showMouldSection}
@@ -528,8 +544,6 @@ const AdvProductionEntry = () => {
               />
             </MouldChangeSection>
 
-            {/* LOSS TIME */}
-
             <LossTimeBreakup
               lossReasons={lossReasons}
               lossTimeReasonOptions={lossTimeReasonOptions}
@@ -539,28 +553,10 @@ const AdvProductionEntry = () => {
               totalLossMinutes={totalLossMinutes}
             />
 
-            {/* REMARKS */}
-
-            <div
-              className="
-    mt-2
-    bg-white
-    border
-    border-slate-200
-    rounded
-    p-3
-    shadow-sm
-  "
-            >
+            <div className="mt-2 bg-white border border-slate-200 rounded p-3 shadow-sm">
               <label
                 htmlFor="remarks"
-                className="
-      text-xs
-      font-medium
-      text-slate-600
-      block
-      mb-1
-    "
+                className="text-xs font-medium text-slate-600 block mb-1"
               >
                 Remarks
               </label>
@@ -572,27 +568,9 @@ const AdvProductionEntry = () => {
                 placeholder="Add any additional notes here..."
                 value={formData.remarks}
                 onChange={handleChange}
-                className="
-      w-full
-      border
-      border-slate-300
-      rounded
-      px-3
-      py-2
-      text-sm
-      text-slate-700
-      resize-none
-      focus:outline-none
-      focus:ring-2
-      focus:ring-blue-400
-      focus:border-blue-400
-      transition-all
-      duration-150
-    "
+                className="w-full border border-slate-300 rounded px-3 py-2 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
               />
             </div>
-
-            {/* FOOTER */}
 
             <FooterActions
               currentMachineIndex={currentMachineIndex}

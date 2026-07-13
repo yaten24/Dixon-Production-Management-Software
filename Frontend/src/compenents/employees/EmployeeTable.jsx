@@ -5,12 +5,14 @@ import EmployeeRow from "./EmployeeRow";
 import EmployeePagination from "./EmployeePagination";
 
 const EmployeeTable = ({
-  employees,
+  operators,
+  loading,
   currentPage,
   totalPages,
+  totalRecords,
+  limit,
   onPageChange,
   onView,
-  onEdit,
   onDelete,
 }) => {
   return (
@@ -20,17 +22,12 @@ const EmployeeTable = ({
       transition={{ duration: 0.4 }}
       className="bg-white rounded border border-gray-200 shadow-sm overflow-hidden"
     >
-      {/* ================= Header ================= */}
-
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1.5 px-3 py-1.5 border-b border-gray-200">
         <div>
-          <h2 className="text-sm font-bold text-gray-800 leading-tight">
-            Employee List
-          </h2>
-
+          <h2 className="text-sm font-bold text-gray-800 leading-tight">Operator List</h2>
           <p className="text-[10px] text-gray-500 leading-tight">
-            Total <span className="font-semibold">{employees.length}</span>{" "}
-            Employees
+            Total <span className="font-semibold">{totalRecords}</span> Operators
           </p>
         </div>
 
@@ -39,49 +36,34 @@ const EmployeeTable = ({
         </span>
       </div>
 
-      {/* ================= Table ================= */}
-
+      {/* Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-1.5 text-left text-xs font-semibold text-gray-600">
-                Employee
-              </th>
-
-              <th className="px-3 py-1.5 text-left text-xs font-semibold text-gray-600">
-                Department
-              </th>
-
-              <th className="px-3 py-1.5 text-left text-xs font-semibold text-gray-600">
-                Shift
-              </th>
-
-              <th className="px-3 py-1.5 text-center text-xs font-semibold text-gray-600">
-                Actions
-              </th>
+              <th className="px-3 py-1.5 text-left text-xs font-semibold text-gray-600">Operator</th>
+              <th className="px-3 py-1.5 text-left text-xs font-semibold text-gray-600">Hall</th>
+              <th className="px-3 py-1.5 text-left text-xs font-semibold text-gray-600">Shift</th>
+              <th className="px-3 py-1.5 text-left text-xs font-semibold text-gray-600">Performance</th>
+              <th className="px-3 py-1.5 text-center text-xs font-semibold text-gray-600">Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {employees.length > 0 ? (
-              employees.map((employee, index) => (
-                <EmployeeRow
-                  key={employee.id}
-                  employee={employee}
-                  index={index}
-                  onView={onView}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                />
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="py-6 text-center text-xs text-gray-500">
+                  Loading operators...
+                </td>
+              </tr>
+            ) : operators.length > 0 ? (
+              operators.map((operator, index) => (
+                <EmployeeRow key={operator.id} operator={operator} index={index} onView={onView} onDelete={onDelete} />
               ))
             ) : (
               <tr>
-                <td
-                  colSpan={4}
-                  className="py-6 text-center text-xs text-gray-500"
-                >
-                  No employees found.
+                <td colSpan={5} className="py-6 text-center text-xs text-gray-500">
+                  No operators found.
                 </td>
               </tr>
             )}
@@ -89,11 +71,12 @@ const EmployeeTable = ({
         </table>
       </div>
 
-      {/* ================= Footer ================= */}
-
+      {/* Footer */}
       <EmployeePagination
         currentPage={currentPage}
         totalPages={totalPages}
+        totalRecords={totalRecords}
+        limit={limit}
         onPageChange={onPageChange}
       />
     </motion.div>

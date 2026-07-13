@@ -59,11 +59,73 @@ exports.addPart = async (req, res) => {
   }
 };
 
-// UPDATED: getAllParts now accepts ?page=&limit=&search=&category=&customer=&source=&status=
-// Filters are applied in SQL against the WHOLE table (see Part.findAll /
-// Part.count), so applying a filter returns every matching part across
-// all pages, not just whatever happened to be loaded already. Default
-// limit stays 100 for the first-load requirement.
+// NEW: quick-add used by the Production Entry screen's inline "+ Add Part"
+// mini-forms. Only part_name + actual_cycle_time are required from the
+// user — product_category/source/customer are set to "Unassigned" so they
+// don't block creation (edit them properly later from the Parts module),
+// and standard_cycle_time defaults to the given actual_cycle_time since
+// there's no better number yet. Returns insertId + the created row so the
+// frontend can immediately wire part_id into the production entry without
+// a second round trip.
+exports.quickAddPart = async (req, res) => {
+  try {
+    const { part_name, actual_cycle_time, part_number } = req.body;
+
+    const ct = Number(actual_cycle_time);
+
+    if (!part_name || !part_name.trim() || !ct || ct <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Part name and actual cycle time are required.",
+      });
+    }
+
+    const finalPartNumber =
+      part_number && part_number.trim()
+        ? part_number.trim()
+        : `QUICK-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    const exist = await Part.findByPartNumber(finalPartNumber);
+
+    if (exist) {
+      return res.status(400).json({
+        success: false,
+        message: "Part Number Already Exists.",
+      });
+    }
+
+    const result = await Part.create({
+      part_number: finalPartNumber,
+      part_name: part_name.trim(),
+      product_category: "Unassigned",
+      source: "Unassigned",
+      customer: "Unassigned",
+      standard_cycle_time: ct,
+      actual_cycle_time: ct,
+      status: "Active",
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Part added successfully.",
+      insertId: result.insertId,
+      data: {
+        id: result.insertId,
+        part_number: finalPartNumber,
+        part_name: part_name.trim(),
+        standard_cycle_time: ct,
+        actual_cycle_time: ct,
+        status: "Active",
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 exports.getAllParts = async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -100,7 +162,6 @@ exports.getAllParts = async (req, res) => {
   }
 };
 
-// NEW: distinct filter-dropdown values across the whole table.
 exports.getFilterOptions = async (req, res) => {
   try {
     const options = await Part.getFilterOptions();

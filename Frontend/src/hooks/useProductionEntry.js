@@ -6,10 +6,6 @@ import {
   createRejectionReason,
 } from "../api/rejectionReasonApi";
 import { getAllLossReasons } from "../api/lossReasonApi";
-import {
-  createProductionEntry,
-  updateProductionEntry,
-} from "../api/productionEntryApi";
 
 // ==========================================================
 // Static shift time-slot definitions
@@ -51,11 +47,11 @@ const baseFormData = {
   shift: "",
   timeSlot: "",
 
-  operatorId: "", // typed operator code, looked up via fetchOperator
-  operator_id: null, // resolved numeric id, set once lookup succeeds
+  operatorId: "",
+  operator_id: null,
 
-  part: "", // part name shown in the input
-  part_id: null, // resolved numeric id, set once a suggestion is picked
+  part: "",
+  part_id: null,
 
   standardCycleTime: "",
   actualCycleTime: "",
@@ -63,8 +59,6 @@ const baseFormData = {
   target: "",
   actual: "",
 
-  // plain numbers typed directly by the user — validated against the
-  // breakdown totals (rejectReasons / mouldRejectReasons sums) in the UI
   reject: "",
   mouldReject: "",
 
@@ -76,12 +70,6 @@ const baseFormData = {
   mould_duration: "",
   mould_remarks: "",
 
-  // FIX: these were read/written by MouldChangeSection.jsx
-  // (formData.mouldPart, mouldStandardCycleTime, mouldActualCycleTime,
-  // mouldTarget, mouldActual) but were never declared here. That meant
-  // the inputs were "uncontrolled → controlled" on first render (React
-  // warning) and, worse, loadMachineData()'s `{...baseFormData, ...}`
-  // reset wiped them out inconsistently between machines.
   mouldPart: "",
   mouldStandardCycleTime: "",
   mouldActualCycleTime: "",
@@ -100,19 +88,20 @@ const getLoggedInUserId = () => {
   }
 };
 
-// Build the initial breakdown rows from the master reasons list:
-// every master reason is always shown (custom: false, not removable),
-// with qty/minutes starting at 0. Custom rows get appended on top of this.
+// FIX: qty now defaults to "" instead of 0. With 0, the number input
+// always rendered a literal "0" that the user had to manually delete
+// before typing a real value — annoying when filling in a long list of
+// reject reasons. Empty string renders as a blank input, and every place
+// that reads qty already does Number(r.qty) || 0, so calculations are
+// unaffected.
 const buildReasonRows = (masterList, qtyField) =>
   masterList.map((r) => ({
     reason: r.reason_name,
-    [qtyField]: 0,
+    [qtyField]: "",
     custom: false,
     reason_id: r.id,
   }));
 
-// Backend returns status as "Active" (capital A); accept string status or
-// is_active flag, case-insensitively.
 const isActiveReason = (item) => {
   if (item.status === undefined && item.is_active === undefined) {
     return true;
@@ -129,20 +118,11 @@ const isActiveReason = (item) => {
   return false;
 };
 
-// FIX: single source of truth for the API base URL instead of hardcoding
-// "http://localhost:5000" inline inside submitMachineEntry. Set
-// VITE_API_URL in your .env for production builds.
 const API_BASE = import.meta.env?.VITE_API_URL || "http://localhost:5000";
 
 const useProductionEntry = () => {
-  // ------------------------------------------------------
-  // Setup stage
-  // ------------------------------------------------------
   const [setupComplete, setSetupComplete] = useState(false);
 
-  // ------------------------------------------------------
-  // Master data (fetched from backend)
-  // ------------------------------------------------------
   const [allMachines, setAllMachines] = useState([]);
   const [masterRejectReasons, setMasterRejectReasons] = useState([]);
   const [masterLossReasons, setMasterLossReasons] = useState([]);
@@ -189,9 +169,6 @@ const useProductionEntry = () => {
     [masterLossReasons],
   );
 
-  // ------------------------------------------------------
-  // Per-machine working state
-  // ------------------------------------------------------
   const [formData, setFormData] = useState(baseFormData);
   const [rejectReasons, setRejectReasons] = useState([]);
   const [mouldRejectReasons, setMouldRejectReasons] = useState([]);
@@ -222,9 +199,6 @@ const useProductionEntry = () => {
     setFormData((prev) => ({ ...prev, shift, timeSlot: "" }));
   };
 
-  // ------------------------------------------------------
-  // Machines filtered by selected hall
-  // ------------------------------------------------------
   const filteredMachines = useMemo(() => {
     if (!formData.hall) return allMachines;
     return allMachines.filter((m) => !m.hall || m.hall === formData.hall);
@@ -236,9 +210,6 @@ const useProductionEntry = () => {
 
   const [machineEntries, setMachineEntries] = useState({});
 
-  // ------------------------------------------------------
-  // Save / load per-machine data (LOCAL ONLY)
-  // ------------------------------------------------------
   const saveCurrentMachine = useCallback(() => {
     if (!currentMachine) return;
 
@@ -273,24 +244,53 @@ const useProductionEntry = () => {
         setMouldRejectReasons(existing.mouldRejectReasons);
         setLossReasons(existing.lossReasons);
       } else {
+        const prevMachineIndex = currentMachineIndex - 1;
+        const prevMachine =
+          prevMachineIndex >= 0 ? filteredMachines[prevMachineIndex] : null;
+        const prevSnapshot = prevMachine
+          ? machineEntries[prevMachine.id]
+          : null;
+
+        const carryOperatorId = prevSnapshot?.formData?.operator_id || null;
+        const carryOperatorCode = prevSnapshot?.formData?.operatorId || "";
+        const carryPartId = prevSnapshot?.formData?.part_id || null;
+        const carryPartName = prevSnapshot?.formData?.part || "";
+        const carryStandardCT =
+          prevSnapshot?.formData?.standardCycleTime || "";
+
+        const prevHadMould =
+          prevSnapshot?.formData?.mouldChange &&
+          prevSnapshot?.formData?.new_part_id;
+        const carryOldPartId = prevHadMould
+          ? prevSnapshot?.formData?.new_part_id
+          : null;
+        const carryOldPartNumber = prevHadMould
+          ? prevSnapshot?.formData?.new_part_number
+          : "";
+
         setFormData((prev) => ({
           ...baseFormData,
           date: prev.date,
           hall: prev.hall,
           shift: prev.shift,
           timeSlot: prev.timeSlot,
+          operatorId: carryOperatorCode,
+          operator_id: carryOperatorId,
+          part: carryPartName,
+          part_id: carryPartId,
+          standardCycleTime: carryStandardCT,
+          old_part_id: carryOldPartId,
+          old_part_number: carryOldPartNumber,
         }));
+
         setRejectReasons(buildReasonRows(masterRejectReasons, "qty"));
         setMouldRejectReasons(buildReasonRows(masterRejectReasons, "qty"));
         setLossReasons([{ reason: "", minutes: 0 }]);
       }
     },
-    [machineEntries, masterRejectReasons],
+    [machineEntries, currentMachineIndex, filteredMachines, masterRejectReasons],
   );
 
-  // ------------------------------------------------------
-  // Progress / efficiency / totals
-  // ------------------------------------------------------
   const progress = useMemo(() => {
     if (!filteredMachines.length) return 0;
     const savedCount = Object.values(machineEntries).filter(
@@ -321,13 +321,10 @@ const useProductionEntry = () => {
     [lossReasons],
   );
 
-  // ------------------------------------------------------
-  // Reject breakup
-  // ------------------------------------------------------
   const addCustomRejectReason = () => {
     setRejectReasons((prev) => [
       ...prev,
-      { reason: "", qty: 0, custom: true, reason_id: null },
+      { reason: "", qty: "", custom: true, reason_id: null },
     ]);
   };
 
@@ -341,15 +338,12 @@ const useProductionEntry = () => {
     );
   };
 
-  // ------------------------------------------------------
-  // Mould reject breakup
-  // ------------------------------------------------------
   const addMouldRejectReason = (reason) => {
     setMouldRejectReasons((prev) => [
       ...prev,
       {
         reason: reason.reason_name,
-        qty: 0,
+        qty: "",
         custom: false,
         reason_id: reason.id,
       },
@@ -363,7 +357,7 @@ const useProductionEntry = () => {
   const addCustomMouldRejectReason = () => {
     setMouldRejectReasons((prev) => [
       ...prev,
-      { reason: "", qty: 0, custom: true, reason_id: null },
+      { reason: "", qty: "", custom: true, reason_id: null },
     ]);
   };
 
@@ -377,9 +371,6 @@ const useProductionEntry = () => {
     );
   };
 
-  // ------------------------------------------------------
-  // Loss time breakup
-  // ------------------------------------------------------
   const addLossReason = () => {
     setLossReasons((prev) => [...prev, { reason: "", minutes: 0 }]);
   };
@@ -396,9 +387,6 @@ const useProductionEntry = () => {
     );
   };
 
-  // ------------------------------------------------------
-  // Mould change toggle
-  // ------------------------------------------------------
   const [showMouldSection, setShowMouldSection] = useState(false);
 
   const handleMouldToggle = () => {
@@ -406,9 +394,6 @@ const useProductionEntry = () => {
     setFormData((prev) => ({ ...prev, mouldChange: !prev.mouldChange }));
   };
 
-  // ------------------------------------------------------
-  // Resolve a custom (typed, no id) reason to a real rejection_reasons row
-  // ------------------------------------------------------
   const customReasonCache = useRef({});
 
   const resolveReasonId = async (row) => {
@@ -420,9 +405,6 @@ const useProductionEntry = () => {
 
     try {
       const res = await createRejectionReason({
-        // FIX: Date.now() alone can collide if two custom reasons are
-        // created within the same millisecond during a loop; add a random
-        // suffix to keep reason_code unique.
         reason_code: `CUSTOM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         reason_name: row.reason.trim(),
       });
@@ -435,9 +417,6 @@ const useProductionEntry = () => {
     }
   };
 
-  // ------------------------------------------------------
-  // Build backend payload for one machine's saved entry.
-  // ------------------------------------------------------
   const buildPayload = async (machine, snapshot, existingProductionId) => {
     const {
       formData: data,
@@ -499,10 +478,6 @@ const useProductionEntry = () => {
       })
       .filter((l) => l.loss_reason_id != null);
 
-    // FIX: mould section's own new_part_id (set when the user picks a part
-    // via mould-part search) is now used instead of the stale/never-set
-    // data.new_part_id, which was always null and violated the schema's
-    // NOT NULL constraint on new_part_id.
     const mould_changes = data.mouldChange
       ? [
           {
@@ -512,6 +487,9 @@ const useProductionEntry = () => {
             new_part_number: data.new_part_number || data.mouldPart || null,
             duration_minutes: Number(data.mould_duration) || 0,
             remarks: data.mould_remarks || null,
+            // NEW: sent so the backend can sync the NEW part's
+            // actual_cycle_time in the parts table.
+            mould_actual_cycle_time: Number(data.mouldActualCycleTime) || 0,
           },
         ]
       : [];
@@ -541,15 +519,9 @@ const useProductionEntry = () => {
     };
   };
 
-  // ------------------------------------------------------
-  // Create-or-update a single machine's entry on the backend.
-  // ------------------------------------------------------
   const submitMachineEntry = async (machine, snapshot) => {
     const existing = machineEntries[machine.id];
 
-    // FIX: mould change requires a resolved new_part_id — block the save
-    // early with a clear message instead of letting it hit the DB and
-    // fail with a cryptic "cannot be null" SQL error.
     if (snapshot.formData.mouldChange && !snapshot.formData.new_part_id) {
       throw new Error(
         "Mould change is enabled but no new part was selected — pick a part from the mould section's suggestions before saving.",
@@ -568,7 +540,7 @@ const useProductionEntry = () => {
 
     const response = await fetch(url, {
       method: existing?.entryId ? "PUT" : "POST",
-      credentials: "include", // send httpOnly cookie
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -577,10 +549,6 @@ const useProductionEntry = () => {
 
     const res = await response.json();
 
-    // FIX: fetch() only rejects on network failure, not on HTTP 4xx/5xx.
-    // Previously a failed save (validation error, duplicate production_id,
-    // DB constraint violation) still fell through to "success" handling
-    // below and the machine got marked saved: true — silently losing data.
     if (!response.ok || !res?.success) {
       throw new Error(
         res?.message || `Failed to save entry (HTTP ${response.status}).`,
@@ -602,9 +570,6 @@ const useProductionEntry = () => {
     return res;
   };
 
-  // ------------------------------------------------------
-  // Navigation
-  // ------------------------------------------------------
   const previousMachine = () => {
     saveCurrentMachine();
 
@@ -624,7 +589,7 @@ const useProductionEntry = () => {
     if (!formData.operator_id || !formData.part_id) {
       setSubmitError(
         !formData.operator_id
-          ? "Operator not found/selected — use the Find button next to Operator ID before moving on."
+          ? "Operator not found/selected — use Find or pick from the search list before moving on."
           : "Part not selected — pick a part from the suggestions list before moving on.",
       );
       return;
@@ -664,71 +629,54 @@ const useProductionEntry = () => {
     }
   };
 
-  // ------------------------------------------------------
-  // Final submit
-  // ------------------------------------------------------
+  // CHANGED: this used to loop over EVERY saved machine and re-submit
+  // them all again ("Submit All Entries"). Each machine already saves
+  // itself the moment you hit "Save & Next", so re-submitting everything
+  // at the end was redundant and confusing. Now this only saves the
+  // CURRENT (last) machine — same one-by-one flow, just without the
+  // batch step at the end. Renamed conceptually to a single-entry save,
+  // kept the export name `finalSubmit` so AdvProductionEntry.jsx doesn't
+  // need extra wiring.
   const finalSubmit = async () => {
-    saveCurrentMachine();
+    if (!currentMachine) return null;
 
-    setSubmitting(true);
     setSubmitError(null);
 
-    const entriesToSubmit = {
-      ...machineEntries,
-      ...(currentMachine
-        ? {
-            [currentMachine.id]: {
-              ...machineEntries[currentMachine.id],
-              formData,
-              rejectReasons,
-              mouldRejectReasons,
-              lossReasons,
-              saved: true,
-            },
-          }
-        : {}),
+    if (!formData.operator_id || !formData.part_id) {
+      setSubmitError(
+        !formData.operator_id
+          ? "Operator not found/selected — use Find or pick from the search list before saving."
+          : "Part not selected — pick a part from the suggestions list before saving.",
+      );
+      return null;
+    }
+
+    setSubmitting(true);
+
+    const snapshot = {
+      formData,
+      rejectReasons,
+      mouldRejectReasons,
+      lossReasons,
     };
 
-    const results = [];
-
     try {
-      for (const machine of filteredMachines) {
-        const snapshot = entriesToSubmit[machine.id];
-
-        if (!snapshot || !snapshot.saved) continue;
-
-        if (!snapshot.formData.operator_id || !snapshot.formData.part_id) {
-          results.push({
-            machine: machine.machine_code,
-            success: false,
-            error: !snapshot.formData.operator_id
-              ? "Operator not found/selected — use the Find button next to Operator ID"
-              : "Part not selected — pick a part from the suggestions list",
-          });
-          continue;
-        }
-
-        try {
-          const res = await submitMachineEntry(machine, snapshot);
-          results.push({ machine: machine.machine_code, success: true, res });
-        } catch (err) {
-          results.push({
-            machine: machine.machine_code,
-            success: false,
-            error: err?.response?.data?.message || err.message,
-          });
-        }
-      }
-
-      const failed = results.filter((r) => !r.success);
-
-      if (failed.length) {
-        setSubmitError(
-          `Failed to submit for: ${failed.map((f) => `${f.machine} (${f.error})`).join(", ")}`,
-        );
-      }
-
-      return results;
+      const res = await submitMachineEntry(currentMachine, snapshot);
+      return [{ machine: currentMachine.machine_code, success: true, res }];
+    } catch (err) {
+      console.error(
+        "Failed to save entry for",
+        currentMachine.machine_code,
+        err,
+      );
+      const message =
+        err?.response?.data?.message ||
+        err.message ||
+        "Failed to save this machine's entry. Please try again.";
+      setSubmitError(message);
+      return [
+        { machine: currentMachine.machine_code, success: false, error: message },
+      ];
     } finally {
       setSubmitting(false);
     }

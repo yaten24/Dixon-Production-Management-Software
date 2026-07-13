@@ -25,6 +25,9 @@ export const getAllParts = (page = 1, limit = 100, filters = {}) =>
 export const getFilterOptions = () =>
   api.get("/parts/filter-options").then((res) => res.data);
 
+export const addPartQuick = (payload) =>
+  api.post("/parts/quick-add", payload).then((res) => res.data);
+
 export const getPartById = (id) =>
   api.get(`/parts/${id}`).then((res) => res.data);
 

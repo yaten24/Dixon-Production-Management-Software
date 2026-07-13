@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 
 const ProductionForm = ({
   formData,
@@ -12,6 +13,13 @@ const ProductionForm = ({
   onAddOperator,
   addingOperator,
 
+  // NEW: operator search-and-select (like Part search)
+  fetchOperatorSuggestions,
+  operatorSuggestions = [],
+  setOperatorSuggestions,
+  noOperatorResults,
+  onSelectOperator,
+
   fetchPartSuggestions,
   partSuggestions = [],
   setPartSuggestions,
@@ -20,8 +28,10 @@ const ProductionForm = ({
   addingPart,
 }) => {
   const wrapperRef = useRef(null);
+  const operatorWrapperRef = useRef(null);
 
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [operatorSelectedIndex, setOperatorSelectedIndex] = useState(-1);
 
   const numberInputProps = {
     onWheel: (e) => {
@@ -55,28 +65,22 @@ const ProductionForm = ({
   `;
 
   // ===========================
-  // TARGET — auto-calculated from Actual Cycle Time
-  // FIX: target used to be a manually typed number, but the real target is
-  // derived from cycle time (pieces achievable per hour = 3600s / cycle
-  // time in seconds). Now it's computed automatically and shown read-only,
-  // so it can never drift out of sync with the cycle time entered.
-  // ASSUMPTION: actualCycleTime is entered in seconds; adjust the 3600
-  // divisor if a different time base (e.g. per shift) is intended.
+  // TARGET — editable (user can override the calculated value)
   // ===========================
-  useEffect(() => {
+  const calculatedTarget = useMemo(() => {
     const ct = Number(formData.actualCycleTime);
-    const computedTarget = ct > 0 ? Math.round(3600 / ct) : "";
-
-    if (formData.target !== computedTarget) {
-      handleChange({ target: { name: "target", value: computedTarget } });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return ct > 0 ? Math.round(3600 / ct) : "";
   }, [formData.actualCycleTime]);
 
+  useEffect(() => {
+    if (formData.target === "" && calculatedTarget) {
+      handleChange({ target: { name: "target", value: calculatedTarget } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calculatedTarget]);
+
   // ===========================
-  // LOSS TIME (minutes) — (Target - Actual) pieces short, converted to
-  // time using the actual cycle time: each missing piece "cost" one
-  // cycle-time's worth of seconds, summed and converted to minutes.
+  // LOSS TIME (minutes)
   // ===========================
   const lossMinutes = useMemo(() => {
     const target = Number(formData.target) || 0;
@@ -90,7 +94,7 @@ const ProductionForm = ({
   }, [formData.target, formData.actual, formData.actualCycleTime]);
 
   // ===========================
-  // OPERATOR — inline "Add Operator" mini-form
+  // OPERATOR — search box (NEW) + inline add form
   // ===========================
   const [showAddOperator, setShowAddOperator] = useState(false);
   const [newOperator, setNewOperator] = useState({
@@ -100,8 +104,6 @@ const ProductionForm = ({
   });
   const [addOperatorError, setAddOperatorError] = useState(null);
 
-  // Whenever the operator code changes (new lookup), collapse and reset
-  // the inline add-form so a stale draft doesn't linger for a new code.
   useEffect(() => {
     setShowAddOperator(false);
     setAddOperatorError(null);
@@ -135,49 +137,87 @@ const ProductionForm = ({
     }
   };
 
+  // NEW: type-to-search handler for the operator field — replaces the
+  // old "type code, click Find" only flow. Typing 2+ chars now shows a
+  // dropdown of matching operators (by code OR name) you can click to
+  // select, same UX as the Part search box below.
+  const handleOperatorChange = (e) => {
+    handleChange(e);
+    handleChange({ target: { name: "operator_id", value: null } });
+
+    const value = e.target.value;
+
+    if (!value || value.trim().length < 2) {
+      setOperatorSuggestions([]);
+      setOperatorSelectedIndex(-1);
+      return;
+    }
+
+    fetchOperatorSuggestions(value);
+    setOperatorSelectedIndex(-1);
+  };
+
+  const selectOperator = (op) => {
+    onSelectOperator(op);
+    setOperatorSuggestions([]);
+    setOperatorSelectedIndex(-1);
+  };
+
+  const handleOperatorKeyDown = (e) => {
+    if (!operatorSuggestions.length) return;
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setOperatorSelectedIndex((prev) =>
+          prev < operatorSuggestions.length - 1 ? prev + 1 : prev,
+        );
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setOperatorSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (operatorSelectedIndex >= 0) {
+          selectOperator(operatorSuggestions[operatorSelectedIndex]);
+        }
+        break;
+      case "Escape":
+        setOperatorSuggestions([]);
+        setOperatorSelectedIndex(-1);
+        break;
+      default:
+        break;
+    }
+  };
+
   // ===========================
-  // PART — inline "Add Part" mini-form
+  // PART — inline add form
   // ===========================
   const [showAddPart, setShowAddPart] = useState(false);
   const [newPart, setNewPart] = useState({
-    part_number: "",
     part_name: "",
-    product_category: "",
-    source: "",
-    customer: "",
-    standard_cycle_time: "",
+    actual_cycle_time: "",
   });
   const [addPartError, setAddPartError] = useState(null);
 
   const submitNewPart = async () => {
-    if (
-      !newPart.part_number.trim() ||
-      !newPart.part_name.trim() ||
-      !Number(newPart.standard_cycle_time)
-    ) {
-      setAddPartError(
-        "Part number, part name and standard cycle time are required.",
-      );
+    if (!newPart.part_name.trim() || !Number(newPart.actual_cycle_time)) {
+      setAddPartError("Part name and actual cycle time are required.");
       return;
     }
 
     setAddPartError(null);
 
     const result = await onAddPart({
-      ...newPart,
-      standard_cycle_time: Number(newPart.standard_cycle_time),
+      part_name: newPart.part_name.trim(),
+      actual_cycle_time: Number(newPart.actual_cycle_time),
     });
 
     if (result.success) {
       setShowAddPart(false);
-      setNewPart({
-        part_number: "",
-        part_name: "",
-        product_category: "",
-        source: "",
-        customer: "",
-        standard_cycle_time: "",
-      });
+      setNewPart({ part_name: "", actual_cycle_time: "" });
     } else {
       setAddPartError(result.message);
     }
@@ -192,12 +232,7 @@ const ProductionForm = ({
 
     const value = e.target.value;
 
-    // typing a new part name invalidates the previously resolved part_id
     handleChange({ target: { name: "part_id", value: null } });
-
-    // BUG FIX: also clear the standard cycle time (and therefore the
-    // derived Target) so stale numbers from a previously-selected part
-    // don't keep showing while the user is mid-search for a new one.
     handleChange({ target: { name: "standardCycleTime", value: "" } });
 
     if (value.length < 2) {
@@ -222,8 +257,6 @@ const ProductionForm = ({
       },
     });
 
-    // FIX: capture the numeric part id — needed as the FK for the backend
-    // (production_entries.part_id). Previously only the display name was set.
     handleChange({
       target: {
         name: "part_id",
@@ -292,8 +325,14 @@ const ProductionForm = ({
     const handleClickOutside = (event) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setPartSuggestions([]);
-
         setSelectedIndex(-1);
+      }
+      if (
+        operatorWrapperRef.current &&
+        !operatorWrapperRef.current.contains(event.target)
+      ) {
+        setOperatorSuggestions([]);
+        setOperatorSelectedIndex(-1);
       }
     };
 
@@ -302,22 +341,7 @@ const ProductionForm = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [setPartSuggestions]);
-
-  const summaryCards = [
-    {
-      label: "Standard CT",
-      value: formData.standardCycleTime || "-",
-      color: "text-slate-700",
-    },
-    {
-      label: "Target",
-      value: formData.target === "" ? "-" : formData.target,
-      color: "text-blue-600",
-    },
-    { label: "Loss (min)", value: lossMinutes, color: "text-red-600" },
-    { label: "Efficiency", value: `${efficiency}%`, color: "text-orange-600" },
-  ];
+  }, [setPartSuggestions, setOperatorSuggestions]);
 
   return (
     <motion.div
@@ -334,11 +358,14 @@ const ProductionForm = ({
       =========================== */}
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
-        {/* OPERATOR ID */}
+        {/* OPERATOR ID — search & select */}
 
-        <div className="col-span-2 md:col-span-1">
+        <div
+          ref={operatorWrapperRef}
+          className="relative col-span-2 md:col-span-1"
+        >
           <label className="text-[11px] font-medium text-slate-600 block mb-1">
-            Operator ID
+            Operator ID / Name
           </label>
 
           <div className="flex gap-1.5">
@@ -346,11 +373,10 @@ const ProductionForm = ({
               type="text"
               name="operatorId"
               value={formData.operatorId}
-              onChange={(e) => {
-                handleChange(e);
-                // typing a new code invalidates the previously resolved operator_id
-                handleChange({ target: { name: "operator_id", value: null } });
-              }}
+              onChange={handleOperatorChange}
+              onKeyDown={handleOperatorKeyDown}
+              autoComplete="off"
+              placeholder="Search by code or name..."
               className={`${inputClass} flex-1`}
             />
 
@@ -363,11 +389,41 @@ const ProductionForm = ({
             </button>
           </div>
 
+          {/* SEARCH SUGGESTIONS */}
+          {operatorSuggestions.length > 0 && (
+            <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E2E4E9] rounded-sm shadow-lg max-h-72 overflow-y-auto z-50">
+              {operatorSuggestions.map((op, index) => (
+                <div
+                  key={op.id}
+                  onClick={() => selectOperator(op)}
+                  className={`px-2.5 py-1.5 cursor-pointer border-b border-[#E2E4E9] last:border-b-0 ${
+                    operatorSelectedIndex === index
+                      ? "bg-blue-50"
+                      : "hover:bg-slate-50"
+                  }`}
+                >
+                  <div className="text-xs font-semibold text-slate-800">
+                    {op.operator_name}
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Code: {op.operator_code} &middot; Shift: {op.shift}{" "}
+                    &middot; Hall: {op.hall}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* FOUND — show details */}
           {operatorDetails && (
             <div className="mt-1.5 border border-emerald-200 bg-emerald-50 rounded-sm px-2 py-1.5">
-              <div className="text-xs font-semibold text-emerald-700">
-                {operatorDetails.operator_name}
+              <div className="flex items-center gap-1">
+                <div className="text-xs font-semibold text-emerald-700">
+                  {operatorDetails.operator_name}
+                </div>
+                {formData.operatorId && (
+                  <ArrowRight size={10} className="text-emerald-600" />
+                )}
               </div>
 
               <div className="text-[11px] text-slate-500 mt-0.5">
@@ -378,100 +434,102 @@ const ProductionForm = ({
           )}
 
           {/* NOT FOUND — offer to add */}
-          {operatorNotFound && !operatorDetails && (
-            <div className="mt-1.5 border border-amber-200 bg-amber-50 rounded-sm p-2">
-              {!showAddOperator ? (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-amber-700 font-medium">
-                    Operator code "{formData.operatorId}" not found.
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddOperator(true)}
-                    className="h-6 px-2 shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-semibold rounded-sm"
-                  >
-                    + Add Operator
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1.5">
-                  <input
-                    type="text"
-                    placeholder="Operator Name"
-                    value={newOperator.operator_name}
-                    onChange={(e) =>
-                      setNewOperator((p) => ({
-                        ...p,
-                        operator_name: e.target.value,
-                      }))
-                    }
-                    className={inputClass}
-                  />
-
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <select
-                      value={newOperator.shift}
-                      onChange={(e) =>
-                        setNewOperator((p) => ({ ...p, shift: e.target.value }))
-                      }
-                      className={inputClass}
-                    >
-                      <option value="">Shift</option>
-                      <option value="A">A</option>
-                      <option value="B">B</option>
-                      <option value="G">G</option>
-                    </select>
-
-                    <select
-                      value={newOperator.hall}
-                      onChange={(e) =>
-                        setNewOperator((p) => ({ ...p, hall: e.target.value }))
-                      }
-                      className={inputClass}
-                    >
-                      <option value="">Hall</option>
-                      <option value="Hall 1">Hall 1</option>
-                      <option value="Hall 2">Hall 2</option>
-                      <option value="Hall 3">Hall 3</option>
-                      <option value="Hall 4">Hall 4</option>
-                      <option value="C 8">C8</option>
-                    </select>
-                  </div>
-
-                  {addOperatorError && (
-                    <p className="text-[10px] text-red-600">
-                      {addOperatorError}
-                    </p>
-                  )}
-
-                  <div className="flex gap-1.5">
+          {(operatorNotFound || noOperatorResults) &&
+            !operatorDetails &&
+            operatorSuggestions.length === 0 && (
+              <div className="mt-1.5 border border-amber-200 bg-amber-50 rounded-sm p-2">
+                {!showAddOperator ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-amber-700 font-medium">
+                      No operator found for "{formData.operatorId}".
+                    </span>
                     <button
                       type="button"
-                      onClick={submitNewOperator}
-                      disabled={addingOperator}
-                      className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-sm disabled:opacity-50"
+                      onClick={() => setShowAddOperator(true)}
+                      className="h-6 px-2 shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-semibold rounded-sm"
                     >
-                      {addingOperator ? "Saving..." : "Save & Use"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddOperator(false)}
-                      className="h-7 px-2 bg-slate-200 hover:bg-slate-300 text-slate-600 text-[11px] rounded-sm"
-                    >
-                      Cancel
+                      + Add Operator
                     </button>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                ) : (
+                  <div className="flex flex-col gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Operator Name"
+                      value={newOperator.operator_name}
+                      onChange={(e) =>
+                        setNewOperator((p) => ({
+                          ...p,
+                          operator_name: e.target.value,
+                        }))
+                      }
+                      className={inputClass}
+                    />
+
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <select
+                        value={newOperator.shift}
+                        onChange={(e) =>
+                          setNewOperator((p) => ({ ...p, shift: e.target.value }))
+                        }
+                        className={inputClass}
+                      >
+                        <option value="">Shift</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="G">G</option>
+                      </select>
+
+                      <select
+                        value={newOperator.hall}
+                        onChange={(e) =>
+                          setNewOperator((p) => ({ ...p, hall: e.target.value }))
+                        }
+                        className={inputClass}
+                      >
+                        <option value="">Hall</option>
+                        <option value="Hall 1">Hall 1</option>
+                        <option value="Hall 2">Hall 2</option>
+                        <option value="Hall 3">Hall 3</option>
+                        <option value="Hall 4">Hall 4</option>
+                        <option value="C 8">C8</option>
+                      </select>
+                    </div>
+
+                    {addOperatorError && (
+                      <p className="text-[10px] text-red-600">
+                        {addOperatorError}
+                      </p>
+                    )}
+
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={submitNewOperator}
+                        disabled={addingOperator}
+                        className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-sm disabled:opacity-50"
+                      >
+                        {addingOperator ? "Saving..." : "Save & Use"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddOperator(false)}
+                        className="h-7 px-2 bg-slate-200 hover:bg-slate-300 text-slate-600 text-[11px] rounded-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
         </div>
 
         {/* PART SEARCH */}
 
         <div ref={wrapperRef} className="relative col-span-2 md:col-span-1">
           <label className="text-[11px] font-medium text-slate-600 block mb-1">
-            Part Name
+            Part Name / Number
           </label>
 
           <input
@@ -481,7 +539,7 @@ const ProductionForm = ({
             onChange={handlePartChange}
             onKeyDown={handlePartKeyDown}
             autoComplete="off"
-            placeholder="Search part..."
+            placeholder="Search by part name or number..."
             className={inputClass}
           />
 
@@ -536,15 +594,6 @@ const ProductionForm = ({
                 <div className="flex flex-col gap-1.5">
                   <input
                     type="text"
-                    placeholder="Part Number"
-                    value={newPart.part_number}
-                    onChange={(e) =>
-                      setNewPart((p) => ({ ...p, part_number: e.target.value }))
-                    }
-                    className={inputClass}
-                  />
-                  <input
-                    type="text"
                     placeholder="Part Name"
                     value={newPart.part_name}
                     onChange={(e) =>
@@ -552,45 +601,17 @@ const ProductionForm = ({
                     }
                     className={inputClass}
                   />
-                  <input
-                    type="text"
-                    placeholder="Product Category"
-                    value={newPart.product_category}
-                    onChange={(e) =>
-                      setNewPart((p) => ({
-                        ...p,
-                        product_category: e.target.value,
-                      }))
-                    }
-                    className={inputClass}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Source"
-                    value={newPart.source}
-                    onChange={(e) =>
-                      setNewPart((p) => ({ ...p, source: e.target.value }))
-                    }
-                    className={inputClass}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Customer"
-                    value={newPart.customer}
-                    onChange={(e) =>
-                      setNewPart((p) => ({ ...p, customer: e.target.value }))
-                    }
-                    className={inputClass}
-                  />
+
                   <input
                     type="number"
-                    placeholder="Standard Cycle Time (sec)"
-                    value={newPart.standard_cycle_time}
+                    placeholder="Actual Cycle Time (sec)"
+                    step="0.1"
+                    value={newPart.actual_cycle_time}
                     {...numberInputProps}
                     onChange={(e) =>
                       setNewPart((p) => ({
                         ...p,
-                        standard_cycle_time: e.target.value,
+                        actual_cycle_time: e.target.value,
                       }))
                     }
                     className={`${inputClass} font-mono`}
@@ -676,28 +697,69 @@ const ProductionForm = ({
       </div>
 
       {/* ===========================
-          AUTO-CALCULATED (READ-ONLY) SUMMARY CARDS
+          AUTO-CALCULATED + EDITABLE TARGET SECTION
       =========================== */}
 
       <div className="mt-3 pt-2.5 border-t border-[#E2E4E9]">
         <p className="text-[10px] uppercase tracking-wide text-slate-400 font-medium mb-1.5">
-          Auto-calculated
+          Auto-calculated &amp; Editable
         </p>
 
-        <div className="grid grid-cols-4 gap-2">
-          {summaryCards.map((card) => (
-            <div
-              key={card.label}
-              className="border border-[#E2E4E9] bg-slate-50 rounded-sm px-2 py-1.5"
-            >
-              <p className="text-[9px] uppercase tracking-wide text-slate-400 leading-none">
-                {card.label}
-              </p>
-              <p className={`text-xs font-bold font-mono mt-1 ${card.color}`}>
-                {card.value}
-              </p>
-            </div>
-          ))}
+        <div className="grid grid-cols-5 gap-2">
+          {/* Standard CT (from part) */}
+          <div className="border border-[#E2E4E9] bg-slate-50 rounded-sm px-2 py-1.5">
+            <p className="text-[9px] uppercase tracking-wide text-slate-400 leading-none">
+              Standard CT
+            </p>
+            <p className="text-xs font-bold font-mono mt-1 text-slate-500">
+              {formData.standardCycleTime || "-"}
+            </p>
+          </div>
+
+          {/* Calculated target (read-only) */}
+          <div className="border border-[#E2E4E9] bg-slate-50 rounded-sm px-2 py-1.5">
+            <p className="text-[9px] uppercase tracking-wide text-slate-400 leading-none">
+              Calc Target
+            </p>
+            <p className="text-xs font-bold font-mono mt-1 text-slate-500">
+              {calculatedTarget === "" ? "-" : calculatedTarget}
+            </p>
+          </div>
+
+          {/* Editable target */}
+          <div className="border border-[#E2E4E9] bg-blue-50 rounded-sm px-2 py-1.5">
+            <label className="text-[9px] uppercase tracking-wide text-blue-400 leading-none block">
+              Target (editable)
+            </label>
+            <input
+              type="number"
+              name="target"
+              value={formData.target}
+              onChange={handleChange}
+              {...numberInputProps}
+              className="w-full h-5 px-1 text-xs font-bold font-mono text-blue-600 bg-transparent border-0 outline-none"
+            />
+          </div>
+
+          {/* Loss minutes */}
+          <div className="border border-[#E2E4E9] bg-red-50 rounded-sm px-2 py-1.5">
+            <p className="text-[9px] uppercase tracking-wide text-red-400 leading-none">
+              Loss (min)
+            </p>
+            <p className="text-xs font-bold font-mono mt-1 text-red-600">
+              {lossMinutes}
+            </p>
+          </div>
+
+          {/* Efficiency */}
+          <div className="border border-[#E2E4E9] bg-orange-50 rounded-sm px-2 py-1.5">
+            <p className="text-[9px] uppercase tracking-wide text-orange-400 leading-none">
+              Efficiency
+            </p>
+            <p className="text-xs font-bold font-mono mt-1 text-orange-600">
+              {efficiency}%
+            </p>
+          </div>
         </div>
       </div>
     </motion.div>

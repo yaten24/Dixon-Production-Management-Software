@@ -1,6 +1,14 @@
 const db = require("../config/db");
 
 // =========================================
+// FIX: mysql2 throws "Bind parameters must not contain undefined" if any
+// param is undefined (e.g. an optional field the client didn't send).
+// Every value that goes into a query now passes through this helper so
+// missing fields become SQL NULL instead of crashing the insert/update.
+// =========================================
+const n = (v) => (v === undefined ? null : v);
+
+// =========================================
 // Get All Production Entries
 // =========================================
 
@@ -238,41 +246,41 @@ exports.create = async (connection, data) => {
         `,
 
     [
-      production_id,
+      n(production_id),
 
-      entry_date,
+      n(entry_date),
 
-      hall,
+      n(hall),
 
-      shift,
+      n(shift),
 
-      time_slot,
+      n(time_slot),
 
-      machine_id,
+      n(machine_id),
 
-      operator_id,
+      n(operator_id),
 
-      part_id,
+      n(part_id),
 
-      standard_cycle_time,
+      n(standard_cycle_time),
 
-      actual_cycle_time,
+      n(actual_cycle_time),
 
-      target_qty,
+      n(target_qty),
 
-      actual_qty,
+      n(actual_qty),
 
-      good_qty,
+      n(good_qty),
 
-      reject_qty,
+      n(reject_qty),
 
-      loss_minutes,
+      n(loss_minutes),
 
-      efficiency,
+      n(efficiency),
 
-      remarks,
+      n(remarks),
 
-      created_by,
+      n(created_by),
     ],
   );
 
@@ -281,8 +289,6 @@ exports.create = async (connection, data) => {
 
 // =========================================
 // Update Production Entry
-// (was missing entirely — needed for "Save & Next" re-saves and any
-// edit-after-submit flow. Mirrors create()'s column list exactly.)
 // =========================================
 
 exports.update = async (connection, id, data) => {
@@ -368,39 +374,39 @@ exports.update = async (connection, id, data) => {
         `,
 
     [
-      production_id,
+      n(production_id),
 
-      entry_date,
+      n(entry_date),
 
-      hall,
+      n(hall),
 
-      shift,
+      n(shift),
 
-      time_slot,
+      n(time_slot),
 
-      machine_id,
+      n(machine_id),
 
-      operator_id,
+      n(operator_id),
 
-      part_id,
+      n(part_id),
 
-      standard_cycle_time,
+      n(standard_cycle_time),
 
-      actual_cycle_time,
+      n(actual_cycle_time),
 
-      target_qty,
+      n(target_qty),
 
-      actual_qty,
+      n(actual_qty),
 
-      good_qty,
+      n(good_qty),
 
-      reject_qty,
+      n(reject_qty),
 
-      loss_minutes,
+      n(loss_minutes),
 
-      efficiency,
+      n(efficiency),
 
-      remarks,
+      n(remarks),
 
       id,
     ],
@@ -428,8 +434,6 @@ exports.delete = async (id) => {
 
 // =========================================
 // Delete child rows before re-inserting on update
-// (rejects / losses / mould changes are fully replaced each update,
-// same "replace-all" approach the create flow already uses on insert)
 // =========================================
 
 exports.deleteRejectDetails = async (connection, productionEntryId) => {

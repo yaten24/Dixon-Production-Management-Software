@@ -8,15 +8,22 @@ const {
   editOperator,
   removeOperator,
   getOperatorByCode,
+  getOperatorMeta,      // NEW: distinct hall/shift values for filter dropdowns
+  getTopPerformers,     // NEW: best operators by completion %
+  exportOperators,      // NEW: xlsx export (respects filters)
 } = require("../controllers/operatorController");
 
 const router = express.Router();
 
 // FIX: these routes had no auth check at all — anyone could hit them.
-router.use(authMiddleware);
+
+// More specific routes BEFORE /:id, or /:id will swallow them.
+router.get("/meta", getOperatorMeta);
+router.get("/top-performers", getTopPerformers);
+router.get("/export", exportOperators);
+router.get("/code/:operatorCode", getOperatorByCode);
 
 router.get("/", getOperators);
-router.get("/code/:operatorCode", getOperatorByCode); // more specific route BEFORE /:id
 router.get("/:id", getOperator);
 router.post("/", addOperator);
 router.put("/:id", editOperator);

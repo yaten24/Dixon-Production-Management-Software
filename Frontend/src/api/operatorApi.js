@@ -1,9 +1,22 @@
 import api from "./axios";
 
-// Get All Operators
-export const getAllOperators = async () => {
-  const response = await api.get("/operators");
+// Get All Operators (supports pagination + search + shift/hall filters)
+// -> { success, count, total, page, limit, totalPages, data }
+export const getAllOperators = async (params = {}) => {
+  const response = await api.get("/operators", { params });
   return response.data;
+};
+
+// NEW: search-as-you-type suggestions for the Production Entry operator
+// field. Reuses the existing GET /operators?search=&limit= endpoint —
+// it already matches against BOTH operator_name and operator_code
+// (see buildFilters in operatorModel.js), so typing either one works.
+// Capped to a small limit + page 1 so the dropdown stays light.
+export const searchOperators = async (keyword) => {
+  const response = await api.get("/operators", {
+    params: { search: keyword, limit: 20, page: 1 },
+  });
+  return response.data; // { success, data: [...], total, count, page, limit, totalPages }
 };
 
 // Get Single Operator By Code

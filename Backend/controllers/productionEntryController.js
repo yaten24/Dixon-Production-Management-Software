@@ -1,5 +1,12 @@
 const db = require("../config/db");
 const ProductionEntry = require("../models/productionEntryModel");
+const Part = require("../models/part.model");
+
+// FIX: mysql2 throws "Bind parameters must not contain undefined" if any
+// param is undefined (e.g. an optional field the client didn't send, like
+// reject.remarks, mould.old_part_id, etc). This normalizes undefined -> null
+// so the query never crashes because of a missing optional field.
+const n = (v) => (v === undefined ? null : v);
 
 // ==========================================================
 // Get All Production Entries
@@ -113,12 +120,6 @@ exports.createProductionEntry = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // FIX: created_by used to be pulled from req.body — meaning the
-    // frontend (or anyone hitting the API directly with a tool like
-    // Postman) could claim to be any user by just changing a field in
-    // the request. It's now taken exclusively from req.user, which comes
-    // from the verified JWT in authMiddleware — impossible to spoof
-    // without a valid session for that account.
     const created_by = req.user.id;
 
     const {
@@ -233,9 +234,9 @@ exports.createProductionEntry = async (req, res) => {
           `,
           [
             productionEntryId,
-            reject.reject_reason_id,
-            reject.reject_qty,
-            reject.remarks || null,
+            n(reject.reject_reason_id),
+            n(reject.reject_qty),
+            n(reject.remarks),
             created_by,
           ],
         );
@@ -262,9 +263,9 @@ exports.createProductionEntry = async (req, res) => {
           `,
           [
             productionEntryId,
-            loss.loss_reason_id,
-            loss.loss_minutes,
-            loss.remarks || null,
+            n(loss.loss_reason_id),
+            n(loss.loss_minutes),
+            n(loss.remarks),
             created_by,
           ],
         );
@@ -297,19 +298,39 @@ exports.createProductionEntry = async (req, res) => {
           `,
           [
             productionEntryId,
-            machine_id,
-            hall,
-            shift,
-            mould.old_part_id,
-            mould.old_part_number,
-            mould.new_part_id,
-            mould.new_part_number,
-            mould.duration_minutes,
-            mould.remarks || null,
+            n(machine_id),
+            n(hall),
+            n(shift),
+            n(mould.old_part_id),
+            n(mould.old_part_number),
+            n(mould.new_part_id),
+            n(mould.new_part_number),
+            n(mould.duration_minutes),
+            n(mould.remarks),
             created_by,
           ],
         );
+
+        // Keep the NEW part's actual_cycle_time in sync with what was
+        // actually observed on the floor after the mould change.
+        // FIX: pass `connection` so this runs inside the SAME open
+        // transaction (see part.model.js for why — otherwise this
+        // deadlocks against the FK lock this same transaction holds
+        // on the parts row, causing "Lock wait timeout exceeded").
+        if (mould.new_part_id && mould.mould_actual_cycle_time) {
+          await Part.updateActualCycleTime(
+            connection,
+            mould.new_part_id,
+            mould.mould_actual_cycle_time,
+          );
+        }
       }
+    }
+
+    // Keep the main part's actual_cycle_time in sync too.
+    // FIX: same reason — use the transaction connection, not the pool.
+    if (part_id && actual_cycle_time) {
+      await Part.updateActualCycleTime(connection, part_id, actual_cycle_time);
     }
 
     // ==========================================
@@ -388,8 +409,6 @@ exports.updateProductionEntry = async (req, res) => {
 
     const { id } = req.params;
 
-    // FIX: same as create — created_by (used for the activity log entry
-    // on this update) comes from the verified JWT, not from req.body.
     const updated_by = req.user.id;
 
     const {
@@ -530,9 +549,9 @@ exports.updateProductionEntry = async (req, res) => {
           `,
           [
             id,
-            reject.reject_reason_id,
-            reject.reject_qty,
-            reject.remarks || null,
+            n(reject.reject_reason_id),
+            n(reject.reject_qty),
+            n(reject.remarks),
             updated_by,
           ],
         );
@@ -561,9 +580,9 @@ exports.updateProductionEntry = async (req, res) => {
           `,
           [
             id,
-            loss.loss_reason_id,
-            loss.loss_minutes,
-            loss.remarks || null,
+            n(loss.loss_reason_id),
+            n(loss.loss_minutes),
+            n(loss.remarks),
             updated_by,
           ],
         );
@@ -598,19 +617,36 @@ exports.updateProductionEntry = async (req, res) => {
           `,
           [
             id,
-            machine_id,
-            hall,
-            shift,
-            mould.old_part_id,
-            mould.old_part_number,
-            mould.new_part_id,
-            mould.new_part_number,
-            mould.duration_minutes,
-            mould.remarks || null,
+            n(machine_id),
+            n(hall),
+            n(shift),
+            n(mould.old_part_id),
+            n(mould.old_part_number),
+            n(mould.new_part_id),
+            n(mould.new_part_number),
+            n(mould.duration_minutes),
+            n(mould.remarks),
             updated_by,
           ],
         );
+
+        // Same sync as create — keep new part's actual_cycle_time current
+        // whenever an entry is edited too. FIX: pass `connection` (see
+        // part.model.js for why this must run on the same transaction).
+        if (mould.new_part_id && mould.mould_actual_cycle_time) {
+          await Part.updateActualCycleTime(
+            connection,
+            mould.new_part_id,
+            mould.mould_actual_cycle_time,
+          );
+        }
       }
+    }
+
+    // Sync main part's actual_cycle_time on update as well.
+    // FIX: use the transaction connection, not the pool.
+    if (part_id && actual_cycle_time) {
+      await Part.updateActualCycleTime(connection, part_id, actual_cycle_time);
     }
 
     // ==========================================
