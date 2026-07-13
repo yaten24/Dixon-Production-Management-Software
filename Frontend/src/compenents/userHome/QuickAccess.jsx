@@ -31,7 +31,7 @@ const QuickAccess = () => {
       </div>
 
       {/* Cards */}
-      <div className="relative grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <div className="relative grid grid-cols-3 gap-1 lg:grid-cols-6">
         {menuCards.map((card, index) => (
           <motion.div
             key={card.id}

@@ -20,7 +20,6 @@ const HallCards = () => {
   // ==========================================================
   const mergedHalls = hallRouteConfig.map((cfg) => {
     const live = halls.find((h) => h.hall === cfg.hall);
-
     return {
       id: cfg.hall,
       hall: cfg.hall,
@@ -65,7 +64,7 @@ const HallCards = () => {
         </div>
       ) : (
         /* Hall Cards */
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-1 md:grid-cols-3 lg:grid-cols-5">
           {mergedHalls.map((hall) => (
             <HallCard key={hall.id} hall={hall} onClick={handleNavigation} />
           ))}

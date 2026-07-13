@@ -25,6 +25,11 @@ import UserProfile from "../pages/UserProfile";
 import ReportsPage from "../pages/ReportsPage";
 import HallDashboard from "../pages/HallDashboard";
 import ActivityLogs from "../pages/Activitylogs";
+import DailyProductionPlan from "../pages/DailyProductionPlan";
+import MachineOverviewDashboard from "../pages/MachineOverview";
+import MachineOperatorManagement from "../pages/MachineOperatorManagement";
+import AllocateMachineOperator from "../pages/AllocateMachineOperator";
+import UpdateMachineOperator from "../pages/UpdateMachineOperator";
 
 const AppRoutes = () => {
   return (
@@ -50,6 +55,11 @@ const AppRoutes = () => {
       <Route path="/user/profile" element={<UserProfile />} />
       <Route path="/user/dashboard" element={<UserDashboard />} />
       <Route path="/user/reports" element={<ReportsPage />} />
+      <Route path="/user/production/daily-plan" element={<DailyProductionPlan />} />
+      <Route path="/user/machines/overview" element={<MachineOverviewDashboard />} />
+      <Route path="/user/machine-allocation" element={<MachineOperatorManagement />} />
+      <Route path="production/machine-allocation" element={<AllocateMachineOperator />} />
+      <Route path="/production/update-machine-operator" element={<UpdateMachineOperator />} />
       <Route path="/parts" element={<PartsPage />} />
 
       <Route path="/production" element={<ProductionDashboard />} />

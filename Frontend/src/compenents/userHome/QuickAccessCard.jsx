@@ -29,7 +29,7 @@ const QuickAccessCard = ({ card, onClick }) => {
     >
       {/* Header */}
       <div className="relative flex items-center justify-between">
-        <div className="flex h-11 w-11 items-center justify-center rounded-sm bg-[#2563EB] text-white shadow-sm">
+        <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-[#2563EB] text-white shadow-sm">
           <Icon className="h-5.5 w-5.5" />
         </div>
 
@@ -37,7 +37,7 @@ const QuickAccessCard = ({ card, onClick }) => {
           className="flex h-8 w-8 items-center justify-center rounded-sm bg-slate-100 text-slate-500 transition-colors duration-200 group-hover:bg-[#2563EB] group-hover:text-white"
           whileHover={{ x: 2 }}
         >
-          <HiOutlineArrowRight className="h-4 w-4" />
+          <HiOutlineArrowRight className="h-5.5 w-5.5" />
         </motion.div>
       </div>
 
