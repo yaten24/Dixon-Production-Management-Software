@@ -1,116 +1,65 @@
-import { useEffect, useState } from "react";
-import {
-  HiOutlineCalendarDays,
-  HiOutlineBuildingOffice2,
-  HiOutlineClock,
-} from "react-icons/hi2";
-
-import PlanningFilters from "../compenents/productionPlan/PlanningFilters";
+import { useState } from "react";
+import PlanningSetup from "../compenents/productionPlan/PlanningSetup";
+import PlanningStats from "../compenents/productionPlan/PlanningStats";
 import MachinePlanningTable from "../compenents/productionPlan/MachinePlanningTable";
-import PlanningSummary from "../compenents/productionPlan/PlanningSummary";
+import { checkPlan, createPlan, getPlan, publishPlan } from "../api/productionPlanApi";
+import { getAllMachines } from "../api/machineApi";
+
+const naturalSort = (a, b) => {
+  const numA = parseInt(a.machine_code.replace(/\D/g, ""), 10);
+  const numB = parseInt(b.machine_code.replace(/\D/g, ""), 10);
+  return numA - numB;
+};
 
 const DailyProductionPlan = () => {
   const [loading, setLoading] = useState(false);
+  const [plan, setPlan] = useState(null); // { header, details }
 
-  const [filters, setFilters] = useState({
-    planningDate: new Date().toISOString().split("T")[0],
-    hall: "",
-    shift: "",
-  });
-
-  const [machines, setMachines] = useState([]);
-
-  const [operators, setOperators] = useState([]);
-
-  const [parts, setParts] = useState([]);
-
-  const [planRows, setPlanRows] = useState([]);
-
-  const halls = ["Hall 1", "Hall 2", "Hall 3", "Hall 4", "C-8"];
-
-  const shifts = ["A", "B", "C"];
-
-  const handleFilterChange = (name, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const loadPlanningData = async () => {
-    if (!filters.hall || !filters.shift) {
-      alert("Please select Hall & Shift");
-      return;
-    }
-
+  const handleStart = async (form) => {
     try {
       setLoading(true);
 
-      /**
-       * Replace this block with API later
-       */
+      // ⚠️ checkPlan() already returns res.data (see api file), NOT the axios response
+      const check = await checkPlan(form.planning_date, form.hall, form.shift);
 
-      const machineResponse = [
-        {
-          machineCode: "IM-01",
-          machineName: "Injection Machine 01",
-        },
-        {
-          machineCode: "IM-02",
-          machineName: "Injection Machine 02",
-        },
-        {
-          machineCode: "IM-03",
-          machineName: "Injection Machine 03",
-        },
-      ];
+      if (check.exists) {
+        const plan = await getPlan(check.plan_id); // ⚠️ already unwrapped
+        setPlan(plan);
+        return;
+      }
 
-      const operatorResponse = [
-        {
-          operatorId: "OP001",
-          operatorName: "Rahul",
-        },
-        {
-          operatorId: "OP002",
-          operatorName: "Aman",
-        },
-        {
-          operatorId: "OP003",
-          operatorName: "Deepak",
-        },
-      ];
+      const machineRes = await getAllMachines(); // { success, data: [...] }
+      const hallMachines = (machineRes.data || [])
+        .filter((m) => m.hall === form.hall)
+        .sort(naturalSort)
+        .map((m) => ({
+          machine_code: m.machine_code,
+          machine_name: m.machine_name,
+        }));
 
-      const partResponse = [
-        {
-          partNumber: "PN1001",
-          partName: "Back Cover",
-          cycleTime: 42,
-        },
-        {
-          partNumber: "PN1002",
-          partName: "Camera Ring",
-          cycleTime: 38,
-        },
-        {
-          partNumber: "PN1003",
-          partName: "Battery Cover",
-          cycleTime: 45,
-        },
-      ];
+      if (hallMachines.length === 0) {
+        alert(`No machines found for ${form.hall}`);
+        return;
+      }
 
-      const existingPlan = machineResponse.map((machine) => ({
-        machineCode: machine.machineCode,
-        machineName: machine.machineName,
-        operatorId: "",
-        partNumber: "",
-        targetQty: "",
-        status: "Pending",
-      }));
+      const newPlan = await createPlan({ ...form, machines: hallMachines }); // ⚠️ already unwrapped
+      setPlan(newPlan);
+    } catch (err) {
+      console.log(err);
+      alert(err?.response?.data?.message || "Failed to load plan");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      setMachines(machineResponse);
-      setOperators(operatorResponse);
-      setParts(partResponse);
-      setPlanRows(existingPlan);
+  const handleRowSaved = (updatedPlan) => setPlan(updatedPlan);
+
+  const handlePublish = async () => {
+    if (!window.confirm("Publish this plan? It cannot be edited after publishing.")) return;
+    try {
+      setLoading(true);
+      const updated = await publishPlan(plan.header.plan_id); // ⚠️ already unwrapped
+      setPlan(updated);
     } catch (err) {
       console.log(err);
     } finally {
@@ -118,40 +67,46 @@ const DailyProductionPlan = () => {
     }
   };
 
-  return (
-    <div className="space-y-6 p-6">
-      <div className="rounded-xl bg-white shadow">
-        <div className="border-b p-6">
-          <h1 className="text-2xl font-bold">Daily Production Planning</h1>
+  if (!plan) {
+    return (
+      <div className="p-6">
+        <PlanningSetup onStart={handleStart} loading={loading} />
+      </div>
+    );
+  }
 
-          <p className="text-sm text-gray-500 mt-1">
-            Create and manage machine-wise production planning.
+  return (
+    <div className="space-y-1 p-1">
+      <div className="bg-white rounded-sm border border-[#E2E4E9] px-3 py-1 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-gray-800">{plan.header.plan_number}</h1>
+          <p className="text-[11px] text-gray-500 mt-0.5 font-mono">
+            {plan.header.planning_date} · {plan.header.hall} · Shift {plan.header.shift}
           </p>
         </div>
 
-        <PlanningFilters
-          filters={filters}
-          halls={halls}
-          shifts={shifts}
-          loading={loading}
-          onChange={handleFilterChange}
-          onLoad={loadPlanningData}
-        />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPlan(null)}
+            className="h-8 px-3 rounded-sm border border-[#E2E4E9] text-xs font-medium text-gray-600 hover:bg-gray-50"
+          >
+            Change Selection
+          </button>
+
+          {plan.header.status === "Draft" && (
+            <button
+              onClick={handlePublish}
+              disabled={loading}
+              className="h-8 px-3 rounded-sm bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold"
+            >
+              Publish Plan
+            </button>
+          )}
+        </div>
       </div>
 
-      {planRows.length > 0 && (
-        <>
-          <MachinePlanningTable
-            machines={machines}
-            rows={planRows}
-            setRows={setPlanRows}
-            operators={operators}
-            parts={parts}
-          />
-
-          <PlanningSummary rows={planRows} />
-        </>
-      )}
+      <PlanningStats header={plan.header} />
+      <MachinePlanningTable details={plan.details} onRowSaved={handleRowSaved} />
     </div>
   );
 };
