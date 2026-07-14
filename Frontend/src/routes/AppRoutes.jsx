@@ -54,12 +54,27 @@ const AppRoutes = () => {
       <Route path="/user/home" element={<UserHome />} />
       <Route path="/user/profile" element={<UserProfile />} />
       <Route path="/user/dashboard" element={<UserDashboard />} />
-      <Route path="/user/reports" element={<ReportsPage />} />
-      <Route path="/user/production/daily-plan" element={<DailyProductionPlan />} />
-      <Route path="/user/machines/overview" element={<MachineOverviewDashboard />} />
-      <Route path="/user/machine-allocation" element={<MachineOperatorManagement />} />
-      <Route path="production/machine-allocation" element={<AllocateMachineOperator />} />
-      <Route path="/production/update-machine-operator" element={<UpdateMachineOperator />} />
+      <Route path="/user/history" element={<ReportsPage />} />
+      <Route
+        path="/user/production/daily-plan"
+        element={<DailyProductionPlan />}
+      />
+      <Route
+        path="/user/machines/overview"
+        element={<MachineOverviewDashboard />}
+      />
+      <Route
+        path="/user/machine-allocation"
+        element={<MachineOperatorManagement />}
+      />
+      <Route
+        path="production/machine-allocation"
+        element={<AllocateMachineOperator />}
+      />
+      <Route
+        path="/production/update-machine-operator"
+        element={<UpdateMachineOperator />}
+      />
       <Route path="/parts" element={<PartsPage />} />
 
       <Route path="/production" element={<ProductionDashboard />} />

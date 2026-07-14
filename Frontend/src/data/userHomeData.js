@@ -31,26 +31,6 @@ export const menuCards = [
   },
 
   {
-    id: 2,
-    title: "Hall Overview",
-    description: "Hall-wise Production Summary",
-    icon: HiOutlineBuildingOffice2,
-    color: "bg-sky-600",
-    hover: "hover:border-sky-500",
-    path: "/user/dashboard",
-  },
-
-  {
-    id: 3,
-    title: "Reports",
-    description: "Daily, Monthly & Excel Reports",
-    icon: HiOutlineDocumentChartBar,
-    color: "bg-orange-500",
-    hover: "hover:border-orange-500",
-    path: "/user/reports",
-  },
-
-  {
     id: 4,
     title: "Production Targets",
     description: "Machine-wise Target Planning",
@@ -61,16 +41,6 @@ export const menuCards = [
   },
 
   {
-    id: 5,
-    title: "Machine Overview",
-    description: "View Hall-wise Machine Status",
-    icon: HiOutlineCpuChip,
-    color: "bg-cyan-600",
-    hover: "hover:border-cyan-500",
-    path: "/user/machines/overview",
-  },
-
-  {
     id: 6,
     title: "Machine Allocation",
     description: "Assign Operators to Machines",
@@ -78,6 +48,36 @@ export const menuCards = [
     color: "bg-pink-600",
     hover: "hover:border-pink-500",
     path: "/user/machine-allocation",
+  },
+
+  {
+    id: 15,
+    title: "Production History",
+    description: "Machine-wise Historical Records",
+    icon: HiOutlineClipboard,
+    color: "bg-teal-600",
+    hover: "hover:border-teal-500",
+    path: "/user/history",
+  },
+
+  {
+    id: 2,
+    title: "Hall Overview",
+    description: "Hall-wise Production Summary",
+    icon: HiOutlineBuildingOffice2,
+    color: "bg-sky-600",
+    hover: "hover:border-sky-500",
+    path: "/user/dashboard",
+  },
+
+  {
+    id: 5,
+    title: "Machine Overview",
+    description: "View Hall-wise Machine Status",
+    icon: HiOutlineCpuChip,
+    color: "bg-cyan-600",
+    hover: "hover:border-cyan-500",
+    path: "/user/machines/overview",
   },
 
   // {
@@ -159,14 +159,15 @@ export const menuCards = [
     hover: "hover:border-lime-500",
     path: "/user/performance",
   },
+
   {
-    id: 15,
-    title: "Production History",
-    description: "Machine-wise Historical Records",
-    icon: HiOutlineClipboard,
-    color: "bg-teal-600",
-    hover: "hover:border-teal-500",
-    path: "/user/history",
+    id: 3,
+    title: "Reports",
+    description: "Daily, Monthly & Excel Reports",
+    icon: HiOutlineDocumentChartBar,
+    color: "bg-orange-500",
+    hover: "hover:border-orange-500",
+    path: "/user/reports",
   },
 
   // {
