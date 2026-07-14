@@ -629,7 +629,7 @@ const useProductionEntry = () => {
     }
   };
 
-  // CHANGED: this used to loop over EVERY saved machine and re-submit
+  // this used to loop over EVERY saved machine and re-submit
   // them all again ("Submit All Entries"). Each machine already saves
   // itself the moment you hit "Save & Next", so re-submitting everything
   // at the end was redundant and confusing. Now this only saves the
