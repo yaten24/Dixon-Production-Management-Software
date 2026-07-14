@@ -18,20 +18,25 @@ const QuickAccess = () => {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="relative mt-2 rounded-sm border border-slate-200 bg-white p-2 shadow-sm lg:mt-2 lg:p-3"
+      className="relative mt-1 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] p-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)] lg:mt-1 lg:p-2"
     >
       {/* Header */}
-      <div className="relative mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="relative mb-1 flex flex-wrap items-center justify-between gap-1">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">Quick Access</h2>
-          <p className="text-xs font-medium text-slate-600">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#FDC94D]">
+            Modules
+          </span>
+          <h2 className="mt-0.5 text-sm font-bold tracking-tight text-[#0F1D24]">
+            Quick Access
+          </h2>
+          <p className="text-xs font-medium text-[#9B9B9B]">
             Select a module to continue your work
           </p>
         </div>
       </div>
 
       {/* Cards */}
-      <div className="relative grid grid-cols-3 gap-1 lg:grid-cols-6">
+      <div className="relative grid grid-cols-3 gap-2.5 lg:grid-cols-6">
         {menuCards.map((card, index) => (
           <motion.div
             key={card.id}

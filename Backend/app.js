@@ -40,5 +40,6 @@ app.use("/api/hall-dashboard", hallDashboardRoutes);
 app.use("/api/activity-logs", activityLogRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/production-plan", productionPlanRoutes);
+app.use("/api/mould-change", require("./routes/mouldChangeRoutes"));
 
 module.exports = app;

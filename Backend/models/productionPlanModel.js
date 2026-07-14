@@ -19,7 +19,13 @@ const checkExistingPlan = async (date, hall, shift) => {
   return rows[0] || null;
 };
 
-const createPlan = async ({ planning_date, hall, shift, machines, created_by }) => {
+const createPlan = async ({
+  planning_date,
+  hall,
+  shift,
+  machines,
+  created_by,
+}) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -82,7 +88,31 @@ const getPlanById = async (planId) => {
     [planId],
   );
 
-  return { header, details };
+  const detailIds = details.map((d) => d.detail_id);
+  let mouldChanges = [];
+
+  if (detailIds.length > 0) {
+    [mouldChanges] = await pool.query(
+      `SELECT
+          mc.mould_change_id, mc.detail_id, mc.production_id, mc.status,
+          mc.change_type, mc.scheduled_time, mc.reason,
+          mc.old_part_id, op.part_number AS old_part_number,
+          mc.new_part_id, np.part_number AS new_part_number, np.part_name AS new_part_name
+       FROM mould_changes mc
+       LEFT JOIN parts op ON op.id = mc.old_part_id
+       LEFT JOIN parts np ON np.id = mc.new_part_id
+       WHERE mc.detail_id IN (?)
+       ORDER BY mc.scheduled_time`,
+      [detailIds],
+    );
+  }
+
+  const detailsWithMould = details.map((d) => ({
+    ...d,
+    mould_changes: mouldChanges.filter((mc) => mc.detail_id === d.detail_id),
+  }));
+
+  return { header, details: detailsWithMould };
 };
 
 const updateDetail = async (detailId, { operator_id, part_id, target_qty }) => {

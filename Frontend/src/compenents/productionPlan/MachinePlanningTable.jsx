@@ -1,6 +1,6 @@
 import MachinePlanningRow from "./MachinePlanningRow";
 
-const MachinePlanningTable = ({ details, onRowSaved }) => (
+const MachinePlanningTable = ({ header, details, onRowSaved }) => (
   <div className="bg-white rounded-sm border border-[#E2E4E9]">
     <div className="border-b border-[#E2E4E9] px-3 py-1">
       <h2 className="text-sm font-semibold text-gray-800">Machine Planning</h2>
@@ -17,11 +17,20 @@ const MachinePlanningTable = ({ details, onRowSaved }) => (
             <th className="px-3 py-1 text-center text-[11px] font-medium text-gray-500">Cycle Time</th>
             <th className="px-3 py-1 text-left text-[11px] font-medium text-gray-500">Target Qty</th>
             <th className="px-3 py-1 text-left text-[11px] font-medium text-gray-500">Status</th>
+            <th className="px-3 py-1 text-left text-[11px] font-medium text-gray-500">Mould Change</th>
           </tr>
         </thead>
         <tbody>
           {details.map((row) => (
-            <MachinePlanningRow key={row.detail_id} row={row} onSaved={onRowSaved} />
+            <MachinePlanningRow
+              key={row.detail_id}
+              row={row}
+              planId={header.plan_id}
+              hall={header.hall}
+              shift={header.shift}
+              planningDate={header.planning_date}
+              onSaved={onRowSaved}
+            />
           ))}
         </tbody>
       </table>

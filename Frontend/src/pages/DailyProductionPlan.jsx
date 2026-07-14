@@ -2,7 +2,12 @@ import { useState } from "react";
 import PlanningSetup from "../compenents/productionPlan/PlanningSetup";
 import PlanningStats from "../compenents/productionPlan/PlanningStats";
 import MachinePlanningTable from "../compenents/productionPlan/MachinePlanningTable";
-import { checkPlan, createPlan, getPlan, publishPlan } from "../api/productionPlanApi";
+import {
+  checkPlan,
+  createPlan,
+  getPlan,
+  publishPlan,
+} from "../api/productionPlanApi";
 import { getAllMachines } from "../api/machineApi";
 
 const naturalSort = (a, b) => {
@@ -19,12 +24,11 @@ const DailyProductionPlan = () => {
     try {
       setLoading(true);
 
-      // ⚠️ checkPlan() already returns res.data (see api file), NOT the axios response
       const check = await checkPlan(form.planning_date, form.hall, form.shift);
 
       if (check.exists) {
-        const plan = await getPlan(check.plan_id); // ⚠️ already unwrapped
-        setPlan(plan);
+        const existingPlan = await getPlan(check.plan_id);
+        setPlan(existingPlan);
         return;
       }
 
@@ -42,7 +46,7 @@ const DailyProductionPlan = () => {
         return;
       }
 
-      const newPlan = await createPlan({ ...form, machines: hallMachines }); // ⚠️ already unwrapped
+      const newPlan = await createPlan({ ...form, machines: hallMachines });
       setPlan(newPlan);
     } catch (err) {
       console.log(err);
@@ -52,13 +56,20 @@ const DailyProductionPlan = () => {
     }
   };
 
-  const handleRowSaved = (updatedPlan) => setPlan(updatedPlan);
+  const handleRowSaved = (updatedPlan) => {
+    if (updatedPlan) setPlan(updatedPlan);
+  };
 
   const handlePublish = async () => {
-    if (!window.confirm("Publish this plan? It cannot be edited after publishing.")) return;
+    if (
+      !window.confirm(
+        "Publish this plan? It cannot be edited after publishing.",
+      )
+    )
+      return;
     try {
       setLoading(true);
-      const updated = await publishPlan(plan.header.plan_id); // ⚠️ already unwrapped
+      const updated = await publishPlan(plan.header.plan_id);
       setPlan(updated);
     } catch (err) {
       console.log(err);
@@ -79,9 +90,12 @@ const DailyProductionPlan = () => {
     <div className="space-y-1 p-1">
       <div className="bg-white rounded-sm border border-[#E2E4E9] px-3 py-1 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-gray-800">{plan.header.plan_number}</h1>
+          <h1 className="text-lg font-bold text-gray-800">
+            {plan.header.plan_number}
+          </h1>
           <p className="text-[11px] text-gray-500 mt-0.5 font-mono">
-            {plan.header.planning_date} · {plan.header.hall} · Shift {plan.header.shift}
+            {plan.header.planning_date} · {plan.header.hall} · Shift{" "}
+            {plan.header.shift}
           </p>
         </div>
 
@@ -106,7 +120,11 @@ const DailyProductionPlan = () => {
       </div>
 
       <PlanningStats header={plan.header} />
-      <MachinePlanningTable details={plan.details} onRowSaved={handleRowSaved} />
+      <MachinePlanningTable
+        header={plan.header}
+        details={plan.details}
+        onRowSaved={handleRowSaved}
+      />
     </div>
   );
 };

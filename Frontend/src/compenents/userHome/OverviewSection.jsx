@@ -13,13 +13,8 @@ import OverviewCard from "./OverviewCard";
 import useDashboardOverview from "../../hooks/useDashboardOverview";
 
 // ==========================================================
-// Static presentation config (icon only) per metric.
-// Color has been intentionally removed here — every KPI card
-// uses the same single brand accent (see OverviewCard) so the
-// section reads as one consistent, professional surface instead
-// of a rainbow of per-metric colors.
-// The actual numeric `value` / `subtitle` gets injected at render
-// time from the live API response.
+// tone: "blue"/"amber" = neutral brand tones (navy/gold).
+// tone: "red"/"green" = semantic (bad/good) — kept universal.
 // ==========================================================
 const buildOverviewData = (data) => {
   if (!data) return [];
@@ -78,15 +73,18 @@ const OverviewSection = ({ hall }) => {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="relative mt-1 rounded-sm border border-slate-200 bg-white p-2 shadow-sm lg:mt-2 lg:p-3"
+      className="relative mt-1 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] p-2 shadow-[0_1px_2px_rgba(15,29,36,0.04)] lg:mt-1 lg:p-2"
     >
       {/* Header */}
-      <div className="relative mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="relative mb-2 flex flex-wrap items-center justify-between gap-1">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#FDC94D]">
+            Live Stats
+          </span>
+          <h2 className="mt-0.5 text-sm font-bold tracking-tight text-[#0F1D24]">
             Today's Overview
           </h2>
-          <p className="text-xs font-medium text-slate-600">
+          <p className="text-xs font-medium text-[#9B9B9B]">
             {data
               ? `Live production statistics for ${data.date}${hall ? ` · Hall ${hall}` : " · All Halls"}`
               : "Live production statistics from all manufacturing halls"}
@@ -97,7 +95,7 @@ const OverviewSection = ({ hall }) => {
           onClick={refresh}
           disabled={loading}
           whileTap={{ scale: 0.97 }}
-          className="flex h-8 items-center gap-1.5 rounded-sm border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:border-[#2563EB] hover:text-[#2563EB] disabled:opacity-60"
+          className="flex h-8 items-center gap-1.5 rounded border border-[#C6C6C6]/60 bg-white px-2 text-xs font-semibold text-[#0F1D24] transition-all duration-300 hover:border-transparent hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:opacity-60"
         >
           <motion.span
             animate={loading ? { rotate: 360 } : { rotate: 0 }}
@@ -116,7 +114,7 @@ const OverviewSection = ({ hall }) => {
 
       {/* ERROR STATE */}
       {error && !loading && (
-        <div className="relative mb-3 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+        <div className="relative mb-1 rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-600">
           {error}
         </div>
       )}
@@ -127,7 +125,7 @@ const OverviewSection = ({ hall }) => {
           {[...Array(5)].map((_, i) => (
             <div
               key={i}
-              className="h-28 animate-pulse rounded-sm border border-slate-200 bg-slate-100"
+              className="h-28 animate-pulse rounded border border-[#C6C6C6]/50 bg-[#C6C6C6]/20"
             />
           ))}
         </div>
