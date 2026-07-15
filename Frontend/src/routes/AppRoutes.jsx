@@ -8,7 +8,6 @@ import Attendance from "../pages/Attendance";
 import Reports from "../pages/Reports";
 import MachineAssignment from "../pages/AsignMachine";
 import ProductionEntry from "../user/productionEntry";
-import AdvProductionEntry from "../user/advProductionEnrty";
 import ProductionPlanning from "../user/ProductionPlanning";
 import Login from "../auth/Login";
 import MouldChangeDashboard from "../pages/MouldChangeDashboard";
@@ -31,6 +30,7 @@ import MachineOperatorManagement from "../pages/MachineOperatorManagement";
 import AllocateMachineOperator from "../pages/AllocateMachineOperator";
 import UpdateMachineOperator from "../pages/UpdateMachineOperator";
 import ProductionHistoryPage from "../pages/ProductionHistoryPage";
+import AdvProductionEntry from "../pages/advProductionEnrty";
 
 const AppRoutes = () => {
   return (

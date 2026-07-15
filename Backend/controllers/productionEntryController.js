@@ -1,6 +1,7 @@
 const db = require("../config/db");
 const ProductionEntry = require("../models/productionEntryModel");
 const Part = require("../models/part.model");
+const mouldChangeModel = require("../models/mouldChangeModel");
 
 // FIX: mysql2 throws "Bind parameters must not contain undefined" if any
 // param is undefined (e.g. an optional field the client didn't send, like
@@ -128,6 +129,7 @@ exports.createProductionEntry = async (req, res) => {
       hall,
       shift,
       time_slot,
+      machine_code, // NEW — used to link back to a Planned mould change
       machine_id,
       operator_id,
       part_id,
@@ -313,10 +315,9 @@ exports.createProductionEntry = async (req, res) => {
 
         // Keep the NEW part's actual_cycle_time in sync with what was
         // actually observed on the floor after the mould change.
-        // FIX: pass `connection` so this runs inside the SAME open
-        // transaction (see part.model.js for why — otherwise this
-        // deadlocks against the FK lock this same transaction holds
-        // on the parts row, causing "Lock wait timeout exceeded").
+        // Runs on the SAME open transaction (see part.model.js) — otherwise
+        // it deadlocks against the FK lock this transaction already holds
+        // on the parts row ("Lock wait timeout exceeded").
         if (mould.new_part_id && mould.mould_actual_cycle_time) {
           await Part.updateActualCycleTime(
             connection,
@@ -324,11 +325,29 @@ exports.createProductionEntry = async (req, res) => {
             mould.mould_actual_cycle_time,
           );
         }
+
+        // NEW: if this mould change fulfils a "Planned" entry created from
+        // the Production Plan module, mark it Completed and link it to this
+        // actual production entry. Non-fatal if no match is found — that
+        // just means this was an unplanned/ad-hoc mould change.
+        if (mould.new_part_id && machine_code) {
+          try {
+            await mouldChangeModel.linkProductionToMouldChange({
+              machine_code,
+              planning_date: entry_date,
+              shift,
+              new_part_id: mould.new_part_id,
+              old_part_id: mould.old_part_id,
+              production_id: productionEntryId,
+            });
+          } catch (linkErr) {
+            console.error("Failed to link planned mould change:", linkErr);
+          }
+        }
       }
     }
 
     // Keep the main part's actual_cycle_time in sync too.
-    // FIX: same reason — use the transaction connection, not the pool.
     if (part_id && actual_cycle_time) {
       await Part.updateActualCycleTime(connection, part_id, actual_cycle_time);
     }
@@ -417,6 +436,7 @@ exports.updateProductionEntry = async (req, res) => {
       hall,
       shift,
       time_slot,
+      machine_code, // NEW — used to link back to a Planned mould change
       machine_id,
       operator_id,
       part_id,
@@ -631,8 +651,7 @@ exports.updateProductionEntry = async (req, res) => {
         );
 
         // Same sync as create — keep new part's actual_cycle_time current
-        // whenever an entry is edited too. FIX: pass `connection` (see
-        // part.model.js for why this must run on the same transaction).
+        // whenever an entry is edited too.
         if (mould.new_part_id && mould.mould_actual_cycle_time) {
           await Part.updateActualCycleTime(
             connection,
@@ -640,11 +659,26 @@ exports.updateProductionEntry = async (req, res) => {
             mould.mould_actual_cycle_time,
           );
         }
+
+        // NEW: same planned-mould-change link/complete logic as create.
+        if (mould.new_part_id && machine_code) {
+          try {
+            await mouldChangeModel.linkProductionToMouldChange({
+              machine_code,
+              planning_date: entry_date,
+              shift,
+              new_part_id: mould.new_part_id,
+              old_part_id: mould.old_part_id,
+              production_id: id,
+            });
+          } catch (linkErr) {
+            console.error("Failed to link planned mould change:", linkErr);
+          }
+        }
       }
     }
 
     // Sync main part's actual_cycle_time on update as well.
-    // FIX: use the transaction connection, not the pool.
     if (part_id && actual_cycle_time) {
       await Part.updateActualCycleTime(connection, part_id, actual_cycle_time);
     }

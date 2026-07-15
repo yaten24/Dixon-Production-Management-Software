@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { getOperatorByCode, createOperator, searchOperators } from "../api/operatorApi";
 import { searchParts, addPartQuick } from "../api/partApi";
 
@@ -20,7 +20,7 @@ import useClock from "../hooks/useClock";
 import Header from "../compenents/dashboard/Header";
 
 // ==========================================================
-// FIX: generates a guaranteed-unique part number using the current
+// Generates a guaranteed-unique part number using the current
 // date + time (down to milliseconds).
 // ==========================================================
 const generatePartNumber = (base) => {
@@ -97,6 +97,11 @@ const AdvProductionEntry = () => {
     masterError,
     submitting,
     submitError,
+
+    // NEW — production plan integration
+    plan,
+    planLoading,
+    planError,
   } = useProductionEntry();
 
   const currentTime = useClock();
@@ -108,7 +113,6 @@ const AdvProductionEntry = () => {
   const [operatorNotFound, setOperatorNotFound] = useState(false);
   const [addingOperator, setAddingOperator] = useState(false);
 
-  // NEW: operator search suggestions (like Part search)
   const [operatorSuggestions, setOperatorSuggestions] = useState([]);
   const [noOperatorResults, setNoOperatorResults] = useState(false);
 
@@ -159,7 +163,17 @@ const AdvProductionEntry = () => {
     }
   };
 
-  // NEW: search-as-you-type suggestions (code OR name)
+  // NEW: when the Production Plan auto-fills operatorId (a code) for the
+  // current machine but operator_id (numeric) is still missing, resolve
+  // it automatically instead of forcing the user to click "Find".
+  useEffect(() => {
+    if (formData.operatorId && !formData.operator_id) {
+      fetchOperator(formData.operatorId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMachine?.id]);
+
+  // search-as-you-type suggestions (code OR name)
   const fetchOperatorSuggestions = async (keyword) => {
     if (!keyword || keyword.trim().length < 2) {
       setOperatorSuggestions([]);
@@ -184,9 +198,6 @@ const AdvProductionEntry = () => {
     }
   };
 
-  // NEW: clicking a suggestion fills everything directly (no extra
-  // round-trip to fetchOperator) — same instant behaviour as picking a
-  // part from the part search dropdown.
   const selectOperator = (op) => {
     setOperatorDetails(op);
     setOperatorNotFound(false);
@@ -260,11 +271,6 @@ const AdvProductionEntry = () => {
     }
   };
 
-  // FIX: now calls addPartQuick() -> POST /parts/quick-add, which only
-  // requires part_name + actual_cycle_time (matches what this mini-form
-  // actually collects) and returns insertId — the old flow called the
-  // full addPart() endpoint that required product_category/source/customer
-  // and never returned an insertId, so quick-add always silently failed.
   const handleAddPart = async (newPart) => {
     setAddingPart(true);
 
@@ -338,11 +344,6 @@ const AdvProductionEntry = () => {
     }
   };
 
-  // FIX: same quick-add fix as handleAddPart. This mini-form actually
-  // collects part_number/name/category/source/customer/standard_cycle_time
-  // (fuller form than the main one), so we send those directly to
-  // quick-add — it accepts part_number if provided instead of generating
-  // one, and standard_cycle_time overrides the default.
   const handleAddMouldPart = async (newPart) => {
     setAddingMouldPart(true);
 
@@ -395,8 +396,7 @@ const AdvProductionEntry = () => {
     }
   };
 
-  // CHANGED: finalSubmit now saves only the current (last) machine's
-  // entry — no more looping through every previously saved machine.
+  // finalSubmit saves only the current (last) machine's entry.
   const handleFinalSubmit = async () => {
     setSubmitResult(null);
     const results = await finalSubmit();
@@ -474,6 +474,25 @@ const AdvProductionEntry = () => {
           />
         ) : (
           <>
+            {/* NEW — Production Plan status banner */}
+            {planLoading && (
+              <div className="mb-1 text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded p-2">
+                Checking for a published production plan for this date/hall/shift...
+              </div>
+            )}
+            {planError && (
+              <div className="mb-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                {planError}
+              </div>
+            )}
+            {plan?.header && (
+              <div className="mb-1 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-2">
+                Plan <strong>{plan.header.plan_number}</strong> loaded — operator,
+                part &amp; target pre-filled for {plan.details.length} machine
+                {plan.details.length === 1 ? "" : "s"}. Just confirm actuals below.
+              </div>
+            )}
+
             <MachineNavigator
               filteredMachines={filteredMachines}
               machineEntries={machineEntries}

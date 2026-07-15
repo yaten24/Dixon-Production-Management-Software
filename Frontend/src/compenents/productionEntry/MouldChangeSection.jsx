@@ -68,9 +68,7 @@ const MouldChangeSection = ({
   }, [showMouldSection, formData.part_id, formData.part]);
 
   // ===========================
-  // TARGET — now EDITABLE, same pattern as main ProductionForm.
-  // Only auto-sets from Actual Cycle Time when the field is empty, so it
-  // no longer stomps on a value you manually reduced/increased.
+  // TARGET — editable, auto-sets from Actual Cycle Time only when empty
   // ===========================
   const calculatedMouldTarget = useMemo(() => {
     const ct = Number(formData.mouldActualCycleTime);
@@ -87,7 +85,7 @@ const MouldChangeSection = ({
   }, [calculatedMouldTarget]);
 
   // ===========================
-  // LOSS TIME (minutes)
+  // LOSS TIME (minutes) — shortfall vs target, in this part's own slot
   // ===========================
   const mouldLossMinutes = useMemo(() => {
     const target = Number(formData.mouldTarget) || 0;
@@ -98,11 +96,7 @@ const MouldChangeSection = ({
     const lossSeconds = shortfall * cycleTime;
 
     return Number((lossSeconds / 60).toFixed(1));
-  }, [
-    formData.mouldTarget,
-    formData.mouldActual,
-    formData.mouldActualCycleTime,
-  ]);
+  }, [formData.mouldTarget, formData.mouldActual, formData.mouldActualCycleTime]);
 
   // ===========================
   // EFFICIENCY
@@ -546,7 +540,7 @@ const MouldChangeSection = ({
                   Auto-calculated &amp; Editable
                 </p>
 
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                   <div className="border border-[#E2E4E9] bg-white rounded-sm px-2 py-1.5">
                     <p className="text-[9px] uppercase tracking-wide text-slate-400 leading-none">
                       Standard CT
@@ -565,7 +559,7 @@ const MouldChangeSection = ({
                     </p>
                   </div>
 
-                  {/* Editable target — was read-only before */}
+                  {/* Editable target */}
                   <div className="border border-[#E2E4E9] bg-blue-50 rounded-sm px-2 py-1.5">
                     <label className="text-[9px] uppercase tracking-wide text-blue-400 leading-none block">
                       Target (editable)
@@ -597,7 +591,33 @@ const MouldChangeSection = ({
                       {mouldEfficiency}%
                     </p>
                   </div>
+
+                  {/* NEW: Mould Change Duration — 60 - (old part time + new part time) */}
+                  <div className="border border-purple-200 bg-purple-50 rounded-sm px-2 py-1.5">
+                    <p className="text-[9px] uppercase tracking-wide text-purple-400 leading-none">
+                      Mould Change (min)
+                    </p>
+                    <p className="text-xs font-bold font-mono mt-1 text-purple-700">
+                      {formData.mould_duration === "" ? "-" : formData.mould_duration}
+                    </p>
+                  </div>
                 </div>
+              </div>
+
+              {/* NEW: Mould Change Remarks — this was collected in state before
+                  but had no input anywhere, so it silently never saved. */}
+              <div className="mt-2.5">
+                <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                  Mould Change Remarks
+                </label>
+                <input
+                  type="text"
+                  name="mould_remarks"
+                  value={formData.mould_remarks}
+                  onChange={handleChange}
+                  placeholder="e.g. reason for change, breakdown notes..."
+                  className={inputClass}
+                />
               </div>
 
               {/* CHILD COMPONENT */}

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ClipboardCheck } from "lucide-react";
 
 const ProductionForm = ({
   formData,
@@ -13,7 +13,7 @@ const ProductionForm = ({
   onAddOperator,
   addingOperator,
 
-  // NEW: operator search-and-select (like Part search)
+  // operator search-and-select (like Part search)
   fetchOperatorSuggestions,
   operatorSuggestions = [],
   setOperatorSuggestions,
@@ -32,6 +32,13 @@ const ProductionForm = ({
 
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [operatorSelectedIndex, setOperatorSelectedIndex] = useState(-1);
+
+  // NEW: true whenever this machine's data was seeded from a Production
+  // Plan row (see useProductionEntry -> loadMachineData -> plan_detail_id).
+  // Purely cosmetic — a small badge so the operator knows the value came
+  // from the plan and isn't something they typed by mistake. Editing the
+  // field normally still works exactly as before.
+  const isFromPlan = !!formData.plan_detail_id;
 
   const numberInputProps = {
     onWheel: (e) => {
@@ -64,6 +71,13 @@ const ProductionForm = ({
     [&::-webkit-outer-spin-button]:appearance-none
   `;
 
+  const planBadge = (
+    <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-1.5 py-0.5 ml-1.5 align-middle">
+      <ClipboardCheck size={9} />
+      Plan
+    </span>
+  );
+
   // ===========================
   // TARGET — editable (user can override the calculated value)
   // ===========================
@@ -94,7 +108,7 @@ const ProductionForm = ({
   }, [formData.target, formData.actual, formData.actualCycleTime]);
 
   // ===========================
-  // OPERATOR — search box (NEW) + inline add form
+  // OPERATOR — search box + inline add form
   // ===========================
   const [showAddOperator, setShowAddOperator] = useState(false);
   const [newOperator, setNewOperator] = useState({
@@ -137,13 +151,18 @@ const ProductionForm = ({
     }
   };
 
-  // NEW: type-to-search handler for the operator field — replaces the
-  // old "type code, click Find" only flow. Typing 2+ chars now shows a
-  // dropdown of matching operators (by code OR name) you can click to
+  // type-to-search handler for the operator field — typing 2+ chars shows
+  // a dropdown of matching operators (by code OR name) you can click to
   // select, same UX as the Part search box below.
   const handleOperatorChange = (e) => {
     handleChange(e);
     handleChange({ target: { name: "operator_id", value: null } });
+    // Editing manually after a plan pre-fill means this is no longer
+    // strictly "the plan's" value — clear the plan_detail_id link so the
+    // badge disappears and future auto-behaviour doesn't get confused.
+    if (formData.plan_detail_id) {
+      handleChange({ target: { name: "plan_detail_id", value: null } });
+    }
 
     const value = e.target.value;
 
@@ -234,6 +253,9 @@ const ProductionForm = ({
 
     handleChange({ target: { name: "part_id", value: null } });
     handleChange({ target: { name: "standardCycleTime", value: "" } });
+    if (formData.plan_detail_id) {
+      handleChange({ target: { name: "plan_detail_id", value: null } });
+    }
 
     if (value.length < 2) {
       setPartSuggestions([]);
@@ -268,6 +290,16 @@ const ProductionForm = ({
       target: {
         name: "standardCycleTime",
         value: part.standard_cycle_time,
+      },
+    });
+
+    // FIX: actual_cycle_time bhi part se copy karo — pehle ye missing tha,
+    // isliye Actual CT field khali reh jaata tha part select karne ke baad.
+    // Fallback standard_cycle_time pe agar actual_cycle_time DB me 0/null hai.
+    handleChange({
+      target: {
+        name: "actualCycleTime",
+        value: part.actual_cycle_time || part.standard_cycle_time || "",
       },
     });
 
@@ -349,9 +381,15 @@ const ProductionForm = ({
       animate={{ opacity: 1, y: 0 }}
       className="bg-white border border-[#E2E4E9] rounded-sm p-3"
     >
-      <h2 className="text-sm font-bold text-slate-800 mb-3">
-        Production Entry
-      </h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-bold text-slate-800">Production Entry</h2>
+        {isFromPlan && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
+            <ClipboardCheck size={10} />
+            Pre-filled from Plan
+          </span>
+        )}
+      </div>
 
       {/* ===========================
           EDITABLE FIELDS
@@ -366,6 +404,7 @@ const ProductionForm = ({
         >
           <label className="text-[11px] font-medium text-slate-600 block mb-1">
             Operator ID / Name
+            {isFromPlan && formData.operatorId && planBadge}
           </label>
 
           <div className="flex gap-1.5">
@@ -530,6 +569,7 @@ const ProductionForm = ({
         <div ref={wrapperRef} className="relative col-span-2 md:col-span-1">
           <label className="text-[11px] font-medium text-slate-600 block mb-1">
             Part Name / Number
+            {isFromPlan && formData.part && planBadge}
           </label>
 
           <input
@@ -703,6 +743,11 @@ const ProductionForm = ({
       <div className="mt-3 pt-2.5 border-t border-[#E2E4E9]">
         <p className="text-[10px] uppercase tracking-wide text-slate-400 font-medium mb-1.5">
           Auto-calculated &amp; Editable
+          {isFromPlan && formData.target && (
+            <span className="ml-1.5 normal-case text-indigo-500 font-semibold">
+              (Target from Plan)
+            </span>
+          )}
         </p>
 
         <div className="grid grid-cols-5 gap-2">
