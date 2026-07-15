@@ -66,30 +66,35 @@ const OperatorSearchSelect = ({ value, valueName, onSelect }) => {
         }}
         onFocus={() => results.length > 0 && setOpen(true)}
         placeholder="Search operator (name/code)..."
-        className="w-full h-8 rounded-sm border border-[#E2E4E9] px-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+        className="w-full h-8 rounded border border-[#C6C6C6]/60 px-2.5 text-xs text-[#0F1D24] placeholder:text-[#9B9B9B] transition-colors focus:outline-none focus:ring-1 focus:ring-[#0F1D24] focus:border-[#0F1D24]"
       />
 
       {open && (
-        <div className="absolute z-20 mt-1 w-full max-h-48 overflow-auto bg-white rounded-sm border border-[#E2E4E9] shadow-md">
+        <div className="absolute z-20 mt-1 w-full max-h-48 overflow-auto rounded border border-[#C6C6C6]/60 bg-white shadow-md">
           {loading && (
-            <div className="px-2.5 py-1.5 text-xs text-gray-400">Searching...</div>
+            <div className="px-2.5 py-1.5 text-xs text-[#9B9B9B]">Searching...</div>
           )}
 
           {!loading && results.length === 0 && (
-            <div className="px-2.5 py-1.5 text-xs text-gray-400">No operators found</div>
+            <div className="px-2.5 py-1.5 text-xs text-[#9B9B9B]">No operators found</div>
           )}
 
           {!loading &&
-            results.map((op) => (
-              <div
-                key={op.operator_code}
-                onClick={() => handlePick(op)}
-                className="px-2.5 py-1.5 text-xs hover:bg-blue-50 cursor-pointer flex justify-between"
-              >
-                <span className="font-mono text-gray-500">{op.operator_code}</span>
-                <span className="text-gray-700">{op.operator_name}</span>
-              </div>
-            ))}
+            results.map((op) => {
+              const isSelected = op.operator_code === value;
+              return (
+                <div
+                  key={op.operator_code}
+                  onClick={() => handlePick(op)}
+                  className={`flex cursor-pointer justify-between px-2.5 py-1.5 text-xs transition-colors ${
+                    isSelected ? "bg-[#0F1D24]/8" : "hover:bg-[#FDC94D]/15"
+                  }`}
+                >
+                  <span className="font-mono text-[#9B9B9B]">{op.operator_code}</span>
+                  <span className="font-medium text-[#0F1D24]">{op.operator_name}</span>
+                </div>
+              );
+            })}
         </div>
       )}
     </div>

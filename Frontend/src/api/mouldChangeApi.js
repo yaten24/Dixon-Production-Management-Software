@@ -11,3 +11,6 @@ export const deleteMouldChange = (id) =>
 
 export const getMouldChangesByPlan = (planId) =>
   api.get(`/mould-change/plan/${planId}`).then((r) => r.data);
+
+export const getMouldChangeDetail = (id) =>
+  api.get(`/mould-change/${id}/detail`).then((r) => r.data);

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { HiOutlineArrowUturnLeft, HiOutlinePaperAirplane } from "react-icons/hi2";
 import PlanningSetup from "../compenents/productionPlan/PlanningSetup";
 import PlanningStats from "../compenents/productionPlan/PlanningStats";
 import MachinePlanningTable from "../compenents/productionPlan/MachinePlanningTable";
@@ -80,20 +82,25 @@ const DailyProductionPlan = () => {
 
   if (!plan) {
     return (
-      <div className="p-6">
+      <div className="min-h-screen bg-[#F5F5F5] p-6">
         <PlanningSetup onStart={handleStart} loading={loading} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-1 p-1">
-      <div className="bg-white rounded-sm border border-[#E2E4E9] px-3 py-1 flex items-center justify-between">
+    <div className="min-h-screen space-y-1 bg-[#F5F5F5] p-1">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="flex items-center justify-between rounded border border-[#C6C6C6]/50 bg-white px-3 py-2 shadow-sm"
+      >
         <div>
-          <h1 className="text-lg font-bold text-gray-800">
+          <h1 className="text-base font-bold tracking-tight text-[#0F1D24]">
             {plan.header.plan_number}
           </h1>
-          <p className="text-[11px] text-gray-500 mt-0.5 font-mono">
+          <p className="mt-0.5 font-mono text-[11px] text-[#9B9B9B]">
             {plan.header.planning_date} · {plan.header.hall} · Shift{" "}
             {plan.header.shift}
           </p>
@@ -102,22 +109,30 @@ const DailyProductionPlan = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setPlan(null)}
-            className="h-8 px-3 rounded-sm border border-[#E2E4E9] text-xs font-medium text-gray-600 hover:bg-gray-50"
+            className="flex h-8 items-center gap-1.5 rounded border border-[#C6C6C6] px-3 text-xs font-semibold text-[#0F1D24] transition-colors hover:border-[#0F1D24] hover:bg-[#F5F5F5]"
           >
+            <HiOutlineArrowUturnLeft className="h-3.5 w-3.5" />
             Change Selection
           </button>
 
-          {plan.header.status === "Draft" && (
-            <button
-              onClick={handlePublish}
-              disabled={loading}
-              className="h-8 px-3 rounded-sm bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold"
-            >
-              Publish Plan
-            </button>
-          )}
+          <AnimatePresence>
+            {plan.header.status === "Draft" && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handlePublish}
+                disabled={loading}
+                className="flex h-8 items-center gap-1.5 rounded bg-[#0F1D24] px-3 text-xs font-semibold text-[#FDC94D] transition-all hover:bg-[#0F1D24]/90 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <HiOutlinePaperAirplane className="h-3.5 w-3.5" />
+                Publish Plan
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
 
       <PlanningStats header={plan.header} />
       <MachinePlanningTable

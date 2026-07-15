@@ -139,6 +139,21 @@ const linkProductionToMouldChange = async ({
   return match.mould_change_id;
 };
 
+// Single mould change ki poori detail (parts joined) — modal ke fresh-fetch ke liye
+const getMouldChangeDetailById = async (id) => {
+  const [[row]] = await pool.query(
+    `SELECT mc.*,
+            np.part_number AS new_part_number, np.part_name AS new_part_name,
+            op.part_number AS old_part_number, op.part_name AS old_part_name
+     FROM mould_changes mc
+     LEFT JOIN parts np ON np.id = mc.new_part_id
+     LEFT JOIN parts op ON op.id = mc.old_part_id
+     WHERE mc.mould_change_id = ?`,
+    [id],
+  );
+  return row || null;
+};
+
 module.exports = {
   createMouldChange,
   getMouldChangeById,
@@ -146,4 +161,5 @@ module.exports = {
   deleteMouldChange,
   getMouldChangesByPlan,
   linkProductionToMouldChange,
+  getMouldChangeDetailById,
 };

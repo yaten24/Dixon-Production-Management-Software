@@ -48,7 +48,7 @@ const PartSearchSelect = ({ value, valueName, onSelect }) => {
     return () => clearTimeout(timer);
   }, [query]);
 
-const handlePick = (part) => {
+  const handlePick = (part) => {
     setQuery(`${part.part_number} - ${part.part_name}`);
     setOpen(false);
     onSelect({
@@ -73,33 +73,38 @@ const handlePick = (part) => {
         }}
         onFocus={() => results.length > 0 && setOpen(true)}
         placeholder="Search part (number/name)..."
-        className="w-full h-8 rounded-sm border border-[#E2E4E9] px-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+        className="w-full h-8 rounded border border-[#C6C6C6]/60 px-2.5 text-xs text-[#0F1D24] placeholder:text-[#9B9B9B] transition-colors focus:outline-none focus:ring-1 focus:ring-[#0F1D24] focus:border-[#0F1D24]"
       />
 
       {open && (
-        <div className="absolute z-20 mt-1 w-full max-h-48 overflow-auto bg-white rounded-sm border border-[#E2E4E9] shadow-md">
+        <div className="absolute z-20 mt-1 w-full max-h-48 overflow-auto rounded border border-[#C6C6C6]/60 bg-white shadow-md">
           {loading && (
-            <div className="px-2.5 py-1.5 text-xs text-gray-400">Searching...</div>
+            <div className="px-2.5 py-1.5 text-xs text-[#9B9B9B]">Searching...</div>
           )}
 
           {!loading && results.length === 0 && (
-            <div className="px-2.5 py-1.5 text-xs text-gray-400">No parts found</div>
+            <div className="px-2.5 py-1.5 text-xs text-[#9B9B9B]">No parts found</div>
           )}
 
           {!loading &&
-            results.map((p) => (
-              <div
-                key={p.id}
-                onClick={() => handlePick(p)}
-                className="px-2.5 py-1.5 text-xs hover:bg-blue-50 cursor-pointer flex justify-between gap-2"
-              >
-                <span className="font-mono text-gray-500">{p.part_number}</span>
-                <span className="text-gray-700 truncate">{p.part_name}</span>
-                <span className="font-mono text-gray-400">
-                  {p.cycle_time ?? p.standard_cycle_time ?? "--"}s
-                </span>
-              </div>
-            ))}
+            results.map((p) => {
+              const isSelected = p.part_number === value;
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => handlePick(p)}
+                  className={`flex cursor-pointer justify-between gap-2 px-2.5 py-1.5 text-xs transition-colors ${
+                    isSelected ? "bg-[#0F1D24]/8" : "hover:bg-[#FDC94D]/15"
+                  }`}
+                >
+                  <span className="font-mono text-[#9B9B9B]">{p.part_number}</span>
+                  <span className="truncate font-medium text-[#0F1D24]">{p.part_name}</span>
+                  <span className="font-mono text-[#9B9B9B]">
+                    {p.cycle_time ?? p.standard_cycle_time ?? "--"}s
+                  </span>
+                </div>
+              );
+            })}
         </div>
       )}
     </div>

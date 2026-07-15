@@ -27,7 +27,7 @@ export const getTimeSlots = (shift) => {
 export const calcTargetQty = (cycleTimeSeconds, availableSeconds = SHIFT_SECONDS) => {
   const ct = Number(cycleTimeSeconds);
   if (!ct || ct <= 0) return 0;
-  return Math.floor(availableSeconds / ct);
+  return Math.floor(3600 / ct);
 };
 
 // Mould change ek slot pe hoti hai to shift khatam hone tak jitna time bacha hai

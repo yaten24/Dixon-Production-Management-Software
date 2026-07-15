@@ -81,3 +81,16 @@ exports.getByPlan = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch mould changes" });
   }
 };
+
+exports.getMouldChangeDetail = async (req, res) => {
+  try {
+    const mc = await model.getMouldChangeDetailById(req.params.id);
+    if (!mc) {
+      return res.status(404).json({ message: "Mould change not found" });
+    }
+    res.json({ mould_change: mc });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to fetch mould change detail" });
+  }
+};
