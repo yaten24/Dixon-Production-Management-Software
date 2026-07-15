@@ -445,8 +445,8 @@ const ProductionForm = ({
                     {op.operator_name}
                   </div>
                   <div className="text-[10px] text-slate-400 mt-0.5">
-                    Code: {op.operator_code} &middot; Shift: {op.shift}{" "}
-                    &middot; Hall: {op.hall}
+                    Code: {op.operator_code} &middot; Shift: {op.shift} &middot;
+                    Hall: {op.hall}
                   </div>
                 </div>
               ))}
@@ -509,7 +509,10 @@ const ProductionForm = ({
                       <select
                         value={newOperator.shift}
                         onChange={(e) =>
-                          setNewOperator((p) => ({ ...p, shift: e.target.value }))
+                          setNewOperator((p) => ({
+                            ...p,
+                            shift: e.target.value,
+                          }))
                         }
                         className={inputClass}
                       >
@@ -522,7 +525,10 @@ const ProductionForm = ({
                       <select
                         value={newOperator.hall}
                         onChange={(e) =>
-                          setNewOperator((p) => ({ ...p, hall: e.target.value }))
+                          setNewOperator((p) => ({
+                            ...p,
+                            hall: e.target.value,
+                          }))
                         }
                         className={inputClass}
                       >

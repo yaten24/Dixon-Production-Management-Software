@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   FaCalendarAlt,
@@ -7,7 +7,90 @@ import {
   FaLayerGroup,
   FaArrowRight,
   FaCheckCircle,
+  FaCheck,
+  FaChevronDown,
 } from "react-icons/fa";
+
+const HALL_OPTIONS = [
+  { code: "", label: "Select Hall" },
+  { code: "Hall 1", label: "Hall 1" },
+  { code: "Hall 2", label: "Hall 2" },
+  { code: "Hall 3", label: "Hall 3" },
+  { code: "Hall 4", label: "Hall 4" },
+  { code: "C 8", label: "C8" },
+];
+
+const SHIFT_OPTIONS = [
+  { code: "", label: "Select Shift" },
+  { code: "A", label: "Shift A" },
+  { code: "B", label: "Shift B" },
+];
+
+// ==========================================================
+// Local themed dropdown — navy/gold brand palette, replaces
+// native <select>. Defined right here so this file has no
+// external dependency on a shared component.
+// ==========================================================
+const ThemedDropdown = ({ value, options, onChange, ariaLabel, placeholder = "Select" }) => {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const selected = options.find((o) => o.code === value);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        onClick={() => setOpen((o) => !o)}
+        className={`flex h-9 w-full items-center gap-1.5 rounded border bg-white px-2.5 text-xs font-medium text-[#0F1D24] outline-none transition-all ${
+          open ? "border-[#0F1D24] ring-1 ring-[#0F1D24]" : "border-[#C6C6C6] hover:border-[#0F1D24]"
+        }`}
+      >
+        <span className="min-w-0 flex-1 truncate text-left">
+          {selected ? selected.label : placeholder}
+        </span>
+        <FaChevronDown
+          className={`shrink-0 text-[9px] text-[#9B9B9B] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1 max-h-56 w-full overflow-y-auto rounded border border-[#C6C6C6]/70 bg-white py-1 shadow-lg">
+          {options.map((o) => {
+            const isSelected = o.code === value;
+            return (
+              <button
+                key={o.code || "empty"}
+                type="button"
+                onClick={() => {
+                  onChange(o.code);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-xs transition-colors ${
+                  isSelected
+                    ? "bg-[#0F1D24]/8 font-semibold text-[#0F1D24]"
+                    : "text-[#0F1D24]/80 hover:bg-[#F5F5F5]"
+                }`}
+              >
+                <span className="min-w-0 truncate">{o.label}</span>
+                {isSelected && <FaCheck className="shrink-0 text-[9px] text-[#FDC94D]" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ProductionSetup = ({
   formData,
@@ -18,22 +101,6 @@ const ProductionSetup = ({
   shiftBTimes,
   setSetupComplete,
 }) => {
-  const inputClass = `
-    w-full
-    h-9
-    px-2.5
-    text-xs
-    bg-white
-    border
-    border-slate-300
-    rounded
-    outline-none
-    focus:border-blue-500
-    focus:ring-1
-    focus:ring-blue-500
-    transition-all
-  `;
-
   const isComplete =
     formData.date && formData.hall && formData.shift && formData.timeSlot;
 
@@ -100,30 +167,48 @@ const ProductionSetup = ({
     { key: "thisWeek", label: "This Week" },
   ];
 
+  const timeSlotOptions = [
+    { code: "", label: "Select Time Slot" },
+    ...(formData.shift === "A" ? shiftATimes : shiftBTimes).map((t) => ({
+      code: t,
+      label: t,
+    })),
+  ];
+
+  const summaryItems = [
+    { label: "Hall", value: formData.hall },
+    { label: "Shift", value: formData.shift },
+    { label: "Time Slot", value: formData.timeSlot },
+    { label: "Date", value: formData.date },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="max-w-4xl mx-auto rounded border border-slate-200 bg-white shadow-sm overflow-hidden"
+      className="mx-auto max-w-4xl overflow-hidden rounded border border-[#C6C6C6]/50 bg-white shadow-sm"
     >
       {/* HEADER */}
-      <div className="border-b border-slate-100 bg-gradient-to-r from-blue-50/60 to-white p-2">
-        <h2 className="text-sm font-bold text-slate-800">
-          Production Setup
-        </h2>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Configure production details before starting entry.
-        </p>
+      <div className="flex items-center gap-2 border-b border-[#C6C6C6]/50 bg-gradient-to-r from-[#0F1D24]/5 via-white to-[#F5F5F5] px-3 py-2.5">
+        <span className="h-1.5 w-1.5 rounded bg-[#FDC94D]" />
+        <div>
+          <h2 className="text-sm font-bold tracking-tight text-[#0F1D24]">
+            Production Setup
+          </h2>
+          <p className="mt-0.5 text-xs text-[#9B9B9B]">
+            Configure production details before starting entry.
+          </p>
+        </div>
       </div>
 
       {/* FORM */}
       <div className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
           {/* DATE */}
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 mb-1.5">
-              <FaCalendarAlt className="text-blue-600 text-[11px]" />
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-[#0F1D24]">
+              <FaCalendarAlt className="text-[11px] text-[#0F1D24]" />
               Production Date
             </label>
             <input
@@ -131,20 +216,20 @@ const ProductionSetup = ({
               name="date"
               value={formData.date}
               onChange={handleChange}
-              className={inputClass}
+              className="h-9 w-full rounded border border-[#C6C6C6] px-2.5 text-xs font-medium text-[#0F1D24] outline-none transition-all focus:border-[#0F1D24] focus:ring-1 focus:ring-[#0F1D24]"
             />
 
             {/* PRESET BUTTONS */}
-            <div className="flex gap-1 mt-1.5">
+            <div className="mt-1.5 flex gap-1">
               {presets.map((preset) => (
                 <button
                   key={preset.key}
                   type="button"
                   onClick={() => applyPreset(preset.key)}
-                  className={`flex-1 h-6 rounded text-[10px] font-medium transition-colors ${
+                  className={`h-6 flex-1 rounded text-[10px] font-semibold transition-colors ${
                     isPresetActive(preset.key)
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      ? "bg-[#0F1D24] text-[#FDC94D]"
+                      : "bg-[#F5F5F5] text-[#9B9B9B] hover:bg-[#C6C6C6]/40"
                   }`}
                 >
                   {preset.label}
@@ -155,127 +240,85 @@ const ProductionSetup = ({
 
           {/* HALL */}
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 mb-1.5">
-              <FaIndustry className="text-blue-600 text-[11px]" />
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-[#0F1D24]">
+              <FaIndustry className="text-[11px] text-[#0F1D24]" />
               Hall
             </label>
-            <select
-              name="hall"
+            <ThemedDropdown
+              ariaLabel="Select hall"
               value={formData.hall}
-              onChange={handleHallChange}
-              className={inputClass}
-            >
-              <option value="">Select Hall</option>
-              <option value="Hall 1">Hall 1</option>
-              <option value="Hall 2">Hall 2</option>
-              <option value="Hall 3">Hall 3</option>
-              <option value="Hall 4">Hall 4</option>
-              <option value="C 8">C8</option>
-            </select>
+              options={HALL_OPTIONS}
+              onChange={(code) => handleHallChange({ target: { name: "hall", value: code } })}
+              placeholder="Select Hall"
+            />
           </div>
 
           {/* SHIFT */}
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 mb-1.5">
-              <FaLayerGroup className="text-blue-600 text-[11px]" />
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-[#0F1D24]">
+              <FaLayerGroup className="text-[11px] text-[#0F1D24]" />
               Shift
             </label>
-            <select
-              name="shift"
+            <ThemedDropdown
+              ariaLabel="Select shift"
               value={formData.shift}
-              onChange={handleShiftChange}
-              className={inputClass}
-            >
-              <option value="">Select Shift</option>
-              <option value="A">Shift A</option>
-              <option value="B">Shift B</option>
-            </select>
+              options={SHIFT_OPTIONS}
+              onChange={(code) => handleShiftChange({ target: { name: "shift", value: code } })}
+              placeholder="Select Shift"
+            />
           </div>
 
           {/* TIME SLOT */}
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 mb-1.5">
-              <FaClock className="text-blue-600 text-[11px]" />
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-[#0F1D24]">
+              <FaClock className="text-[11px] text-[#0F1D24]" />
               Time Slot
             </label>
-            <select
-              name="timeSlot"
+            <ThemedDropdown
+              ariaLabel="Select time slot"
               value={formData.timeSlot}
-              onChange={handleChange}
-              className={inputClass}
-            >
-              <option value="">Select Time Slot</option>
-              {(formData.shift === "A" ? shiftATimes : shiftBTimes).map(
-                (time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                )
-              )}
-            </select>
+              options={timeSlotOptions}
+              onChange={(code) => handleChange({ target: { name: "timeSlot", value: code } })}
+              placeholder="Select Time Slot"
+            />
           </div>
         </div>
 
         {/* SUMMARY */}
-        <div className="mt-4 rounded border border-slate-200 overflow-hidden">
-          <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-2 border-b border-slate-200">
+        <div className="mt-4 overflow-hidden rounded border border-[#C6C6C6]/50">
+          <div className="flex items-center gap-1.5 border-b border-[#C6C6C6]/50 bg-[#F5F5F5] px-3 py-2">
             <FaCheckCircle
-              className={`text-[11px] ${
-                isComplete ? "text-emerald-500" : "text-slate-300"
+              className={`text-[11px] transition-colors ${
+                isComplete ? "text-emerald-500" : "text-[#C6C6C6]"
               }`}
             />
-            <h3 className="text-xs font-semibold text-slate-700">
+            <h3 className="text-xs font-semibold text-[#0F1D24]">
               Selected Configuration
             </h3>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-slate-100">
-            <div className="p-3">
-              <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                Hall
-              </p>
-              <p className="text-xs font-semibold text-slate-800 mt-0.5">
-                {formData.hall || "-"}
-              </p>
-            </div>
-
-            <div className="p-3">
-              <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                Shift
-              </p>
-              <p className="text-xs font-semibold text-slate-800 mt-0.5">
-                {formData.shift || "-"}
-              </p>
-            </div>
-
-            <div className="p-3">
-              <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                Time Slot
-              </p>
-              <p className="text-xs font-semibold text-slate-800 mt-0.5">
-                {formData.timeSlot || "-"}
-              </p>
-            </div>
-
-            <div className="p-3">
-              <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                Date
-              </p>
-              <p className="text-xs font-semibold text-slate-800 mt-0.5">
-                {formData.date || "-"}
-              </p>
-            </div>
+          <div className="grid grid-cols-2 divide-x divide-y divide-[#C6C6C6]/40 md:grid-cols-4 md:divide-y-0">
+            {summaryItems.map((item) => (
+              <div key={item.label} className="p-3">
+                <p className="text-[10px] uppercase tracking-wide text-[#9B9B9B]">
+                  {item.label}
+                </p>
+                <p className="mt-0.5 text-xs font-semibold text-[#0F1D24]">
+                  {item.value || "-"}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* ACTION */}
-        <div className="flex justify-end mt-4">
+        <div className="mt-4 flex justify-end">
           <motion.button
             onClick={() => setSetupComplete(true)}
             disabled={!isComplete}
             whileHover={isComplete ? { scale: 1.02 } : {}}
             whileTap={isComplete ? { scale: 0.97 } : {}}
-            className="h-9 px-4 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
+            className="flex h-9 items-center gap-1.5 rounded bg-[#0F1D24] px-4 text-xs font-semibold text-[#FDC94D] shadow-sm transition-colors hover:bg-[#0F1D24]/90 disabled:cursor-not-allowed disabled:bg-[#C6C6C6] disabled:text-white"
           >
             Continue
             <FaArrowRight className="text-[11px]" />
