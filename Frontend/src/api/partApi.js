@@ -40,6 +40,11 @@ export const addPart = (payload) =>
 export const updatePart = (id, payload) =>
   api.put(`/parts/${id}`, payload).then((res) => res.data);
 
+export const updateActualCycleTime = (id, actual_cycle_time) =>
+  api
+    .put(`/parts/${id}/actual-cycle-time`, { actual_cycle_time })
+    .then((res) => res.data);
+
 export const deletePart = (id) =>
   api.delete(`/parts/${id}`).then((res) => res.data);
 

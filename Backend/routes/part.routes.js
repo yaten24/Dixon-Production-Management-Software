@@ -11,6 +11,7 @@ const {
   deletePart,
   searchParts,
   getFilterOptions,
+  updateActualCycleTime,
 } = require("../controllers/part.controller");
 const authMiddleware = require("../middlewares/authMiddleware");
 
@@ -29,6 +30,7 @@ router.post("/quick-add", quickAddPart);
 
 router.get("/:id", getPartById);
 router.put("/:id", updatePart);
+router.put("/:id/actual-cycle-time", updateActualCycleTime);
 router.delete("/:id", deletePart);
 
 module.exports = router;

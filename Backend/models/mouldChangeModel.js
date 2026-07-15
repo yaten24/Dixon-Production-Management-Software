@@ -1,5 +1,18 @@
 const pool = require("../config/db");
 
+// MySQL DATE column ke liye hamesha "YYYY-MM-DD" — safety net agar frontend
+// se kabhi Date object / ISO datetime string aa jaye.
+const toDateOnly = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) {
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, "0");
+    const d = String(value.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  return String(value).split("T")[0];
+};
+
 const createMouldChange = async ({
   change_type = "Planned",
   plan_id = null,
@@ -9,7 +22,10 @@ const createMouldChange = async ({
   new_part_id = null,
   planned_date = null,
   planned_shift = null,
-  scheduled_time = null,
+  time_slot = null,
+  standard_cycle_time = null,
+  actual_cycle_time = null,
+  target_qty = null,
   reason = null,
   remarks = null,
   created_by,
@@ -17,8 +33,9 @@ const createMouldChange = async ({
   const [result] = await pool.query(
     `INSERT INTO mould_changes
       (change_type, plan_id, detail_id, machine_code, old_part_id, new_part_id,
-       planned_date, planned_shift, scheduled_time, reason, remarks, status, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Planned', ?)`,
+       planned_date, planned_shift, time_slot, standard_cycle_time, actual_cycle_time,
+       target_qty, reason, remarks, status, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Planned', ?)`,
     [
       change_type,
       plan_id,
@@ -26,9 +43,12 @@ const createMouldChange = async ({
       machine_code,
       old_part_id,
       new_part_id,
-      planned_date,
+      toDateOnly(planned_date),
       planned_shift,
-      scheduled_time,
+      time_slot,
+      standard_cycle_time,
+      actual_cycle_time,
+      target_qty,
       reason,
       remarks,
       created_by,
@@ -47,17 +67,20 @@ const getMouldChangeById = async (id) => {
 
 const updateMouldChange = async (
   id,
-  { new_part_id, scheduled_time, reason, remarks, status },
+  { new_part_id, time_slot, standard_cycle_time, actual_cycle_time, target_qty, reason, remarks, status },
 ) => {
   await pool.query(
     `UPDATE mould_changes SET
         new_part_id = COALESCE(?, new_part_id),
-        scheduled_time = COALESCE(?, scheduled_time),
+        time_slot = COALESCE(?, time_slot),
+        standard_cycle_time = COALESCE(?, standard_cycle_time),
+        actual_cycle_time = COALESCE(?, actual_cycle_time),
+        target_qty = COALESCE(?, target_qty),
         reason = COALESCE(?, reason),
         remarks = COALESCE(?, remarks),
         status = COALESCE(?, status)
      WHERE mould_change_id = ?`,
-    [new_part_id, scheduled_time, reason, remarks, status, id],
+    [new_part_id, time_slot, standard_cycle_time, actual_cycle_time, target_qty, reason, remarks, status, id],
   );
 };
 
@@ -74,16 +97,12 @@ const getMouldChangesByPlan = async (planId) => {
      LEFT JOIN parts np ON np.id = mc.new_part_id
      LEFT JOIN parts op ON op.id = mc.old_part_id
      WHERE mc.plan_id = ?
-     ORDER BY mc.scheduled_time`,
+     ORDER BY mc.mould_change_id`,
     [planId],
   );
   return rows;
 };
 
-// 🔑 CORE LINKING LOGIC — production entry save flow se yeh call hoga.
-// Jab operator ek machine pe production entry save karta hai jisme part change
-// hua ho, yeh function us machine/date/shift ke liye pending "Planned" mould
-// change dhoondh ke production_id attach kar deta hai aur status Completed kar deta hai.
 const linkProductionToMouldChange = async ({
   machine_code,
   planning_date,
@@ -101,7 +120,7 @@ const linkProductionToMouldChange = async ({
        AND (new_part_id = ? OR new_part_id IS NULL)
      ORDER BY mould_change_id DESC
      LIMIT 1`,
-    [machine_code, planning_date, shift, new_part_id],
+    [machine_code, toDateOnly(planning_date), shift, new_part_id],
   );
 
   if (!match) return null;

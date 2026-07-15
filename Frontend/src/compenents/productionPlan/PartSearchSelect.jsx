@@ -48,12 +48,13 @@ const PartSearchSelect = ({ value, valueName, onSelect }) => {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const handlePick = (part) => {
+const handlePick = (part) => {
     setQuery(`${part.part_number} - ${part.part_name}`);
     setOpen(false);
     onSelect({
       id: part.id,
       cycle_time: part.cycle_time ?? part.standard_cycle_time ?? "",
+      actual_cycle_time: part.actual_cycle_time ?? "",
       part_number: part.part_number,
       part_name: part.part_name,
     });

@@ -69,7 +69,7 @@ const getPlanById = async (planId) => {
 
   if (!header) return null;
 
-  const [details] = await pool.query(
+const [details] = await pool.query(
     `SELECT
         d.detail_id, d.plan_id, d.machine_code,
         m.machine_name,
@@ -78,6 +78,7 @@ const getPlanById = async (planId) => {
         d.part_id,
         p.part_number, p.part_name,
         p.standard_cycle_time AS cycle_time,
+        p.actual_cycle_time AS actual_cycle_time,
         d.target_qty, d.priority, d.machine_status, d.remarks
      FROM production_plan_details d
      JOIN machines m ON m.machine_code = d.machine_code

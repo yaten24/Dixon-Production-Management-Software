@@ -268,6 +268,48 @@ exports.updatePart = async (req, res) => {
   }
 };
 
+// NEW: standalone actual-cycle-time update — used by the editable "Actual CT"
+// field in the Production Planning table / Mould Change modal. Runs as a
+// plain pooled query (no open transaction to join), so it calls
+// Part.updateActualCycleTime1, NOT the transactional
+// Part.updateActualCycleTime used inside production-entry saves.
+exports.updateActualCycleTime = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { actual_cycle_time } = req.body;
+
+    const ct = Number(actual_cycle_time);
+
+    if (!Number.isFinite(ct) || ct <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid actual_cycle_time is required.",
+      });
+    }
+
+    const part = await Part.findById(id);
+    if (!part) {
+      return res.status(404).json({
+        success: false,
+        message: "Part Not Found.",
+      });
+    }
+
+    const updated = await Part.updateActualCycleTime1(id, ct);
+
+    res.json({
+      success: true,
+      message: "Actual cycle time updated successfully.",
+      data: updated,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 exports.deletePart = async (req, res) => {
   try {
     const part = await Part.findById(req.params.id);

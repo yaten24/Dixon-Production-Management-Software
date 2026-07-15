@@ -131,8 +131,7 @@ const Part = {
     };
   },
 
-  // Search by BOTH part_name and part_number — already covers this,
-  // kept as-is (verify: increased LIMIT slightly for busier lookups)
+  // Search by BOTH part_name and part_number
   async searchParts(keyword) {
     const [rows] = await db.query(
       `SELECT
@@ -197,27 +196,16 @@ const Part = {
     return result;
   },
 
-  // Called from productionEntryController whenever a production entry (or
-  // mould-change new part) is saved with an actual_cycle_time — keeps the
-  // parts table's actual_cycle_time in sync with what's actually being
-  // observed on the floor, without touching any other column.
+  // Called from productionEntryController inside an OPEN TRANSACTION whenever
+  // a production entry (or mould-change new part) is saved with an
+  // actual_cycle_time — keeps parts.actual_cycle_time in sync with what's
+  // observed on the floor.
   //
-  // FIX: this now REQUIRES the caller's active transaction `connection` as
-  // the first argument, instead of running on a fresh connection pulled
-  // from the pool via `db.execute`.
-  //
-  // Why: production_entries.part_id (and mould_change_entries old/new
-  // part ids) reference parts.id via foreign key. While the caller's
-  // transaction is open (row not yet committed), InnoDB holds a lock on
-  // that parts row for the duration of the transaction. Running this
-  // UPDATE on a *separate* pooled connection meant that second connection
-  // had to wait for a lock held by the first — which itself was paused
-  // awaiting this call to finish before it could commit and release the
-  // lock. That's a self-deadlock, and it surfaces as exactly the error
-  // seen: "Lock wait timeout exceeded; try restarting transaction".
-  // Running it on the SAME connection/transaction avoids the conflict
-  // entirely and also means it correctly rolls back if the transaction
-  // rolls back.
+  // REQUIRES the caller's active transaction `connection` as the first arg
+  // (not a fresh pooled connection) — production_entries.part_id references
+  // parts.id via FK, so while the caller's transaction is open, InnoDB holds
+  // a lock on that parts row. Running this on a separate pooled connection
+  // causes a self-deadlock ("Lock wait timeout exceeded").
   async updateActualCycleTime(connection, id, actualCycleTime) {
     if (!id || actualCycleTime === undefined || actualCycleTime === null) {
       return null;
@@ -235,6 +223,19 @@ const Part = {
   async delete(id) {
     const [result] = await db.execute("DELETE FROM parts WHERE id=?", [id]);
     return result;
+  },
+
+  // Standalone (non-transactional) update — used by the plain
+  // PUT /parts/:id/actual-cycle-time route where there's no open
+  // transaction from a production-entry save to piggyback on.
+  async updateActualCycleTime1(id, actual_cycle_time) {
+    const [result] = await db.query(
+      `UPDATE parts SET actual_cycle_time = ? WHERE id = ?`,
+      [actual_cycle_time, id]
+    );
+    if (result.affectedRows === 0) return null;
+    const [rows] = await db.query(`SELECT * FROM parts WHERE id = ?`, [id]);
+    return rows[0];
   },
 };
 

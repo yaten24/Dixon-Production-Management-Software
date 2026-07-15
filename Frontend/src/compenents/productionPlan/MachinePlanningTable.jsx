@@ -14,7 +14,8 @@ const MachinePlanningTable = ({ header, details, onRowSaved }) => (
             <th className="px-3 py-1 text-left text-[11px] font-medium text-gray-500">Name</th>
             <th className="px-3 py-1 text-left text-[11px] font-medium text-gray-500">Operator</th>
             <th className="px-3 py-1 text-left text-[11px] font-medium text-gray-500">Part</th>
-            <th className="px-3 py-1 text-center text-[11px] font-medium text-gray-500">Cycle Time</th>
+            <th className="px-3 py-1 text-center text-[11px] font-medium text-gray-500">Std CT</th>
+            <th className="px-3 py-1 text-left text-[11px] font-medium text-gray-500">Actual CT</th>
             <th className="px-3 py-1 text-left text-[11px] font-medium text-gray-500">Target Qty</th>
             <th className="px-3 py-1 text-left text-[11px] font-medium text-gray-500">Status</th>
             <th className="px-3 py-1 text-left text-[11px] font-medium text-gray-500">Mould Change</th>

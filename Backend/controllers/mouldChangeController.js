@@ -11,7 +11,10 @@ exports.createMouldChange = async (req, res) => {
       new_part_id,
       planned_date,
       planned_shift,
-      scheduled_time,
+      time_slot,
+      standard_cycle_time,
+      actual_cycle_time,
+      target_qty,
       reason,
       remarks,
     } = req.body;
@@ -29,13 +32,15 @@ exports.createMouldChange = async (req, res) => {
       new_part_id,
       planned_date,
       planned_shift,
-      scheduled_time,
+      time_slot,
+      standard_cycle_time,
+      actual_cycle_time,
+      target_qty,
       reason,
       remarks,
       created_by: req.user.id,
     });
 
-    // updated plan bhej rahe hain taaki frontend table turant refresh ho jaaye
     const plan = plan_id ? await planModel.getPlanById(plan_id) : null;
     res.status(201).json({ mould_change_id: id, plan });
   } catch (err) {
