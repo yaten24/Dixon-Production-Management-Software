@@ -30,6 +30,22 @@ import dixonLogo from "../../../public/Dixon_Technologies_Logo.png";
 
 const HEADER_HEIGHT = 48;
 
+/* ==========================================================
+                        THEME
+   Brand palette (client's color reference):
+     highlight #0F1D24  (deep navy)   — icons, titles, hover fills
+     gray      #9B9B9B                — secondary text
+     accent    #FDC94D  (warm gold)   — sparing highlight: eyebrow, bar, hover
+     darken    #C6C6C6                — borders, dividers, neutral surfaces
+========================================================== */
+
+const THEME = {
+  highlight: "#0F1D24",
+  gray: "#9B9B9B",
+  accent: "#FDC94D",
+  darken: "#C6C6C6",
+};
+
 const Header = ({
   title = "Dashboard",
   subtitle = "Production Management System",
@@ -126,7 +142,7 @@ const Header = ({
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="fixed top-0 left-0 right-0 z-[999] w-full bg-white border-b border-slate-200 shadow-sm"
+      className="fixed top-0 left-0 right-0 z-[999] w-full bg-white border-b border-[#C6C6C6]/50 shadow-[0_1px_2px_rgba(15,23,42,0.05)]"
     >
       {/* ==========================================================
                           TOP GRADIENT LINE
@@ -138,8 +154,7 @@ const Header = ({
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         style={{
           transformOrigin: "left",
-          background:
-            "linear-gradient(90deg,#2563EB 0%,#4F46E5 45%,#7C3AED 100%)",
+          background: `linear-gradient(90deg, ${THEME.highlight} 0%, ${THEME.darken} 45%, ${THEME.accent} 100%)`,
         }}
         className="h-[2px] w-full"
       />
@@ -148,44 +163,44 @@ const Header = ({
                           HEADER CONTENT
       ========================================================== */}
 
-      <div className="h-[46px] w-full px-3 sm:px-4 lg:px-6 flex items-center justify-between">
+      <div className="h-[46px] w-full px-2 sm:px-2 lg:px-2 flex items-center justify-between">
         {/* =====================================================
                         LEFT SECTION
         ====================================================== */}
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           {/* Mobile Menu */}
 
           {/* <motion.button
             whileTap={{ scale: 0.9 }}
             whileHover={{ scale: 1.05 }}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="lg:hidden w-8 h-8 rounded border border-slate-200 bg-white flex items-center justify-center shadow-sm"
+            className="lg:hidden w-8 h-8 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] flex items-center justify-center"
           >
-            <HiMenuAlt2 className="text-base text-slate-700" />
+            <HiMenuAlt2 className="text-base text-[#0F1D24]" />
           </motion.button> */}
 
-          {/* Logo */}
+          {/* Logo — navy card w/ gold ring, matches the icon-tile
+              treatment used on the quick-access cards */}
 
-          <motion.div
-            whileHover={{ rotate: -5, scale: 1.06 }}
-            transition={{ type: "spring", stiffness: 320, damping: 14 }}
-            className="w-8 h-8 rounded bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden"
-          >
+          <motion.div>
             <img
               src={dixonLogo}
               alt="Dixon"
-              className="w-5.5 h-5.5 object-contain"
+              className="w-30 h-12 object-contain"
             />
           </motion.div>
 
           {/* Title */}
 
-          <div className="flex items-baseline gap-2">
-            <p className="hidden sm:block text-[11px] text-slate-500 leading-none">
+          {/* <div className="flex flex-col justify-center leading-none">
+            <p className="text-[20px] font-bold uppercase tracking-wider text-[#FDC94D]">
+              Dixon PMS
+            </p>
+            <p className="hidden sm:block text-[10px] font-semibold text-[#0F1D24] mt-0.5">
               {subtitle}
             </p>
-          </div>
+          </div> */}
         </div>
 
         {/* =====================================================
@@ -201,16 +216,16 @@ const Header = ({
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.08 }}
-            className="hidden xl:flex items-center gap-2 rounded border border-slate-200 bg-slate-50 px-3 h-8"
+            className="hidden xl:flex items-center gap-2 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] px-3 h-8"
           >
-            <FaCalendarAlt className="text-blue-600 text-[11px]" />
-            <span className="text-[11px] font-medium text-slate-700">
+            <FaCalendarAlt className="text-[#FDC94D] text-[11px]" />
+            <span className="text-[11px] font-medium text-[#0F1D24]">
               {formattedDate}
             </span>
 
-            <span className="h-3 w-px bg-slate-300" />
+            <span className="h-3 w-px bg-[#C6C6C6]" />
 
-            <FaClock className="text-purple-600 text-[11px]" />
+            <FaClock className="text-[#FDC94D] text-[11px]" />
             <AnimatePresence mode="wait">
               <motion.span
                 key={formattedTime}
@@ -218,7 +233,7 @@ const Header = ({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 3 }}
                 transition={{ duration: 0.15 }}
-                className="text-[11px] font-semibold text-slate-700 font-mono tabular-nums"
+                className="text-[11px] font-semibold text-[#0F1D24] font-mono tabular-nums"
               >
                 {formattedTime}
               </motion.span>
@@ -230,10 +245,11 @@ const Header = ({
           ========================== */}
 
           {/* <motion.button
-            whileHover={{ y: -1, boxShadow: "0 4px 14px rgba(37,99,235,0.3)" }}
+            whileHover={{ y: -1, boxShadow: "0 4px 14px rgba(15,29,36,0.25)" }}
             whileTap={{ scale: 0.95 }}
             onClick={goHome}
-            className="hidden sm:flex items-center gap-1.5 rounded bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-2.5 h-8 text-[11px] font-semibold shadow-sm"
+            style={{ background: THEME.highlight, color: THEME.accent }}
+            className="hidden sm:flex items-center gap-1.5 rounded px-2.5 h-8 text-[11px] font-semibold shadow-sm"
           >
             <FaHome size={11} />
             Home
@@ -245,15 +261,15 @@ const Header = ({
 
           <motion.div
             whileHover={{ scale: 1.03 }}
-            className="hidden md:flex items-center gap-2 rounded border border-slate-200 bg-white px-2.5 h-8"
+            className="hidden md:flex items-center gap-2 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] px-2.5 h-8"
           >
-            <FaUserCircle className="text-xl text-slate-400" />
+            <FaUserCircle className="text-xl text-[#9B9B9B]" />
 
             <div>
-              <p className="text-[11px] font-bold text-slate-700 leading-none">
+              <p className="text-[11px] font-bold text-[#0F1D24] leading-none">
                 {user?.name || "—"}
               </p>
-              <p className="text-[9px] text-slate-500 leading-none mt-0.5">
+              <p className="text-[9px] font-semibold text-[#FDC94D] leading-none mt-0.5">
                 {user?.role || ""}
               </p>
             </div>
@@ -264,7 +280,7 @@ const Header = ({
           ========================== */}
 
           <motion.button
-            whileHover={{ y: -1, boxShadow: "0 4px 14px rgba(220,38,38,0.28)" }}
+            whileHover={{ y: -1, boxShadow: "0 4px 14px rgba(220,38,38,0.22)" }}
             whileTap={{ scale: 0.95 }}
             onClick={handleLogout}
             className="flex items-center gap-1.5 rounded border border-red-200 bg-red-50 hover:bg-red-500 hover:text-white transition-colors text-red-600 px-2.5 h-8 text-[11px] font-semibold"
@@ -279,14 +295,14 @@ const Header = ({
 
           <motion.button
             whileTap={{ scale: 0.9 }}
-            className="md:hidden w-8 h-8 rounded border border-slate-200 bg-white shadow-sm flex items-center justify-center"
+            className="md:hidden w-8 h-8 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] shadow-sm flex items-center justify-center"
           >
             {initials ? (
-              <span className="text-[10px] font-bold text-slate-600">
+              <span className="text-[10px] font-bold text-[#0F1D24]">
                 {initials}
               </span>
             ) : (
-              <FaUserCircle className="text-lg text-slate-500" />
+              <FaUserCircle className="text-lg text-[#9B9B9B]" />
             )}
           </motion.button>
         </div>

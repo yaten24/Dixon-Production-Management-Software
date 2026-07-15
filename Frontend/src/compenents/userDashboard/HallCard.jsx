@@ -21,26 +21,26 @@ const HallCard = ({ hall, onClick }) => {
       onClick={handleCardClick}
       className="
         group flex h-full cursor-pointer flex-col
-        rounded border border-slate-200 bg-white
-        p-1 shadow-sm transition-shadow duration-200
-        hover:shadow-md
+        rounded border border-[#C6C6C6]/50 bg-white
+        p-1 shadow-[0_1px_2px_rgba(15,29,36,0.05)] transition-all duration-300
+        hover:-translate-y-0.5 hover:border-transparent hover:shadow-[0_12px_28px_-8px_rgba(15,29,36,0.18)]
       "
     >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-blue-50">
-            <HiOutlineBuildingOffice2 size={15} className="text-blue-600" />
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#0F1D24]">
+            <HiOutlineBuildingOffice2 size={15} className="text-[#FDC94D]" />
           </div>
-          <h3 className="truncate text-sm font-bold text-slate-900">
+          <h3 className="truncate text-sm font-bold text-[#0F1D24]">
             {hall.hall}
           </h3>
         </div>
 
         <span
-          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
+          className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-bold ${
             isRunning
-              ? "bg-green-100 text-green-700"
+              ? "bg-emerald-100 text-emerald-700"
               : "bg-red-100 text-red-700"
           }`}
         >
@@ -49,23 +49,23 @@ const HallCard = ({ hall, onClick }) => {
       </div>
 
       {/* Body */}
-      <div className="mt-2 space-y-1 border-y border-slate-100 py-2">
+      <div className="mt-1 space-y-1 border-y border-[#C6C6C6]/40 py-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <HiOutlineFlag size={13} className="text-slate-400" />
-            <span className="text-[11px] font-medium text-slate-500">Target</span>
+            <HiOutlineFlag size={13} className="text-[#9B9B9B]" />
+            <span className="text-[11px] font-medium text-[#9B9B9B]">Target</span>
           </div>
-          <span className="text-sm font-bold text-slate-900">
+          <span className="text-sm font-bold text-[#0F1D24]">
             {hall.target.toLocaleString()}
           </span>
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <HiOutlineCube size={13} className="text-green-500" />
-            <span className="text-[11px] font-medium text-slate-500">Actual</span>
+            <HiOutlineCube size={13} className="text-emerald-500" />
+            <span className="text-[11px] font-medium text-[#9B9B9B]">Actual</span>
           </div>
-          <span className="text-sm font-bold text-green-600">
+          <span className="text-sm font-bold text-emerald-600">
             {hall.actual.toLocaleString()}
           </span>
         </div>
@@ -73,7 +73,7 @@ const HallCard = ({ hall, onClick }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <HiOutlineExclamationTriangle size={13} className="text-red-500" />
-            <span className="text-[11px] font-medium text-slate-500">Reject</span>
+            <span className="text-[11px] font-medium text-[#9B9B9B]">Reject</span>
           </div>
           <span className="text-sm font-bold text-red-600">
             {hall.rejection}
@@ -82,16 +82,16 @@ const HallCard = ({ hall, onClick }) => {
       </div>
 
       {/* Achievement */}
-      <div className="mt-2">
+      <div className="mt-1">
         <div className="mb-1 flex items-center justify-between">
-          <span className="text-[11px] font-medium text-slate-500">Achievement</span>
-          <span className="text-xs font-bold text-blue-600">
+          <span className="text-[11px] font-medium text-[#9B9B9B]">Achievement</span>
+          <span className="text-xs font-bold text-[#0F1D24]">
             {hall.achievement}
           </span>
         </div>
-        <div className="h-1.5 overflow-hidden rounded bg-slate-200">
+        <div className="h-1.5 overflow-hidden rounded-full bg-[#C6C6C6]/40">
           <div
-            className="h-full rounded bg-blue-600 transition-all"
+            className="h-full rounded bg-[#FDC94D] transition-all"
             style={{ width: hall.achievement }}
           />
         </div>
@@ -102,8 +102,8 @@ const HallCard = ({ hall, onClick }) => {
         onClick={handleButtonClick}
         className="
           mt-2 flex w-full items-center justify-center gap-1
-          rounded bg-blue-600 py-1.5 text-xs font-semibold text-white
-          transition hover:bg-blue-700
+          rounded bg-[#0F1D24] py-1.5 text-xs font-semibold text-[#FDC94D]
+          transition-colors hover:bg-[#0F1D24]/90
         "
       >
         Open Hall

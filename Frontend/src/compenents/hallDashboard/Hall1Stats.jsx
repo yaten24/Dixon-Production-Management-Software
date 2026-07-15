@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   FaBullseye,
   FaIndustry,
@@ -9,8 +9,82 @@ import {
   FaCog,
   FaTachometerAlt,
   FaClock,
+  FaCheck,
+  FaChevronDown,
 } from "react-icons/fa";
-import { RefreshCw, FileSpreadsheet, SlidersHorizontal } from "lucide-react";
+import { RefreshCw, FileSpreadsheet } from "lucide-react";
+
+// ==========================================================
+// ThemedDropdown — replaces native <select> with a fully
+// styled, brand-themed (navy/gold) dropdown. Closes on outside
+// click and on selection. Keeps the same `icon` + label pattern
+// used elsewhere in this bar.
+// ==========================================================
+const ThemedDropdown = ({ icon: Icon, value, options, onChange, ariaLabel }) => {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const selected = options.find((o) => o.code === value);
+
+  return (
+    <div ref={containerRef} className="relative min-w-[150px] flex-1 basis-[120px] md:w-[240px] md:flex-none md:basis-auto">
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        onClick={() => setOpen((o) => !o)}
+        className={`flex h-8 w-full items-center gap-1.5 rounded border bg-white pl-2 pr-2 text-xs font-medium text-[#0F1D24] outline-none transition-all ${
+          open
+            ? "border-[#0F1D24] ring-2 ring-[#0F1D24]/10"
+            : "border-[#C6C6C6] hover:border-[#0F1D24]"
+        }`}
+      >
+        <Icon className="shrink-0 text-[10px] text-[#0F1D24]" />
+        <span className="min-w-0 flex-1 truncate text-left">
+          {selected ? selected.label : "Select"}
+        </span>
+        <FaChevronDown
+          className={`shrink-0 text-[9px] text-[#9B9B9B] transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1 max-h-56 w-full min-w-[180px] overflow-y-auto rounded border border-[#C6C6C6]/70 bg-white py-1 shadow-lg">
+          {options.map((o) => {
+            const isSelected = o.code === value;
+            return (
+              <button
+                key={o.code}
+                type="button"
+                onClick={() => {
+                  onChange(o.code);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-xs transition-colors ${
+                  isSelected
+                    ? "bg-[#0F1D24]/8 font-semibold text-[#0F1D24]"
+                    : "text-[#0F1D24]/80 hover:bg-[#F5F5F5]"
+                }`}
+              >
+                <span className="min-w-0 truncate">{o.label}</span>
+                {isSelected && <FaCheck className="shrink-0 text-[9px] text-[#FDC94D]" style={{ filter: "drop-shadow(0 0 0 #0F1D24)" }} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Hall1Stats = ({
   hallCode,
@@ -27,7 +101,7 @@ const Hall1Stats = ({
   const toDateRef = useRef(null);
 
   const machineOptions = [
-    { code: "All Machines", label: "All Machines" },
+    { code: "All Machines", label: "All Machines Selected" },
     ...machines.map((m) => ({
       code: m.machine_code,
       label: m.machine_name
@@ -54,7 +128,6 @@ const Hall1Stats = ({
   const hasOee = stats?.oee != null;
   const oeeValue = hasOee ? stats.oee.oee : null;
 
-  // BUG FIX: null-safe tiering — pehle "no data" case bhi red border le leta tha
   const oeeTier = !hasOee
     ? "none"
     : oeeValue >= 85
@@ -63,7 +136,7 @@ const Hall1Stats = ({
         ? "warn"
         : "bad";
   const oeeStyles = {
-    none: { text: "text-slate-400", bg: "bg-slate-100", bar: "bg-slate-300" },
+    none: { text: "text-[#9B9B9B]", bg: "bg-[#C6C6C6]/30", bar: "bg-[#C6C6C6]" },
     good: {
       text: "text-emerald-600",
       bg: "bg-emerald-100",
@@ -78,9 +151,9 @@ const Hall1Stats = ({
       title: "Target",
       value: stats ? stats.target.toLocaleString() : "-",
       icon: FaBullseye,
-      bg: "bg-blue-100",
-      text: "text-blue-600",
-      bar: "bg-blue-500",
+      bg: "bg-[#0F1D24]",
+      text: "text-[#FDC94D]",
+      bar: "bg-[#0F1D24]",
     },
     {
       title: "Actual",
@@ -102,9 +175,9 @@ const Hall1Stats = ({
       title: "Achievement",
       value: stats ? stats.achievement : "-",
       icon: FaChartLine,
-      bg: "bg-orange-100",
-      text: "text-orange-600",
-      bar: "bg-orange-500",
+      bg: "bg-[#FDC94D]/25",
+      text: "text-[#0F1D24]",
+      bar: "bg-[#FDC94D]",
     },
     {
       title: "Hall OEE",
@@ -121,33 +194,28 @@ const Hall1Stats = ({
 
   return (
     <div className="space-y-2">
-      {/* ============ Filter / Action bar ============ */}
-      <div className="rounded border border-slate-200 bg-white p-2 shadow-sm">
+      {/* Filter / Action bar */}
+      <div className="rounded border border-[#C6C6C6]/50 bg-white p-1 shadow-sm">
         <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
-          {/* Title */}
-          <div className="flex shrink-0 items-center gap-2 rounded border border-blue-200 bg-gradient-to-r from-blue-50 via-white to-slate-50 px-3 py-1.5">
-            <span className="h-1.5 w-1.5 rounded bg-blue-600" />
-            <h2 className="whitespace-nowrap text-sm font-bold text-slate-800">
+          <div className="flex shrink-0 items-center gap-2 rounded border border-[#0F1D24]/15 bg-gradient-to-r from-[#0F1D24]/5 via-white to-[#F5F5F5] px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded bg-[#FDC94D]" />
+            <h2 className="whitespace-nowrap text-sm font-bold text-[#0F1D24]">
               {hallCode} Dashboard
             </h2>
           </div>
 
-          {/* Filter group */}
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 md:flex-nowrap">
             {/* From Date */}
             <div
               onClick={openFromCalendar}
-              className="relative min-w-[105px] flex-1 basis-[105px] cursor-pointer rounded border border-slate-300 bg-white px-2 py-1.5 transition-all hover:border-blue-500 hover:shadow-sm md:w-[118px] md:flex-none md:basis-auto"
+              className="relative min-w-[105px] flex-1 basis-[105px] cursor-pointer rounded border border-[#C6C6C6] bg-white p-1 transition-all hover:border-[#0F1D24] hover:shadow-sm md:w-[118px] md:flex-none md:basis-auto"
             >
               <div className="flex items-center gap-1.5">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-blue-100">
-                  <FaCalendarAlt className="text-[10px] text-blue-600" />
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#0F1D24]/10">
+                  <FaCalendarAlt className="text-[10px] text-[#0F1D24]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] leading-tight text-slate-500">
-                    From
-                  </p>
-                  <p className="truncate text-xs font-semibold text-slate-700">
+                  <p className="truncate text-xs font-semibold text-[#0F1D24]">
                     {draftFilters.from || "Select"}
                   </p>
                 </div>
@@ -167,15 +235,14 @@ const Hall1Stats = ({
             {/* To Date */}
             <div
               onClick={openToCalendar}
-              className="relative min-w-[105px] flex-1 basis-[105px] cursor-pointer rounded border border-slate-300 bg-white px-2 py-1.5 transition-all hover:border-blue-500 hover:shadow-sm md:w-[118px] md:flex-none md:basis-auto"
+              className="relative min-w-[105px] flex-1 basis-[105px] cursor-pointer rounded border border-[#C6C6C6] bg-white p-1 transition-all hover:border-[#0F1D24] hover:shadow-sm md:w-[118px] md:flex-none md:basis-auto"
             >
-              <div className="flex items-center gap-1.5">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-blue-100">
-                  <FaCalendarAlt className="text-[10px] text-blue-600" />
+              <div className="flex items-center gap-1">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#0F1D24]/10">
+                  <FaCalendarAlt className="text-[10px] text-[#0F1D24]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] leading-tight text-slate-500">To</p>
-                  <p className="truncate text-xs font-semibold text-slate-700">
+                  <p className="truncate text-xs font-semibold text-[#0F1D24]">
                     {draftFilters.to || "Select"}
                   </p>
                 </div>
@@ -192,77 +259,33 @@ const Hall1Stats = ({
               />
             </div>
 
-            {/* Machine */}
-            <div className="relative min-w-[120px] flex-1 basis-[120px] md:w-[150px] md:flex-none md:basis-auto">
-              <FaCog className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-blue-600" />
-              <select
-                aria-label="Filter by machine"
-                value={draftFilters.machine}
-                onChange={(e) =>
-                  setDraftFilters((prev) => ({
-                    ...prev,
-                    machine: e.target.value,
-                  }))
-                }
-                className="h-9 w-full appearance-none rounded-md border border-slate-300 bg-white pl-7 pr-6 text-xs font-medium text-slate-700 outline-none transition-all hover:border-blue-500 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-              >
-                {machineOptions.map((m) => (
-                  <option key={m.code} value={m.code}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-              <svg
-                className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
+            {/* Machine — custom themed dropdown */}
+            <ThemedDropdown
+              icon={FaCog}
+              ariaLabel="Filter by machine"
+              value={draftFilters.machine}
+              options={machineOptions}
+              onChange={(code) =>
+                setDraftFilters((prev) => ({ ...prev, machine: code }))
+              }
+            />
 
-            {/* Shift — FIX: ab consistent icon hai jaise Machine mein */}
-            <div className="relative min-w-[110px] flex-1 basis-[110px] md:w-[135px] md:flex-none md:basis-auto">
-              <FaClock className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-blue-600" />
-              <select
-                aria-label="Filter by shift"
-                value={draftFilters.shift}
-                onChange={(e) =>
-                  setDraftFilters((prev) => ({
-                    ...prev,
-                    shift: e.target.value,
-                  }))
-                }
-                className="h-9 w-full appearance-none rounded border border-slate-300 bg-white pl-7 pr-6 text-xs font-medium text-slate-700 outline-none transition-all hover:border-blue-500 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-              >
-                {shiftOptions.map((s) => (
-                  <option key={s.code} value={s.code}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-              <svg
-                className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-400"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
+            {/* Shift — custom themed dropdown */}
+            <ThemedDropdown
+              icon={FaClock}
+              ariaLabel="Filter by shift"
+              value={draftFilters.shift}
+              options={shiftOptions}
+              onChange={(code) =>
+                setDraftFilters((prev) => ({ ...prev, shift: code }))
+              }
+            />
 
             {/* Apply */}
             <button
               onClick={onApply}
               disabled={loading}
-              className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded bg-blue-600 px-3 text-xs font-semibold text-white transition-all duration-200 hover:bg-blue-700 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-8 shrink-0 items-center justify-center gap-1.5 rounded bg-[#0F1D24] px-3 text-xs font-semibold text-[#FDC94D] transition-all duration-200 hover:bg-[#0F1D24]/90 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <FaFilter className="text-[10px]" />
               <span className="hidden md:inline">
@@ -271,20 +294,19 @@ const Hall1Stats = ({
             </button>
           </div>
 
-          {/* Divider — sirf lg+ pe, sirf tab jab row single-line ho */}
-          <div className="hidden h-8 w-px shrink-0 bg-slate-200 lg:block" />
+          <div className="hidden h-8 w-px shrink-0 bg-[#C6C6C6]/60 lg:block" />
 
           {/* Actions group */}
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1">
             <button
               onClick={onRefresh}
               disabled={loading}
               title="Refresh data"
               aria-label="Refresh data"
-              className="flex h-9 items-center justify-center gap-1.5 rounded border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-600 transition-all duration-200 hover:border-blue-500 hover:text-blue-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-8 items-center justify-center gap-1.5 rounded border border-[#C6C6C6] bg-white p-1 text-xs font-semibold text-[#0F1D24] transition-all duration-200 hover:border-[#0F1D24] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RefreshCw
-                className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+                className={`h-2 w-2 ${loading ? "animate-spin" : ""}`}
               />
               <span className="hidden md:inline">Refresh</span>
             </button>
@@ -294,7 +316,7 @@ const Hall1Stats = ({
               disabled={loading || !stats}
               title="Export to Excel"
               aria-label="Export to Excel"
-              className="flex h-9 items-center justify-center gap-1.5 rounded bg-emerald-600 px-2.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-8 items-center justify-center gap-1.5 rounded bg-emerald-600 px-2.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <FileSpreadsheet className="h-3.5 w-3.5" />
               <span className="hidden md:inline">Export</span>
@@ -303,26 +325,26 @@ const Hall1Stats = ({
         </div>
       </div>
 
-      {/* ============ KPI Cards ============ */}
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-5">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 gap-1 md:grid-cols-3 lg:grid-cols-5">
         {kpiCards.map((item, index) => {
           const Icon = item.icon;
           return (
             <div
               key={index}
               title={item.subtitle || undefined}
-              className="group relative overflow-hidden rounded border border-slate-200 bg-white p-2.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              className="group relative overflow-hidden rounded border border-[#C6C6C6]/50 bg-white p-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-[#9B9B9B]">
                     {item.title}
                   </p>
-                  <h2 className="mt-1 truncate text-lg font-bold leading-tight text-slate-800">
+                  <h2 className="mt-1 truncate text-lg font-bold leading-tight text-[#0F1D24]">
                     {item.value}
                   </h2>
                   {item.subtitle && (
-                    <p className="mt-0.5 truncate text-[9px] text-slate-400">
+                    <p className="mt-0.5 truncate text-[9px] text-[#9B9B9B]">
                       {item.subtitle}
                     </p>
                   )}
@@ -333,10 +355,8 @@ const Hall1Stats = ({
                   <Icon className={`${item.text} text-sm`} />
                 </div>
               </div>
-              {/* BUG FIX: bottom bar ab bg-{color} hai, pehle "border" tha jo hollow/thin
-                  dikhta tha kyunki 4px height ke div par 4-side border laga diya tha */}
               <div
-                className={`absolute inset-x-0 bottom-0 h-[3px] ${item.bar}`}
+                className={`absolute inset-x-0 bottom-0 h-[4px] ${item.bar}`}
               />
             </div>
           );

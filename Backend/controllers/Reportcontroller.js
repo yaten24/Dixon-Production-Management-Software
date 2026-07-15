@@ -1,310 +1,400 @@
 /**
  * reportController.js
  * ---------------------------------------------------------
- * API for the Reports page.
+ * API for the Reports page (ReportsPage.jsx + useProductionReports hook).
  *
- * ASSUMPTIONS (adjust to match your actual project if different):
- *   - You are using mysql2/promise with a shared pool exported from
- *     "../config/db.js" as `module.exports = pool;`
- *   - The pool/connection is configured with `dateStrings: true` so that
- *     DATE columns (entry_date) come back as "YYYY-MM-DD" strings instead
- *     of JS Date objects (avoids timezone shift bugs). If it's NOT
- *     configured that way, the DATE_FORMAT() calls below already protect
- *     you, so it will work either way.
- *   - loss_reasons table mirrors rejection_reasons:
- *       id, reason_code, reason_name, status ENUM('Active','Inactive')
+ * Endpoints implemented here (mounted under /api/reports and /api):
+ *   GET /api/reports/daily            -> getDailyReport
+ *   GET /api/reports/daily-summary    -> getDailySummary
+ *   GET /api/reports/monthly          -> getMonthlyReport
+ *   GET /api/reports/monthly-summary  -> getMonthlySummary
+ *   GET /api/reports/filters          -> getReportFilters
+ *   GET /api/rejection-reasons        -> getRejectionReasonsList
+ *   GET /api/loss-reasons             -> getLossReasonsList
  *
- * Response shape (every endpoint):
- *   { success: true/false, message: "...", data: ... }
- * This matches the pattern already used by getAllProductionEntries()
- * on the frontend (res.success / res.data / res.message).
+ * ASSUMPTIONS (adjust to match your actual schema if different):
+ *   - mysql2/promise pool exported from "../config/db.js" as `module.exports = pool;`
+ *   - production_entries columns: id, production_id, entry_date, hall, shift,
+ *     time_slot, machine_id, operator_id, part_id, target_qty, actual_qty,
+ *     good_qty, reject_qty, loss_minutes, efficiency
+ *   - machines: id, machine_code, machine_name
+ *   - operators: id, operator_name
+ *   - parts: id, part_name, part_number
+ *   - production_reject_details: production_entry_id, reject_reason_id, reject_qty
+ *   - rejection_reasons: id, reason_code, reason_name, status
+ *   - production_loss_times: production_entry_id, loss_reason_id, loss_minutes
+ *   - loss_reasons: id, reason_code, reason_name, status
+ *
+ * Response shape (every endpoint): { success, message, data }
+ * The frontend hook does `setData(res.data)` on the axios response, i.e. it
+ * stores the WHOLE body ({ success, message, data }). ReportsPage then reads
+ * `data.entries`, `data.totals`, etc. — so `data` in ReportsPage.jsx actually
+ * refers to `data.data` from the API. To avoid an extra nesting bug, every
+ * function below returns the report payload directly under `data`, matching
+ * exactly the field names ReportsPage.jsx destructures.
  * ---------------------------------------------------------
  */
 
 const pool = require("../config/db");
 
 // ----------------------------------------------------------------
-// Helpers
+// Shared filter builders
 // ----------------------------------------------------------------
 
 /**
- * Builds the shared WHERE clause + params for filtering production_entries (alias "e").
- * Every report sub-query (summary, hall breakdown, rejection breakdown,
- * loss breakdown, mould-change stats, entries list) reuses this so the
- * numbers stay consistent across the whole page.
+ * Daily-scoped filter (used by /daily and /daily-summary).
+ * query: { date, hall, shift, machine }
+ *   - date: "YYYY-MM-DD" (required, but we default defensively)
+ *   - hall: hall code, or "" / undefined for all halls
+ *   - shift: "A" | "B", or "" / undefined for all shifts
+ *   - machine: machine_code, or "" / undefined for all machines
  */
-const buildBaseFilter = (query) => {
-  const {
-    fromDate,
-    toDate,
-    hall, // "All" | "Hall-1" | "Hall-1,Hall-2"
-    shift, // "All" | "A" | "B"
-    machineId,
-    operatorId,
-    partId,
-  } = query;
+const buildDailyFilter = (query) => {
+  const { date, hall, shift, machine } = query;
 
   const conditions = [];
   const params = [];
 
-  // ---- Date range filter ----
-  // entry_date is a DATE column, but we defensively format it anyway in
-  // case the driver ever returns a datetime/ISO value.
-  if (fromDate) {
-    conditions.push("DATE(e.entry_date) >= ?");
-    params.push(fromDate);
+  if (date) {
+    conditions.push("DATE(e.entry_date) = ?");
+    params.push(date);
   }
-  if (toDate) {
-    conditions.push("DATE(e.entry_date) <= ?");
-    params.push(toDate);
+  if (hall) {
+    conditions.push("e.hall = ?");
+    params.push(hall);
   }
-
-  // ---- Hall filter (supports comma-separated multi-hall) ----
-  if (hall && hall !== "All") {
-    const halls = String(hall)
-      .split(",")
-      .map((h) => h.trim())
-      .filter(Boolean);
-    if (halls.length) {
-      conditions.push(`e.hall IN (${halls.map(() => "?").join(",")})`);
-      params.push(...halls);
-    }
-  }
-
-  // ---- Shift filter ----
-  if (shift && shift !== "All") {
+  if (shift) {
     conditions.push("e.shift = ?");
     params.push(shift);
   }
-
-  // ---- Machine / Operator / Part filters ----
-  if (machineId) {
-    conditions.push("e.machine_id = ?");
-    params.push(machineId);
-  }
-  if (operatorId) {
-    conditions.push("e.operator_id = ?");
-    params.push(operatorId);
-  }
-  if (partId) {
-    conditions.push("e.part_id = ?");
-    params.push(partId);
-  }
-
-  // ---- Rejection reason filter (only entries that recorded this reason) ----
-  if (query.rejectReasonId) {
-    conditions.push(
-      `EXISTS (
-         SELECT 1 FROM production_reject_details prd
-         WHERE prd.production_entry_id = e.id
-           AND prd.reject_reason_id = ?
-       )`,
-    );
-    params.push(query.rejectReasonId);
-  }
-
-  // ---- Loss reason filter (only entries that recorded this loss reason) ----
-  if (query.lossReasonId) {
-    conditions.push(
-      `EXISTS (
-         SELECT 1 FROM production_loss_times plt
-         WHERE plt.production_entry_id = e.id
-           AND plt.loss_reason_id = ?
-       )`,
-    );
-    params.push(query.lossReasonId);
-  }
-
-  // ---- Mould change filter ----
-  // mouldChange = "yes" -> only entries that had a mould change
-  // mouldChange = "no"  -> only entries with NO mould change
-  if (query.mouldChange === "yes") {
-    conditions.push(
-      `EXISTS (SELECT 1 FROM mould_change_entries mce WHERE mce.production_entry_id = e.id)`,
-    );
-  } else if (query.mouldChange === "no") {
-    conditions.push(
-      `NOT EXISTS (SELECT 1 FROM mould_change_entries mce WHERE mce.production_entry_id = e.id)`,
-    );
+  if (machine) {
+    conditions.push("m.machine_code = ?");
+    params.push(machine);
   }
 
   const whereSql = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   return { whereSql, params };
 };
 
+/**
+ * Monthly-scoped filter (used by /monthly and /monthly-summary).
+ * query: { month, year, hall }
+ */
+const buildMonthlyFilter = (query) => {
+  const { month, year, hall } = query;
+
+  const conditions = [];
+  const params = [];
+
+  if (year) {
+    conditions.push("YEAR(e.entry_date) = ?");
+    params.push(year);
+  }
+  if (month) {
+    conditions.push("MONTH(e.entry_date) = ?");
+    params.push(month);
+  }
+  if (hall) {
+    conditions.push("e.hall = ?");
+    params.push(hall);
+  }
+
+  const whereSql = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  return { whereSql, params };
+};
+
+/** Achievement % = actual / target * 100, safe against divide-by-zero. */
+const pct = (numerator, denominator) =>
+  denominator > 0 ? Math.round((numerator / denominator) * 1000) / 10 : 0;
+
 // ----------------------------------------------------------------
-// GET /api/reports/production
+// GET /api/reports/daily
 // ----------------------------------------------------------------
-const getProductionReport = async (req, res) => {
+const getDailyReport = async (req, res) => {
   try {
-    const { whereSql, params } = buildBaseFilter(req.query);
+    const { whereSql, params } = buildDailyFilter(req.query);
 
-    // Optional pagination for the raw entries table (defaults: all rows)
-    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const limit = req.query.limit
-      ? Math.max(parseInt(req.query.limit, 10), 1)
-      : null;
-    const offset = (page - 1) * (limit || 0);
-
-    // ---------------- 1) Entries (joined for display names) ----------------
-    let entriesSql = `
+    const [entries] = await pool.query(
+      `
       SELECT
         e.id, e.production_id, e.entry_date, e.hall, e.shift, e.time_slot,
-        e.machine_id, m.machine_name, m.machine_code,
+        e.machine_id, m.machine_code, m.machine_name,
         e.operator_id, o.operator_name,
         e.part_id, p.part_name, p.part_number,
-        e.standard_cycle_time, e.actual_cycle_time,
         e.target_qty, e.actual_qty, e.good_qty, e.reject_qty,
-        e.loss_minutes, e.efficiency, e.remarks
+        e.loss_minutes, e.efficiency
       FROM production_entries e
       JOIN machines m ON m.id = e.machine_id
       JOIN operators o ON o.id = e.operator_id
       JOIN parts p ON p.id = e.part_id
       ${whereSql}
-      ORDER BY e.entry_date DESC, e.hall ASC, e.shift ASC, e.time_slot ASC
-    `;
-    const entriesParams = [...params];
-    if (limit) {
-      entriesSql += " LIMIT ? OFFSET ?";
-      entriesParams.push(limit, offset);
-    }
-    const [entries] = await pool.query(entriesSql, entriesParams);
-
-    // ---------------- 2) Summary stats ----------------
-    const [[summaryRow]] = await pool.query(
-      `
-      SELECT
-        COUNT(*) AS totalMachines,
-        COUNT(DISTINCT e.machine_id) AS distinctMachines,
-        COALESCE(SUM(e.target_qty), 0) AS totalTarget,
-        COALESCE(SUM(e.actual_qty), 0) AS totalActual,
-        COALESCE(SUM(e.good_qty), 0) AS totalGood,
-        COALESCE(SUM(e.reject_qty), 0) AS totalReject,
-        COALESCE(SUM(e.loss_minutes), 0) AS totalLossMinutes,
-        ROUND(COALESCE(AVG(e.efficiency), 0), 1) AS avgEfficiency
-      FROM production_entries e
-      ${whereSql}
+      ORDER BY e.hall ASC, e.shift ASC, e.time_slot ASC
       `,
-      params,
-    );
-
-    // ---------------- 3) Hall-wise breakdown ----------------
-    const [hallBreakdown] = await pool.query(
-      `
-      SELECT
-        e.hall AS hallName,
-        COALESCE(SUM(e.actual_qty), 0) AS actual,
-        COALESCE(SUM(e.target_qty), 0) AS target,
-        COALESCE(SUM(e.reject_qty), 0) AS reject
-      FROM production_entries e
-      ${whereSql}
-      GROUP BY e.hall
-      ORDER BY actual DESC
-      `,
-      params,
-    );
-
-    // ---------------- 4) Rejection reason-wise breakdown ----------------
-    const rejectWhere = whereSql
-      ? whereSql.replace(/\be\./g, "e.") // clause already aliases e.*, reused as-is
-      : "";
-    const [rejectionBreakdown] = await pool.query(
-      `
-      SELECT
-        rr.id AS reasonId,
-        rr.reason_code AS reasonCode,
-        rr.reason_name AS reasonName,
-        COALESCE(SUM(prd.reject_qty), 0) AS totalQty,
-        COUNT(DISTINCT prd.production_entry_id) AS entriesCount
-      FROM production_reject_details prd
-      JOIN rejection_reasons rr ON rr.id = prd.reject_reason_id
-      JOIN production_entries e ON e.id = prd.production_entry_id
-      ${rejectWhere}
-      GROUP BY rr.id, rr.reason_code, rr.reason_name
-      ORDER BY totalQty DESC
-      `,
-      params,
-    );
-
-    // ---------------- 5) Loss reason-wise breakdown ----------------
-    const [lossBreakdown] = await pool.query(
-      `
-      SELECT
-        lr.id AS reasonId,
-        lr.reason_code AS reasonCode,
-        lr.reason_name AS reasonName,
-        COALESCE(SUM(plt.loss_minutes), 0) AS totalMinutes,
-        COUNT(DISTINCT plt.production_entry_id) AS entriesCount
-      FROM production_loss_times plt
-      JOIN loss_reasons lr ON lr.id = plt.loss_reason_id
-      JOIN production_entries e ON e.id = plt.production_entry_id
-      ${rejectWhere}
-      GROUP BY lr.id, lr.reason_code, lr.reason_name
-      ORDER BY totalMinutes DESC
-      `,
-      params,
-    );
-
-    // ---------------- 6) Mould change stats ----------------
-    const [[mouldChangeRow]] = await pool.query(
-      `
-      SELECT
-        COUNT(*) AS totalChanges,
-        COALESCE(SUM(mce.duration_minutes), 0) AS totalDurationMinutes,
-        ROUND(COALESCE(AVG(mce.duration_minutes), 0), 1) AS avgDurationMinutes
-      FROM mould_change_entries mce
-      JOIN production_entries e ON e.id = mce.production_entry_id
-      ${rejectWhere}
-      `,
-      params,
-    );
-
-    // ---------------- 7) Total row count (for pagination UI) ----------------
-    const [[{ totalCount }]] = await pool.query(
-      `SELECT COUNT(*) AS totalCount FROM production_entries e ${whereSql}`,
       params,
     );
 
     return res.json({
       success: true,
-      message: "Report data fetched successfully.",
-      data: {
-        entries,
-        pagination: limit
-          ? {
-              page,
-              limit,
-              totalCount,
-              totalPages: Math.ceil(totalCount / limit),
-            }
-          : { page: 1, limit: totalCount, totalCount, totalPages: 1 },
-        summary: {
-          totalMachines: summaryRow.totalMachines,
-          distinctMachines: summaryRow.distinctMachines,
-          totalTarget: summaryRow.totalTarget,
-          totalActual: summaryRow.totalActual,
-          totalGood: summaryRow.totalGood,
-          totalReject: summaryRow.totalReject,
-          totalLossMinutes: summaryRow.totalLossMinutes,
-          avgEfficiency: summaryRow.avgEfficiency,
-        },
-        hallBreakdown,
-        rejectionBreakdown,
-        lossBreakdown,
-        mouldChangeStats: {
-          totalChanges: mouldChangeRow.totalChanges,
-          totalDurationMinutes: mouldChangeRow.totalDurationMinutes,
-          avgDurationMinutes: mouldChangeRow.avgDurationMinutes,
-        },
-      },
+      message: "Daily report fetched successfully.",
+      data: { entries },
     });
   } catch (err) {
-    console.error("getProductionReport error:", err);
+    console.error("getDailyReport error:", err);
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch report data.",
+      message: "Failed to fetch daily report.",
       error: err.message,
     });
+  }
+};
+
+// ----------------------------------------------------------------
+// GET /api/reports/daily-summary
+// ----------------------------------------------------------------
+const getDailySummary = async (req, res) => {
+  try {
+    const { whereSql, params } = buildDailyFilter(req.query);
+    const data = await buildSummaryPayload(whereSql, params);
+
+    return res.json({
+      success: true,
+      message: "Daily summary fetched successfully.",
+      data,
+    });
+  } catch (err) {
+    console.error("getDailySummary error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch daily summary.",
+      error: err.message,
+    });
+  }
+};
+
+// ----------------------------------------------------------------
+// GET /api/reports/monthly
+// ----------------------------------------------------------------
+const getMonthlyReport = async (req, res) => {
+  try {
+    const { whereSql, params } = buildMonthlyFilter(req.query);
+
+    const [dayWise] = await pool.query(
+      `
+      SELECT
+        DATE(e.entry_date) AS entry_date,
+        COALESCE(SUM(e.target_qty), 0) AS target,
+        COALESCE(SUM(e.actual_qty), 0) AS actual,
+        COALESCE(SUM(e.good_qty), 0) AS goodQty,
+        COALESCE(SUM(e.reject_qty), 0) AS reject,
+        COALESCE(SUM(e.loss_minutes), 0) AS lossMinutes,
+        ROUND(COALESCE(AVG(e.efficiency), 0), 1) AS avgEfficiency
+      FROM production_entries e
+      ${whereSql}
+      GROUP BY DATE(e.entry_date)
+      ORDER BY entry_date ASC
+      `,
+      params,
+    );
+
+    const shaped = dayWise.map((d) => ({
+      ...d,
+      achievement: pct(d.actual, d.target),
+    }));
+
+    return res.json({
+      success: true,
+      message: "Monthly report fetched successfully.",
+      data: { dayWise: shaped },
+    });
+  } catch (err) {
+    console.error("getMonthlyReport error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch monthly report.",
+      error: err.message,
+    });
+  }
+};
+
+// ----------------------------------------------------------------
+// GET /api/reports/monthly-summary
+// ----------------------------------------------------------------
+const getMonthlySummary = async (req, res) => {
+  try {
+    const { whereSql, params } = buildMonthlyFilter(req.query);
+    const data = await buildSummaryPayload(whereSql, params);
+
+    // Daily trend, additional to the shared summary payload
+    const [dailyTrend] = await pool.query(
+      `
+      SELECT
+        DATE(e.entry_date) AS entry_date,
+        COALESCE(SUM(e.target_qty), 0) AS target,
+        COALESCE(SUM(e.actual_qty), 0) AS actual
+      FROM production_entries e
+      ${whereSql}
+      GROUP BY DATE(e.entry_date)
+      ORDER BY entry_date ASC
+      `,
+      params,
+    );
+
+    data.dailyTrend = dailyTrend.map((d) => ({
+      ...d,
+      achievement: pct(d.actual, d.target),
+    }));
+
+    return res.json({
+      success: true,
+      message: "Monthly summary fetched successfully.",
+      data,
+    });
+  } catch (err) {
+    console.error("getMonthlySummary error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch monthly summary.",
+      error: err.message,
+    });
+  }
+};
+
+// ----------------------------------------------------------------
+// Shared summary builder — used by both daily-summary and
+// monthly-summary so totals/hallWise/shiftWise/machineWise/
+// topRejects/topLossReasons stay logically identical.
+// ----------------------------------------------------------------
+const buildSummaryPayload = async (whereSql, params) => {
+  // Totals
+  const [[totalsRow]] = await pool.query(
+    `
+    SELECT
+      COALESCE(SUM(e.target_qty), 0) AS target,
+      COALESCE(SUM(e.actual_qty), 0) AS actual,
+      COALESCE(SUM(e.reject_qty), 0) AS reject
+    FROM production_entries e
+    ${whereSql}
+    `,
+    params,
+  );
+  const totals = {
+    target: totalsRow.target,
+    actual: totalsRow.actual,
+    reject: totalsRow.reject,
+    achievement: pct(totalsRow.actual, totalsRow.target),
+  };
+
+  // Hall-wise
+  const [hallRows] = await pool.query(
+    `
+    SELECT
+      e.hall AS hall,
+      COALESCE(SUM(e.target_qty), 0) AS target,
+      COALESCE(SUM(e.actual_qty), 0) AS actual,
+      COALESCE(SUM(e.reject_qty), 0) AS reject
+    FROM production_entries e
+    ${whereSql}
+    GROUP BY e.hall
+    ORDER BY actual DESC
+    `,
+    params,
+  );
+  const hallWise = hallRows.map((h) => ({ ...h, achievement: pct(h.actual, h.target) }));
+
+  // Shift-wise
+  const [shiftRows] = await pool.query(
+    `
+    SELECT
+      e.shift AS shift,
+      COALESCE(SUM(e.target_qty), 0) AS target,
+      COALESCE(SUM(e.actual_qty), 0) AS actual,
+      COALESCE(SUM(e.reject_qty), 0) AS reject
+    FROM production_entries e
+    ${whereSql}
+    GROUP BY e.shift
+    ORDER BY e.shift ASC
+    `,
+    params,
+  );
+  const shiftWise = shiftRows.map((s) => ({ ...s, achievement: pct(s.actual, s.target) }));
+
+  // Machine-wise
+  const [machineRows] = await pool.query(
+    `
+    SELECT
+      m.machine_code AS machine_code,
+      m.machine_name AS machine_name,
+      e.hall AS hall,
+      COALESCE(SUM(e.target_qty), 0) AS target,
+      COALESCE(SUM(e.actual_qty), 0) AS actual,
+      COALESCE(SUM(e.reject_qty), 0) AS reject,
+      ROUND(COALESCE(AVG(e.efficiency), 0), 1) AS efficiency
+    FROM production_entries e
+    JOIN machines m ON m.id = e.machine_id
+    ${whereSql}
+    GROUP BY m.machine_code, m.machine_name, e.hall
+    ORDER BY actual DESC
+    `,
+    params,
+  );
+  const machineWise = machineRows;
+
+  // Top reject reasons (uses same filter, joined through e)
+  const [topRejects] = await pool.query(
+    `
+    SELECT
+      rr.reason_name AS reason,
+      COALESCE(SUM(prd.reject_qty), 0) AS qty
+    FROM production_reject_details prd
+    JOIN rejection_reasons rr ON rr.id = prd.reject_reason_id
+    JOIN production_entries e ON e.id = prd.production_entry_id
+    ${whereSql}
+    GROUP BY rr.id, rr.reason_name
+    ORDER BY qty DESC
+    LIMIT 5
+    `,
+    params,
+  );
+
+  // Top loss reasons
+  const [topLossReasons] = await pool.query(
+    `
+    SELECT
+      lr.reason_name AS reason,
+      COALESCE(SUM(plt.loss_minutes), 0) AS minutes
+    FROM production_loss_times plt
+    JOIN loss_reasons lr ON lr.id = plt.loss_reason_id
+    JOIN production_entries e ON e.id = plt.production_entry_id
+    ${whereSql}
+    GROUP BY lr.id, lr.reason_name
+    ORDER BY minutes DESC
+    LIMIT 5
+    `,
+    params,
+  );
+
+  return { totals, hallWise, shiftWise, machineWise, topRejects, topLossReasons };
+};
+
+// ----------------------------------------------------------------
+// GET /api/reports/filters -> { halls: [...], machines: [...] }
+// ----------------------------------------------------------------
+const getReportFilters = async (req, res) => {
+  try {
+    const [hallRows] = await pool.query(
+      `SELECT DISTINCT hall FROM production_entries WHERE hall IS NOT NULL ORDER BY hall ASC`,
+    );
+    const [machineRows] = await pool.query(
+      `SELECT machine_code, machine_name FROM machines ORDER BY machine_code ASC`,
+    );
+
+    return res.json({
+      halls: hallRows.map((r) => r.hall),
+      machines: machineRows,
+    });
+  } catch (err) {
+    console.error("getReportFilters error:", err);
+    return res.status(500).json({ halls: [], machines: [], error: err.message });
   }
 };
 
@@ -361,7 +451,11 @@ const getLossReasonsList = async (req, res) => {
 };
 
 module.exports = {
-  getProductionReport,
+  getDailyReport,
+  getDailySummary,
+  getMonthlyReport,
+  getMonthlySummary,
+  getReportFilters,
   getRejectionReasonsList,
   getLossReasonsList,
 };

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { FaIndustry } from "react-icons/fa";
 
-const ROW_HEIGHT = 52; // per-machine row (name + 3 bars) in px — reduced from 76
+const ROW_HEIGHT = 52;
 const MAX_VISIBLE_ROWS = 5;
 const HEADER_SPACE = 6;
 
@@ -9,9 +9,9 @@ const BAR_CONFIG = [
   {
     key: "target",
     label: "Target",
-    bar: "bg-blue-600",
-    text: "text-blue-700",
-    chip: "bg-blue-50",
+    bar: "bg-[#0F1D24]",
+    text: "text-[#0F1D24]",
+    chip: "bg-[#0F1D24]/10",
   },
   {
     key: "actual",
@@ -31,14 +31,12 @@ const BAR_CONFIG = [
 
 const oeeTier = (oee) => {
   if (oee === undefined || oee === null)
-    return { text: "text-slate-400", bg: "bg-slate-100" };
+    return { text: "text-[#9B9B9B]", bg: "bg-[#C6C6C6]/30" };
   if (oee >= 85) return { text: "text-emerald-700", bg: "bg-emerald-100" };
   if (oee >= 60) return { text: "text-amber-700", bg: "bg-amber-100" };
   return { text: "text-red-700", bg: "bg-red-100" };
 };
 
-// data: [{ machine, target, actual, rejection, achievement, oee? }]
-// machines: [{ machine_code, machine_name }] — same list Hall1Stats ke dropdown mein use hoti hai
 const Hall1MachineChart = ({ hallCode, data = [], machines = [], loading }) => {
   const [hovered, setHovered] = useState(null);
 
@@ -78,25 +76,25 @@ const Hall1MachineChart = ({ hallCode, data = [], machines = [], loading }) => {
     v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toLocaleString();
 
   return (
-    <div className="w-full rounded border border-slate-200 bg-white p-1.5 shadow-sm">
-      {/* Header — extra compact */}
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-1.5 rounded border border-blue-200 bg-gradient-to-r from-blue-50 via-white to-slate-50 px-2 py-1">
+    <div className="w-full rounded border border-[#C6C6C6]/50 bg-white p-1 shadow-sm">
+      {/* Header */}
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-1 rounded border border-[#0F1D24]/15 bg-gradient-to-r from-[#0F1D24]/5 via-white to-[#F5F5F5] px-2 py-1">
         <div className="flex min-w-0 items-center gap-1.5">
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-blue-600 shadow-sm">
-            <FaIndustry className="text-[10px] text-white" />
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#0F1D24] shadow-sm">
+            <FaIndustry className="text-[10px] text-[#FDC94D]" />
           </div>
           <div className="min-w-0">
-            <h2 className="truncate text-xs font-bold tracking-wide text-slate-800">
+            <h2 className="truncate text-xs font-bold tracking-wide text-[#0F1D24]">
               Machine Performance
             </h2>
-            <p className="hidden truncate text-[9px] text-slate-500 sm:block">
+            <p className="hidden truncate text-[9px] text-[#9B9B9B] sm:block">
               Target • Actual • Rejection • OEE
             </p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <div className="rounded border border-blue-200 bg-blue-100 px-1.5 py-0.5">
-            <span className="text-[9px] font-bold text-blue-700">
+          <div className="rounded border border-[#0F1D24]/15 bg-[#0F1D24]/10 px-1.5 py-0.5">
+            <span className="text-[9px] font-bold text-[#0F1D24]">
               Hall-{hallCode}
             </span>
           </div>
@@ -108,32 +106,32 @@ const Hall1MachineChart = ({ hallCode, data = [], machines = [], loading }) => {
         </div>
       </div>
 
-      {/* Legend — tighter */}
+      {/* Legend */}
       {!loading && enrichedData.length > 0 && (
         <div className="mb-1 flex flex-wrap items-center justify-end gap-2 px-1">
           {BAR_CONFIG.map((cfg) => (
             <div key={cfg.key} className="flex items-center gap-1">
               <span className={`h-1.5 w-1.5 rounded ${cfg.bar}`} />
-              <span className="text-[8px] font-semibold text-slate-500">
+              <span className="text-[8px] font-semibold text-[#9B9B9B]">
                 {cfg.label}
               </span>
             </div>
           ))}
           <div className="flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded bg-purple-600" />
-            <span className="text-[8px] font-semibold text-slate-500">OEE</span>
+            <span className="h-1.5 w-1.5 rounded bg-[#FDC94D]" />
+            <span className="text-[8px] font-semibold text-[#9B9B9B]">OEE</span>
           </div>
         </div>
       )}
 
       {/* Body */}
-      <div className="rounded border border-slate-200 p-1">
+      <div className="rounded border border-[#C6C6C6]/50 p-1">
         {loading && !enrichedData.length ? (
-          <div className="flex h-[130px] items-center justify-center text-xs text-slate-400">
+          <div className="flex h-[130px] items-center justify-center text-xs text-[#9B9B9B]">
             Loading...
           </div>
         ) : !enrichedData.length ? (
-          <div className="flex h-[130px] items-center justify-center text-xs text-slate-400">
+          <div className="flex h-[130px] items-center justify-center text-xs text-[#9B9B9B]">
             No data for this range.
           </div>
         ) : (
@@ -141,7 +139,7 @@ const Hall1MachineChart = ({ hallCode, data = [], machines = [], loading }) => {
             className={`hall1-machine-scroll ${isScrollable ? "overflow-y-auto pr-1" : ""}`}
             style={{ maxHeight: visibleHeight }}
           >
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-[#C6C6C6]/30">
               {enrichedData.map((row) => {
                 const tier = oeeTier(row.oee?.oee);
                 const isHovered = hovered === row.machine;
@@ -153,19 +151,18 @@ const Hall1MachineChart = ({ hallCode, data = [], machines = [], loading }) => {
                     onMouseLeave={() =>
                       setHovered((h) => (h === row.machine ? null : h))
                     }
-                    className={`relative rounded px-1 py-1 transition-colors ${isHovered ? "bg-slate-50" : ""}`}
+                    className={`relative rounded px-1 py-1 transition-colors ${isHovered ? "bg-[#F5F5F5]" : ""}`}
                     style={{ minHeight: ROW_HEIGHT }}
                   >
-                    {/* Row header: full machine name + achievement + OEE badge */}
                     <div className="mb-1 flex items-center justify-between gap-2">
                       <p
-                        className="min-w-0 truncate text-[10px] font-semibold text-slate-700"
+                        className="min-w-0 truncate text-[10px] font-semibold text-[#0F1D24]"
                         title={row.machineName}
                       >
                         {row.machineName}
                       </p>
                       <div className="flex shrink-0 items-center gap-1">
-                        <span className="text-[8px] font-medium text-slate-400">
+                        <span className="text-[8px] font-medium text-[#9B9B9B]">
                           Ach. {row.achievement}%
                         </span>
                         {row.oee && (
@@ -178,7 +175,6 @@ const Hall1MachineChart = ({ hallCode, data = [], machines = [], loading }) => {
                       </div>
                     </div>
 
-                    {/* 3 grouped horizontal bars — thinner, tighter gap */}
                     <div className="space-y-0.5">
                       {BAR_CONFIG.map((cfg) => {
                         const value = row[cfg.key] || 0;
@@ -191,10 +187,10 @@ const Hall1MachineChart = ({ hallCode, data = [], machines = [], loading }) => {
                             key={cfg.key}
                             className="flex items-center gap-1.5"
                           >
-                            <span className="w-8 shrink-0 text-[7px] font-semibold uppercase text-slate-400">
+                            <span className="w-8 shrink-0 text-[7px] font-semibold uppercase text-[#9B9B9B]">
                               {cfg.label}
                             </span>
-                            <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded bg-slate-100">
+                            <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded bg-[#C6C6C6]/30">
                               <div
                                 className={`h-full rounded ${cfg.bar} transition-all duration-500 ease-out`}
                                 style={{ width: `${pct}%` }}
@@ -210,9 +206,8 @@ const Hall1MachineChart = ({ hallCode, data = [], machines = [], loading }) => {
                       })}
                     </div>
 
-                    {/* Hover detail strip */}
                     {isHovered && row.oee && (
-                      <p className="mt-0.5 text-[7px] text-slate-400">
+                      <p className="mt-0.5 text-[7px] text-[#9B9B9B]">
                         A {row.oee.availability}% · P {row.oee.performance}% · Q{" "}
                         {row.oee.quality}%
                       </p>
@@ -228,7 +223,7 @@ const Hall1MachineChart = ({ hallCode, data = [], machines = [], loading }) => {
       <style>{`
         .hall1-machine-scroll {
           scrollbar-width: thin;
-          scrollbar-color: #CBD5E1 transparent;
+          scrollbar-color: #C6C6C6 transparent;
         }
         .hall1-machine-scroll::-webkit-scrollbar {
           width: 5px;
@@ -237,11 +232,11 @@ const Hall1MachineChart = ({ hallCode, data = [], machines = [], loading }) => {
           background: transparent;
         }
         .hall1-machine-scroll::-webkit-scrollbar-thumb {
-          background-color: #CBD5E1;
+          background-color: #C6C6C6;
           border-radius: 999px;
         }
         .hall1-machine-scroll::-webkit-scrollbar-thumb:hover {
-          background-color: #94A3B8;
+          background-color: #9B9B9B;
         }
       `}</style>
     </div>

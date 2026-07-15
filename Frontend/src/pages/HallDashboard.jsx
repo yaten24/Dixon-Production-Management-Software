@@ -31,7 +31,6 @@ const HallDashboard = () => {
   const [filters, setFilters] = useState(defaultFilters);
   const [draftFilters, setDraftFilters] = useState(defaultFilters);
 
-  // hall switch hone par purane hall ka machine/shift filter reset ho jata hai
   useEffect(() => {
     const fresh = defaultFilters();
     setFilters(fresh);
@@ -79,17 +78,16 @@ const HallDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F5F5F5]">
       <Header />
 
-      <div className="max-w-[1800px] mx-auto px-2 sm:px-2 lg:px-4 py-2 space-y-2 mt-11">
+      <div className="max-w-[1800px] mx-auto px-1 sm:px-2 lg:px-2 py-2 space-y-1 mt-11">
         {error && (
           <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
             {error}
           </div>
         )}
 
-        {/* Refresh + Export ab Hall1Stats ke andar header row mein hain */}
         <Hall1Stats
           hallCode={hallCode}
           stats={kpiStats}
