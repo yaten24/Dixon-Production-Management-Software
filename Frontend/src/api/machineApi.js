@@ -30,3 +30,8 @@ export const updateMachineStatus = async (id, status) => {
 
   return response.data;
 };
+
+export const getMachines = async (params = {}) => {
+  const response = await api.get("/machines", { params });
+  return response.data;
+};

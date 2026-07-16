@@ -29,7 +29,7 @@ export const getProductionReport = async (filters = {}) => {
       }
     });
 
-    const response = await api.get("/reports/production", { params });
+    const response = await api.get("/production/history/production", { params });
     return response.data; // { success, message, data }
   } catch (err) {
     return {
@@ -42,7 +42,7 @@ export const getProductionReport = async (filters = {}) => {
 
 export const getRejectionReasonsList = async () => {
   try {
-    const response = await api.get("/rejection-reasons");
+    const response = await api.get("/production/history/rejection-reasons");
     return response.data;
   } catch (err) {
     return {
@@ -54,7 +54,7 @@ export const getRejectionReasonsList = async () => {
 
 export const getLossReasonsList = async () => {
   try {
-    const response = await api.get("/loss-reasons");
+    const response = await api.get("/production/history/loss-reasons");
     return response.data;
   } catch (err) {
     return {

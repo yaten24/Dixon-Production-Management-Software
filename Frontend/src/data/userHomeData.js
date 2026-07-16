@@ -47,7 +47,7 @@ export const menuCards = [
     icon: HiOutlineUserGroup,
     color: "bg-pink-600",
     hover: "hover:border-pink-500",
-    path: "/user/machine-allocation",
+    path: "/production/update-machine-operator",
   },
 
   {

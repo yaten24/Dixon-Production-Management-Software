@@ -1,720 +1,706 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Calendar,
   Building2,
   Factory,
   Search,
-  User,
   Clock,
   ChevronDown,
-  Save,
+  RefreshCw,
   X,
+  CheckCircle2,
+  Loader2,
+  Send,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+import {
+  checkPlan,
+  createPlan as createPlanApi,
+  getPlan,
+  updateDetail as updateDetailApi,
+  publishPlan as publishPlanApi,
+} from "../api/productionPlanApi";
+import { searchOperators } from "../api/operatorApi";
+import { getMachines } from "../api/machineApi";
 
 const halls = ["Hall 1", "Hall 2", "Hall 3", "Hall 4", "C-8"];
-
 const shifts = ["A", "B", "C", "General"];
 
-const operators = [
-  {
-    employeeId: "EMP001",
-    name: "Rahul Kumar",
-    department: "Production",
-    designation: "Machine Operator",
-    status: "Available",
-  },
-  {
-    employeeId: "EMP002",
-    name: "Amit Sharma",
-    department: "Production",
-    designation: "Machine Operator",
-    status: "Available",
-  },
-  {
-    employeeId: "EMP003",
-    name: "Rohit Singh",
-    department: "Production",
-    designation: "Machine Operator",
-    status: "Busy",
-  },
-  {
-    employeeId: "EMP004",
-    name: "Vikas Kumar",
-    department: "Production",
-    designation: "Machine Operator",
-    status: "Available",
-  },
-];
+// field-name fallbacks — backend may return snake_case or camelCase
+const mCode = (m) => m.machine_code || m.machineCode;
+const mName = (m) => m.machine_name || m.machineName;
+const opCode = (o) => o.operator_code || o.operatorCode || o.employeeId;
+const opName = (o) => o.operator_name || o.operatorName || o.name;
+const opStatus = (o) => o.status || o.operator_status || "Available";
 
-const machineList = [
-  {
-    machineCode: "IM-01",
-    machineName: "160T Toshiba",
-    hall: "Hall 1",
-    allocated: false,
-  },
-  {
-    machineCode: "IM-02",
-    machineName: "180T Toshiba",
-    hall: "Hall 1",
-    allocated: false,
-  },
-  {
-    machineCode: "IM-03",
-    machineName: "250T JSW",
-    hall: "Hall 1",
-    allocated: true,
-  },
-  {
-    machineCode: "IM-04",
-    machineName: "350T JSW",
-    hall: "Hall 2",
-    allocated: false,
-  },
-  {
-    machineCode: "IM-05",
-    machineName: "450T Toshiba",
-    hall: "Hall 2",
-    allocated: false,
-  },
-  {
-    machineCode: "IM-06",
-    machineName: "650T JSW",
-    hall: "Hall 3",
-    allocated: false,
-  },
-];
+const useDebounce = (value, delay = 300) => {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+};
 
 const AllocateMachineOperator = () => {
   const [allocationDate, setAllocationDate] = useState(
     new Date().toISOString().substring(0, 10),
   );
-
   const [hall, setHall] = useState("Hall 1");
-
   const [shift, setShift] = useState("A");
 
-  const [operatorSearch, setOperatorSearch] = useState("");
+  // ---- plan state ----
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planId, setPlanId] = useState(null);
+  const [planHeader, setPlanHeader] = useState(null);
+  const [planDetails, setPlanDetails] = useState([]);
+  const [planError, setPlanError] = useState("");
 
-  const [selectedOperator, setSelectedOperator] = useState(null);
-
+  // ---- new-plan machine picker (shown only when no plan exists yet) ----
+  const [availableMachines, setAvailableMachines] = useState([]);
+  const [machinesLoading, setMachinesLoading] = useState(false);
   const [machineSearch, setMachineSearch] = useState("");
+  const [selectedCodes, setSelectedCodes] = useState(new Set());
+  const [creatingPlan, setCreatingPlan] = useState(false);
 
-  const [selectedMachines, setSelectedMachines] = useState([]);
+  // ---- change operator modal ----
+  const [opModalDetail, setOpModalDetail] = useState(null); // detail row being edited
+  const [opSearch, setOpSearch] = useState("");
+  const [opResults, setOpResults] = useState([]);
+  const [opLoading, setOpLoading] = useState(false);
+  const [opSelected, setOpSelected] = useState(null);
+  const [opSaving, setOpSaving] = useState(false);
+  const debouncedOpSearch = useDebounce(opSearch, 300);
 
-  const [remarks, setRemarks] = useState("");
+  const [publishing, setPublishing] = useState(false);
 
-  const filteredOperators = useMemo(() => {
-    return operators.filter(
-      (operator) =>
-        operator.employeeId
-          .toLowerCase()
-          .includes(operatorSearch.toLowerCase()) ||
-        operator.name.toLowerCase().includes(operatorSearch.toLowerCase()),
-    );
-  }, [operatorSearch]);
+  // -------------------------------------------------------------
+  // Load / detect plan whenever date + hall + shift changes
+  // -------------------------------------------------------------
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPlan = async () => {
+      setPlanLoading(true);
+      setPlanError("");
+      setPlanId(null);
+      setPlanHeader(null);
+      setPlanDetails([]);
+      setSelectedCodes(new Set());
+
+      try {
+        const res = await checkPlan(allocationDate, hall, shift);
+        if (cancelled) return;
+
+        if (res.exists && res.plan_id) {
+          const plan = await getPlan(res.plan_id);
+          if (cancelled) return;
+          setPlanId(res.plan_id);
+          setPlanHeader(plan.header);
+          setPlanDetails(plan.details || []);
+        } else {
+          // no plan yet -> fetch machines for this hall so user can create one
+          setMachinesLoading(true);
+          const machinesRes = await getMachines({ hall });
+          if (cancelled) return;
+          setAvailableMachines(machinesRes.data || []);
+        }
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setPlanError("Failed to load plan. Please retry.");
+      } finally {
+        if (!cancelled) {
+          setPlanLoading(false);
+          setMachinesLoading(false);
+        }
+      }
+    };
+
+    loadPlan();
+    return () => {
+      cancelled = true;
+    };
+  }, [allocationDate, hall, shift]);
 
   const filteredMachines = useMemo(() => {
-    return machineList.filter(
-      (machine) =>
-        machine.hall === hall &&
-        (machine.machineCode
-          .toLowerCase()
-          .includes(machineSearch.toLowerCase()) ||
-          machine.machineName
-            .toLowerCase()
-            .includes(machineSearch.toLowerCase())),
+    const q = machineSearch.toLowerCase();
+    return availableMachines.filter(
+      (m) =>
+        mCode(m)?.toLowerCase().includes(q) ||
+        mName(m)?.toLowerCase().includes(q),
     );
-  }, [hall, machineSearch]);
+  }, [availableMachines, machineSearch]);
+
+  const toggleMachine = (code) => {
+    setSelectedCodes((prev) => {
+      const next = new Set(prev);
+      next.has(code) ? next.delete(code) : next.add(code);
+      return next;
+    });
+  };
+
+  const handleCreatePlan = async () => {
+    if (selectedCodes.size === 0) {
+      alert("Please select at least one machine.");
+      return;
+    }
+    setCreatingPlan(true);
+    setPlanError("");
+    try {
+      const machines = Array.from(selectedCodes).map((code) => ({
+        machine_code: code,
+      }));
+      const plan = await createPlanApi({
+        planning_date: allocationDate,
+        hall,
+        shift,
+        machines,
+      });
+      setPlanId(plan.header.plan_id);
+      setPlanHeader(plan.header);
+      setPlanDetails(plan.details || []);
+    } catch (err) {
+      console.error(err);
+      setPlanError(err?.response?.data?.message || "Failed to create plan.");
+    } finally {
+      setCreatingPlan(false);
+    }
+  };
+
+  // -------------------------------------------------------------
+  // Change Operator modal
+  // -------------------------------------------------------------
+  const openChangeOperator = (detail) => {
+    setOpModalDetail(detail);
+    setOpSearch("");
+    setOpResults([]);
+    setOpSelected(null);
+  };
+
+  const closeChangeOperator = () => {
+    setOpModalDetail(null);
+    setOpSearch("");
+    setOpResults([]);
+    setOpSelected(null);
+  };
+
+  useEffect(() => {
+    if (!opModalDetail) return;
+    let cancelled = false;
+
+    const run = async () => {
+      setOpLoading(true);
+      try {
+        const res = await searchOperators(debouncedOpSearch);
+        if (!cancelled) setOpResults(res.data || []);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setOpResults([]);
+      } finally {
+        if (!cancelled) setOpLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedOpSearch, opModalDetail]);
+
+  const confirmChangeOperator = async () => {
+    if (!opSelected || !opModalDetail) {
+      alert("Please select a new operator.");
+      return;
+    }
+    setOpSaving(true);
+    try {
+      const plan = await updateDetailApi(opModalDetail.detail_id, {
+        operator_id: opCode(opSelected),
+        part_id: opModalDetail.part_id,
+        target_qty: opModalDetail.target_qty,
+      });
+      setPlanHeader(plan.header);
+      setPlanDetails(plan.details || []);
+      closeChangeOperator();
+    } catch (err) {
+      console.error(err);
+      alert(err?.response?.data?.message || "Failed to update operator.");
+    } finally {
+      setOpSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!planId) return;
+    setPublishing(true);
+    try {
+      const plan = await publishPlanApi(planId);
+      setPlanHeader(plan.header);
+      setPlanDetails(plan.details || []);
+    } catch (err) {
+      console.error(err);
+      alert(
+        err?.response?.data?.message ||
+          "Failed to publish plan (backend route may be disabled — see productionPlanRoutes.js).",
+      );
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const isPublished = planHeader?.status === "Published";
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#F7F8FA] p-5">
+      <div className="max-w-6xl mx-auto space-y-4">
         {/* Header */}
-
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-2xl bg-blue-600 flex items-center justify-center">
-              <Factory className="text-white w-8 h-8" />
+        <div className="bg-white rounded-sm border border-[#E2E4E9] px-5 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-sm bg-[#2563EB] flex items-center justify-center">
+              <Factory className="text-white" size={18} />
             </div>
-
             <div>
-              <h1 className="text-3xl font-bold text-slate-800">
-                Allocate Machine to Operator
+              <h1 className="text-base font-semibold text-slate-800">
+                Machine &amp; Operator Allocation
               </h1>
-
-              <p className="text-slate-500 mt-1">
-                Assign production machines to operators for a selected hall and
-                shift.
+              <p className="text-[11px] text-slate-500">
+                Select date, hall and shift to view or create a production
+                plan.
               </p>
             </div>
           </div>
+
+          {planHeader && (
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-xs text-slate-500">
+                {planHeader.plan_number}
+              </span>
+              <span
+                className={`px-2 py-0.5 rounded-sm text-[11px] font-semibold ${
+                  isPublished
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                }`}
+              >
+                {planHeader.status || "Draft"}
+              </span>
+              {!isPublished && (
+                <button
+                  onClick={handlePublish}
+                  disabled={publishing}
+                  className="h-7 px-3 rounded-sm bg-[#2563EB] hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition"
+                >
+                  {publishing ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Send size={13} />
+                  )}
+                  Publish
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Allocation Details */}
-
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-slate-700 mb-6">
-            Allocation Details
-          </h2>
-
-          <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-6">
-            {/* Date */}
-
+        {/* Filters */}
+        <div className="bg-white rounded-sm border border-[#E2E4E9] p-4">
+          <div className="grid sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium text-slate-600 mb-2 block">
+              <label className="text-[11px] font-medium text-slate-500 mb-1 block">
                 Allocation Date
               </label>
-
               <div className="relative">
                 <Calendar
-                  className="absolute left-4 top-3 text-slate-400"
-                  size={18}
+                  className="absolute left-3 top-2 text-slate-400"
+                  size={14}
                 />
-
                 <input
                   type="date"
                   value={allocationDate}
                   onChange={(e) => setAllocationDate(e.target.value)}
-                  className="w-full border rounded-xl pl-12 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-8 border border-[#E2E4E9] rounded-sm pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-[#2563EB]"
                 />
               </div>
             </div>
 
-            {/* Hall */}
-
             <div>
-              <label className="text-sm font-medium text-slate-600 mb-2 block">
+              <label className="text-[11px] font-medium text-slate-500 mb-1 block">
                 Hall
               </label>
-
               <div className="relative">
                 <Building2
-                  className="absolute left-4 top-3 text-slate-400"
-                  size={18}
+                  className="absolute left-3 top-2 text-slate-400"
+                  size={14}
                 />
-
                 <select
                   value={hall}
                   onChange={(e) => setHall(e.target.value)}
-                  className="w-full border rounded-xl pl-12 pr-10 py-3 appearance-none outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-8 border border-[#E2E4E9] rounded-sm pl-8 pr-8 text-xs appearance-none outline-none focus:ring-1 focus:ring-[#2563EB]"
                 >
                   {halls.map((item) => (
                     <option key={item}>{item}</option>
                   ))}
                 </select>
-
                 <ChevronDown
-                  className="absolute right-4 top-3 text-slate-400"
-                  size={18}
+                  className="absolute right-3 top-2 text-slate-400"
+                  size={14}
                 />
               </div>
             </div>
 
-            {/* Shift */}
-
             <div>
-              <label className="text-sm font-medium text-slate-600 mb-2 block">
+              <label className="text-[11px] font-medium text-slate-500 mb-1 block">
                 Shift
               </label>
-
               <div className="relative">
                 <Clock
-                  className="absolute left-4 top-3 text-slate-400"
-                  size={18}
+                  className="absolute left-3 top-2 text-slate-400"
+                  size={14}
                 />
-
                 <select
                   value={shift}
                   onChange={(e) => setShift(e.target.value)}
-                  className="w-full border rounded-xl pl-12 pr-10 py-3 appearance-none outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-8 border border-[#E2E4E9] rounded-sm pl-8 pr-8 text-xs appearance-none outline-none focus:ring-1 focus:ring-[#2563EB]"
                 >
                   {shifts.map((item) => (
                     <option key={item}>{item}</option>
                   ))}
                 </select>
-
                 <ChevronDown
-                  className="absolute right-4 top-3 text-slate-400"
-                  size={18}
+                  className="absolute right-3 top-2 text-slate-400"
+                  size={14}
                 />
               </div>
             </div>
           </div>
         </div>
-        {/* ============================
-            Operator Selection Section
-        ============================= */}
 
-        <div className="grid lg:grid-cols-3 gap-6 mb-6">
-          {/* Left Side */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                <User className="text-blue-600" size={22} />
-              </div>
+        {planError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-sm px-4 py-2.5">
+            {planError}
+          </div>
+        )}
 
+        {/* Loading */}
+        {planLoading && (
+          <div className="bg-white rounded-sm border border-[#E2E4E9] py-14 flex flex-col items-center justify-center gap-2">
+            <Loader2 className="animate-spin text-[#2563EB]" size={22} />
+            <p className="text-xs text-slate-500">Checking for plan...</p>
+          </div>
+        )}
+
+        {/* ------------------------------------------------------
+            No plan yet -> machine picker to create one
+        ------------------------------------------------------- */}
+        {!planLoading && !planId && (
+          <div className="bg-white rounded-sm border border-[#E2E4E9] p-4">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-xl font-semibold text-slate-800">
-                  Search Operator
+                <h2 className="text-sm font-semibold text-slate-800">
+                  No plan found for {hall} / Shift {shift} / {allocationDate}
                 </h2>
-
-                <p className="text-sm text-slate-500">
-                  Search using Employee ID or Operator Name
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Select machines to create a new production plan.
                 </p>
               </div>
+              <span className="font-mono text-[11px] text-slate-500">
+                {selectedCodes.size} selected
+              </span>
             </div>
 
-            {/* Search Box */}
-
-            <div className="relative mb-6">
+            <div className="relative mb-3">
               <Search
-                className="absolute left-4 top-3.5 text-slate-400"
-                size={18}
+                className="absolute left-3 top-2.5 text-slate-400"
+                size={14}
               />
-
               <input
                 type="text"
-                placeholder="Search Employee ID or Name..."
-                value={operatorSearch}
-                onChange={(e) => setOperatorSearch(e.target.value)}
-                className="w-full border rounded-xl pl-12 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Search machine code or name..."
+                value={machineSearch}
+                onChange={(e) => setMachineSearch(e.target.value)}
+                className="w-full h-8 border border-[#E2E4E9] rounded-sm pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-[#2563EB]"
               />
             </div>
 
-            {/* Operator List */}
-
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
-              {filteredOperators.length > 0 ? (
-                filteredOperators.map((operator) => (
-                  <div
-                    key={operator.employeeId}
-                    onClick={() => setSelectedOperator(operator)}
-                    className={`cursor-pointer border rounded-xl p-4 transition-all duration-300
-
-                    ${
-                      selectedOperator?.employeeId === operator.employeeId
-                        ? "border-blue-600 bg-blue-50"
-                        : "border-slate-200 hover:border-blue-400 hover:bg-slate-50"
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="font-semibold text-slate-800">
-                          {operator.name}
-                        </h3>
-
-                        <p className="text-sm text-slate-500 mt-1">
-                          {operator.employeeId}
-                        </p>
-                      </div>
-
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold
-
-                        ${
-                          operator.status === "Available"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {operator.status}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="border border-dashed rounded-xl py-12 text-center text-slate-400">
-                  No Operator Found
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Side */}
-
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center">
-                <User className="text-green-600" size={22} />
+            {machinesLoading ? (
+              <div className="py-10 flex justify-center">
+                <Loader2 className="animate-spin text-[#2563EB]" size={18} />
               </div>
-
-              <div>
-                <h2 className="text-xl font-semibold text-slate-800">
-                  Operator Details
-                </h2>
-
-                <p className="text-sm text-slate-500">
-                  Selected Operator Information
-                </p>
-              </div>
-            </div>
-
-            {selectedOperator ? (
-              <div className="space-y-5">
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-slate-500">
-                    Employee ID
-                  </label>
-
-                  <p className="text-lg font-semibold text-slate-800 mt-1">
-                    {selectedOperator.employeeId}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-slate-500">
-                    Name
-                  </label>
-
-                  <p className="text-lg font-semibold text-slate-800 mt-1">
-                    {selectedOperator.name}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-slate-500">
-                    Department
-                  </label>
-
-                  <p className="text-slate-700 mt-1">
-                    {selectedOperator.department}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-slate-500">
-                    Designation
-                  </label>
-
-                  <p className="text-slate-700 mt-1">
-                    {selectedOperator.designation}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-xs uppercase tracking-wide text-slate-500">
-                    Current Status
-                  </label>
-
-                  <div className="mt-2">
-                    <span
-                      className={`px-4 py-2 rounded-full text-sm font-semibold
-
-                      ${
-                        selectedOperator.status === "Available"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
+            ) : filteredMachines.length > 0 ? (
+              <div className="grid sm:grid-cols-3 gap-2 max-h-[340px] overflow-y-auto">
+                {filteredMachines.map((m) => {
+                  const code = mCode(m);
+                  const isSelected = selectedCodes.has(code);
+                  return (
+                    <div
+                      key={code}
+                      onClick={() => toggleMachine(code)}
+                      className={`cursor-pointer rounded-sm border p-3 transition ${
+                        isSelected
+                          ? "border-[#2563EB] bg-blue-50"
+                          : "border-[#E2E4E9] hover:border-blue-300"
                       }`}
                     >
-                      {selectedOperator.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex flex-col justify-center items-center text-center py-12">
-                <User className="text-slate-300 mb-4" size={60} />
-
-                <h3 className="font-semibold text-slate-600">
-                  No Operator Selected
-                </h3>
-
-                <p className="text-sm text-slate-400 mt-2">
-                  Select an operator from the list to view details.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ============================
-            Machine Search
-        ============================= */}
-
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center">
-              <Factory className="text-orange-600" size={22} />
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold text-slate-800">
-                Available Machines
-              </h2>
-
-              <p className="text-sm text-slate-500">
-                Select one or more machines for allocation.
-              </p>
-            </div>
-          </div>
-
-          <div className="relative">
-            <Search
-              className="absolute left-4 top-3.5 text-slate-400"
-              size={18}
-            />
-
-            <input
-              type="text"
-              placeholder="Search Machine Code or Machine Name..."
-              value={machineSearch}
-              onChange={(e) => setMachineSearch(e.target.value)}
-              className="w-full border rounded-xl pl-12 pr-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-        {/* ==========================================
-                Machine Grid
-        =========================================== */}
-
-        <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-5 mb-8">
-          {filteredMachines.length > 0 ? (
-            filteredMachines.map((machine) => {
-              const isSelected = selectedMachines.some(
-                (item) => item.machineCode === machine.machineCode,
-              );
-
-              return (
-                <div
-                  key={machine.machineCode}
-                  onClick={() => {
-                    if (machine.allocated) return;
-
-                    if (isSelected) {
-                      setSelectedMachines((prev) =>
-                        prev.filter(
-                          (item) => item.machineCode !== machine.machineCode,
-                        ),
-                      );
-                    } else {
-                      setSelectedMachines((prev) => [...prev, machine]);
-                    }
-                  }}
-                  className={`rounded-2xl border p-5 cursor-pointer transition-all duration-300
-
-                  ${
-                    machine.allocated
-                      ? "bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed"
-                      : isSelected
-                        ? "border-blue-600 bg-blue-50 shadow-md"
-                        : "border-slate-200 hover:border-blue-500 hover:shadow-md"
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-800">
-                        {machine.machineCode}
-                      </h3>
-
-                      <p className="text-slate-500 mt-1">
-                        {machine.machineName}
-                      </p>
-
-                      <p className="text-sm text-slate-400 mt-2">
-                        {machine.hall}
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-semibold text-slate-800">
+                          {code}
+                        </span>
+                        {isSelected && (
+                          <CheckCircle2 size={14} className="text-[#2563EB]" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        {mName(m)}
                       </p>
                     </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="border border-dashed border-[#E2E4E9] rounded-sm py-10 text-center text-xs text-slate-400">
+                No machines found for {hall}.
+              </div>
+            )}
 
-                    {machine.allocated ? (
-                      <span className="bg-red-100 text-red-700 text-xs px-3 py-1 rounded-full font-semibold">
-                        Allocated
-                      </span>
-                    ) : isSelected ? (
-                      <span className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-semibold">
-                        Selected
-                      </span>
-                    ) : (
-                      <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-semibold">
-                        Available
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="col-span-full text-center py-16 border border-dashed rounded-2xl">
-              <Factory size={60} className="mx-auto text-slate-300 mb-4" />
-
-              <h3 className="text-lg font-semibold text-slate-600">
-                No Machines Found
-              </h3>
-
-              <p className="text-slate-400 mt-2">
-                Try searching with another machine code.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* ==========================================
-                Selected Machines
-        =========================================== */}
-
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-slate-800">
-                Selected Machines
-              </h2>
-
-              <p className="text-sm text-slate-500 mt-1">
-                Machines that will be allocated to the selected operator.
-              </p>
-            </div>
-
-            <div className="bg-blue-600 text-white rounded-xl px-5 py-2 font-semibold">
-              {selectedMachines.length} Selected
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={handleCreatePlan}
+                disabled={creatingPlan || selectedCodes.size === 0}
+                className="h-8 px-4 rounded-sm bg-[#2563EB] hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition"
+              >
+                {creatingPlan && <Loader2 size={13} className="animate-spin" />}
+                Create Plan
+              </button>
             </div>
           </div>
+        )}
 
-          {selectedMachines.length > 0 ? (
-            <div className="flex flex-wrap gap-4">
-              {selectedMachines.map((machine) => (
-                <div
-                  key={machine.machineCode}
-                  className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-4"
-                >
-                  <div>
-                    <h4 className="font-semibold text-slate-800">
-                      {machine.machineCode}
-                    </h4>
-
-                    <p className="text-sm text-slate-500">
-                      {machine.machineName}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      setSelectedMachines((prev) =>
-                        prev.filter(
-                          (item) => item.machineCode !== machine.machineCode,
-                        ),
-                      )
-                    }
-                    className="h-8 w-8 rounded-full bg-red-500 hover:bg-red-600 text-white font-bold transition"
+        {/* ------------------------------------------------------
+            Plan exists -> compact details table
+        ------------------------------------------------------- */}
+        {!planLoading && planId && (
+          <div className="bg-white rounded-sm border border-[#E2E4E9] overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-[#F7F8FA] border-b border-[#E2E4E9] text-[11px] text-slate-500 uppercase tracking-wide">
+                  <th className="text-left px-4 py-2 font-medium">Machine</th>
+                  <th className="text-left px-4 py-2 font-medium">Operator</th>
+                  <th className="text-left px-4 py-2 font-medium">Part</th>
+                  <th className="text-left px-4 py-2 font-medium">
+                    Cycle Time
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium">
+                    Target Qty
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium">Status</th>
+                  <th className="text-right px-4 py-2 font-medium"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {planDetails.map((d) => (
+                  <tr
+                    key={d.detail_id}
+                    className="border-b border-[#E2E4E9] last:border-0 hover:bg-[#F7F8FA]"
                   >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="border border-dashed rounded-xl py-12 text-center">
-              <Factory className="mx-auto text-slate-300 mb-3" size={55} />
-
-              <h3 className="font-semibold text-slate-600">
-                No Machine Selected
-              </h3>
-
-              <p className="text-slate-400 mt-2">
-                Click on any available machine above.
-              </p>
-            </div>
-          )}
-        </div>
-        {/* ==========================================
-                Remarks
-        =========================================== */}
-
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-slate-800 mb-5">Remarks</h2>
-
-          <textarea
-            rows={4}
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-            placeholder="Enter remarks (optional)..."
-            className="w-full border rounded-xl p-4 outline-none resize-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* ==========================================
-                Footer Buttons
-        =========================================== */}
-
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-800">
-                Allocation Summary
-              </h3>
-
-              <p className="text-sm text-slate-500 mt-1">
-                Operator :
-                <span className="font-semibold text-slate-700 ml-2">
-                  {selectedOperator ? selectedOperator.name : "Not Selected"}
-                </span>
-              </p>
-
-              <p className="text-sm text-slate-500 mt-1">
-                Machines :
-                <span className="font-semibold text-blue-600 ml-2">
-                  {selectedMachines.length}
-                </span>
-              </p>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => {
-                  setSelectedOperator(null);
-                  setSelectedMachines([]);
-                  setRemarks("");
-                  setOperatorSearch("");
-                  setMachineSearch("");
-                }}
-                className="px-6 py-3 rounded-xl border border-slate-300 hover:bg-slate-100 flex items-center gap-2 transition"
-              >
-                <X size={18} />
-                Cancel
-              </button>
-
-              <button
-                onClick={() => {
-                  if (!selectedOperator) {
-                    alert("Please select an operator.");
-                    return;
-                  }
-
-                  if (selectedMachines.length === 0) {
-                    alert("Please select at least one machine.");
-                    return;
-                  }
-
-                  const payload = {
-                    allocationDate,
-                    hall,
-                    shift,
-                    employeeId: selectedOperator.employeeId,
-                    employeeName: selectedOperator.name,
-                    machines: selectedMachines.map((item) => item.machineCode),
-                    remarks,
-                  };
-
-                  console.log(payload);
-
-                  alert("Machine Allocated Successfully.");
-
-                  // Reset Form
-
-                  setSelectedOperator(null);
-                  setSelectedMachines([]);
-                  setRemarks("");
-                  setOperatorSearch("");
-                  setMachineSearch("");
-                }}
-                className="px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-2 transition"
-              >
-                <Save size={18} />
-                Allocate Machine
-              </button>
-            </div>
+                    <td className="px-4 py-2.5">
+                      <div className="font-mono font-semibold text-slate-800">
+                        {d.machine_code}
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        {d.machine_name}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-700">
+                      {d.operator_name || (
+                        <span className="text-slate-400">Unassigned</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-700">
+                      {d.part_number ? (
+                        <>
+                          <div className="font-mono">{d.part_number}</div>
+                          <div className="text-[11px] text-slate-400">
+                            {d.part_name}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono text-slate-600">
+                      {d.actual_cycle_time ?? d.cycle_time ?? "—"}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono text-slate-600">
+                      {d.target_qty || 0}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span className="px-2 py-0.5 rounded-sm bg-slate-100 text-slate-600 text-[11px]">
+                        {d.machine_status || "Pending"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <button
+                        onClick={() => openChangeOperator(d)}
+                        disabled={isPublished}
+                        className="h-7 px-2.5 rounded-sm border border-[#E2E4E9] hover:border-[#2563EB] hover:text-[#2563EB] disabled:opacity-40 text-slate-600 text-[11px] font-medium flex items-center gap-1 transition ml-auto"
+                      >
+                        <RefreshCw size={12} />
+                        Change
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* ------------------------------------------------------
+          Change Operator modal
+      ------------------------------------------------------- */}
+      <AnimatePresence>
+        {opModalDetail && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.15 }}
+              className="bg-white rounded-sm border border-[#E2E4E9] w-full max-w-md max-h-[80vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#E2E4E9]">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-800">
+                    Change Operator
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                    {opModalDetail.machine_code}
+                  </p>
+                </div>
+                <button
+                  onClick={closeChangeOperator}
+                  className="h-7 w-7 rounded-sm hover:bg-slate-100 flex items-center justify-center text-slate-500"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              <div className="px-4 pt-3">
+                <div className="bg-[#F7F8FA] border border-[#E2E4E9] rounded-sm px-3 py-2 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Current Operator</span>
+                  <span className="font-semibold text-slate-800">
+                    {opModalDetail.operator_name || "Unassigned"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-4 flex-1 overflow-hidden flex flex-col">
+                <div className="relative mb-3">
+                  <Search
+                    className="absolute left-3 top-2.5 text-slate-400"
+                    size={14}
+                  />
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Search Employee ID or Name..."
+                    value={opSearch}
+                    onChange={(e) => setOpSearch(e.target.value)}
+                    className="w-full h-8 border border-[#E2E4E9] rounded-sm pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-[#2563EB]"
+                  />
+                </div>
+
+                <div className="space-y-2 overflow-y-auto">
+                  {opLoading ? (
+                    <div className="py-8 flex justify-center">
+                      <Loader2
+                        className="animate-spin text-[#2563EB]"
+                        size={16}
+                      />
+                    </div>
+                  ) : opResults.length > 0 ? (
+                    opResults.map((operator) => {
+                      const isChosen =
+                        opSelected && opCode(opSelected) === opCode(operator);
+                      const isCurrent =
+                        opCode(operator) === opModalDetail.operator_id;
+                      return (
+                        <div
+                          key={opCode(operator)}
+                          onClick={() => setOpSelected(operator)}
+                          className={`cursor-pointer rounded-sm border px-3 py-2 transition ${
+                            isChosen
+                              ? "border-[#2563EB] bg-blue-50"
+                              : "border-[#E2E4E9] hover:border-blue-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-xs font-semibold text-slate-800">
+                                {opName(operator)}
+                              </span>
+                              {isCurrent && (
+                                <span className="text-[11px] text-slate-400 ml-1">
+                                  (Current)
+                                </span>
+                              )}
+                              <p className="text-[11px] text-slate-500 font-mono">
+                                {opCode(operator)}
+                              </p>
+                            </div>
+                            <span
+                              className={`px-2 py-0.5 rounded-sm text-[11px] font-semibold ${
+                                opStatus(operator) === "Available"
+                                  ? "bg-green-50 text-green-700"
+                                  : "bg-red-50 text-red-700"
+                              }`}
+                            >
+                              {opStatus(operator)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="border border-dashed border-[#E2E4E9] rounded-sm py-8 text-center text-xs text-slate-400">
+                      No operators found.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="border-t border-[#E2E4E9] p-4 flex justify-end gap-2">
+                <button
+                  onClick={closeChangeOperator}
+                  className="h-8 px-3 rounded-sm border border-[#E2E4E9] hover:bg-slate-50 text-xs font-medium transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmChangeOperator}
+                  disabled={!opSelected || opSaving}
+                  className="h-8 px-4 rounded-sm bg-[#2563EB] hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition"
+                >
+                  {opSaving ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <RefreshCw size={13} />
+                  )}
+                  Update Operator
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
