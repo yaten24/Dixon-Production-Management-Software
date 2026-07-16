@@ -9,21 +9,9 @@ import {
   Sector,
 } from "recharts";
 import { HiOutlineExclamationTriangle } from "react-icons/hi2";
+import useRejectionAnalysis from "../../hooks/useRejectionAnalysis";
 
 /* ---------- matches dashboard accent family: blue -> indigo -> purple, red kept for alert semantics ---------- */
-
-const rejectionData = [
-  { reason: "Short Shot", qty: 420 },
-  { reason: "Flash", qty: 320 },
-  { reason: "Sink Mark", qty: 210 },
-  { reason: "Burn Mark", qty: 120 },
-  { reason: "Weld Line", qty: 165 },
-  { reason: "Warpage", qty: 140 },
-  { reason: "Black Dot", qty: 95 },
-  { reason: "Silver Mark", qty: 80 },
-  { reason: "Flow Mark", qty: 70 },
-  { reason: "Crack", qty: 60 },
-];
 
 const COLORS = [
   "#2563eb",
@@ -99,13 +87,57 @@ const renderPercentLabel = ({
 
 const RejectionAnalysis = () => {
   const [activeIndex, setActiveIndex] = useState(null);
+  const {
+    data: rejectionData,
+    totalReject,
+    rejectionRate,
+    loading,
+    error,
+    refetch,
+  } = useRejectionAnalysis();
 
-  const totalReject = rejectionData.reduce((sum, item) => sum + item.qty, 0);
-  const topReason = rejectionData.reduce((a, b) => (a.qty > b.qty ? a : b));
-  const rejectionRate = ((totalReject / 65000) * 100).toFixed(2);
+  // ================= Loading =================
+  if (loading) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden rounded border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-3.5 py-2.5">
+          <div className="h-4 w-40 animate-pulse rounded bg-slate-100" />
+        </div>
+        <div className="flex flex-1 items-center justify-center gap-4 p-4">
+          <div className="h-32 w-32 animate-pulse rounded-full bg-slate-100" />
+          <div className="flex-1 space-y-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-3 animate-pulse rounded bg-slate-100" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const topFive = [...rejectionData].sort((a, b) => b.qty - a.qty).slice(0, 5);
-  const maxQty = topFive[0].qty;
+  // ================= Error =================
+  if (error) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 rounded border border-red-200 bg-white p-4 text-center shadow-sm">
+        <p className="text-[12px] text-red-600">{error}</p>
+        <button
+          onClick={refetch}
+          className="rounded bg-red-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-red-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const hasData = rejectionData.length > 0;
+  const topReason = hasData
+    ? rejectionData.reduce((a, b) => (a.qty > b.qty ? a : b))
+    : null;
+  const topFive = hasData
+    ? [...rejectionData].sort((a, b) => b.qty - a.qty).slice(0, 5)
+    : [];
+  const maxQty = hasData ? topFive[0].qty : 0;
 
   return (
     <motion.div
@@ -141,200 +173,204 @@ const RejectionAnalysis = () => {
         </span>
       </div>
 
-      {/* ================= Content ================= */}
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* ================= DONUT CHART ================= */}
-
-        <div className="flex w-[42%] min-w-[190px] items-center justify-center px-1.5">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={rejectionData}
-                dataKey="qty"
-                nameKey="reason"
-                cx="50%"
-                cy="50%"
-                innerRadius={46}
-                outerRadius={68}
-                paddingAngle={3}
-                cornerRadius={4}
-                strokeWidth={0}
-                label={renderPercentLabel}
-                labelLine={false}
-                activeIndex={activeIndex}
-                activeShape={renderActiveShape}
-                onMouseEnter={(_, index) => setActiveIndex(index)}
-                onMouseLeave={() => setActiveIndex(null)}
-              >
-                {rejectionData.map((item, index) => (
-                  <Cell
-                    key={index}
-                    fill={COLORS[index % COLORS.length]}
-                    style={{
-                      filter:
-                        activeIndex === null || activeIndex === index
-                          ? "none"
-                          : "opacity(0.45)",
-                      transition: "filter 0.2s ease",
-                    }}
-                  />
-                ))}
-              </Pie>
-
-              <Tooltip
-                formatter={(value) => [`${value} Nos`, "Reject Qty"]}
-                contentStyle={{
-                  border: "1px solid #E2E4E9",
-                  borderRadius: 8,
-                  fontSize: 11,
-                  boxShadow: "0 10px 25px rgba(0,0,0,.08)",
-                }}
-              />
-
-              {/* Center Text */}
-
-              <text
-                x="50%"
-                y="44%"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                style={{ fontSize: 10, fill: "#64748b", fontWeight: 600 }}
-              >
-                Total
-              </text>
-
-              <text
-                x="50%"
-                y="55%"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                style={{ fontSize: 20, fill: "#0f172a", fontWeight: 700 }}
-              >
-                {totalReject}
-              </text>
-
-              <text
-                x="50%"
-                y="65%"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                style={{ fontSize: 9, fill: "#94a3b8" }}
-              >
-                Reject Qty
-              </text>
-            </PieChart>
-          </ResponsiveContainer>
+      {!hasData ? (
+        <div className="flex flex-1 items-center justify-center">
+          <p className="text-[12px] text-slate-400">Aaj koi rejection record nahi hai</p>
         </div>
+      ) : (
+        <div className="flex flex-1 overflow-hidden">
+          {/* ================= DONUT CHART ================= */}
 
-        {/* ================= RIGHT PANEL ================= */}
+          <div className="flex w-[42%] min-w-[190px] items-center justify-center px-1.5">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={rejectionData}
+                  dataKey="qty"
+                  nameKey="reason"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={46}
+                  outerRadius={68}
+                  paddingAngle={3}
+                  cornerRadius={4}
+                  strokeWidth={0}
+                  label={renderPercentLabel}
+                  labelLine={false}
+                  activeIndex={activeIndex}
+                  activeShape={renderActiveShape}
+                  onMouseEnter={(_, index) => setActiveIndex(index)}
+                  onMouseLeave={() => setActiveIndex(null)}
+                >
+                  {rejectionData.map((item, index) => (
+                    <Cell
+                      key={index}
+                      fill={COLORS[index % COLORS.length]}
+                      style={{
+                        filter:
+                          activeIndex === null || activeIndex === index
+                            ? "none"
+                            : "opacity(0.45)",
+                        transition: "filter 0.2s ease",
+                      }}
+                    />
+                  ))}
+                </Pie>
 
-        <div className="flex flex-1 flex-col justify-between px-3 py-2.5">
-          {/* Top Reasons */}
+                <Tooltip
+                  formatter={(value) => [`${value} Nos`, "Reject Qty"]}
+                  contentStyle={{
+                    border: "1px solid #E2E4E9",
+                    borderRadius: 8,
+                    fontSize: 11,
+                    boxShadow: "0 10px 25px rgba(0,0,0,.08)",
+                  }}
+                />
 
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <h4 className="text-[12px] font-semibold text-slate-800">
-                Top Reasons
-              </h4>
-              <span className="text-[10px] font-medium text-slate-400">
-                Top 5
-              </span>
-            </div>
+                {/* Center Text */}
 
-            <div className="space-y-1.5">
-              {topFive.map((item, index) => {
-                const pctOfTotal = ((item.qty / totalReject) * 100).toFixed(1);
-                const barWidth = (item.qty / maxQty) * 100;
+                <text
+                  x="50%"
+                  y="44%"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  style={{ fontSize: 10, fill: "#64748b", fontWeight: 600 }}
+                >
+                  Total
+                </text>
 
-                return (
-                  <motion.div
-                    key={item.reason}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.08 + index * 0.05, duration: 0.25 }}
-                    className="group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="h-2 w-2 shrink-0 rounded"
+                <text
+                  x="50%"
+                  y="55%"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  style={{ fontSize: 20, fill: "#0f172a", fontWeight: 700 }}
+                >
+                  {totalReject}
+                </text>
+
+                <text
+                  x="50%"
+                  y="65%"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  style={{ fontSize: 9, fill: "#94a3b8" }}
+                >
+                  Reject Qty
+                </text>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* ================= RIGHT PANEL ================= */}
+
+          <div className="flex flex-1 flex-col justify-between px-3 py-2.5">
+            {/* Top Reasons */}
+
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <h4 className="text-[12px] font-semibold text-slate-800">
+                  Top Reasons
+                </h4>
+                <span className="text-[10px] font-medium text-slate-400">
+                  Top {topFive.length}
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                {topFive.map((item, index) => {
+                  const pctOfTotal = ((item.qty / totalReject) * 100).toFixed(1);
+                  const barWidth = (item.qty / maxQty) * 100;
+
+                  return (
+                    <motion.div
+                      key={item.reason}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.08 + index * 0.05, duration: 0.25 }}
+                      className="group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="h-2 w-2 shrink-0 rounded"
+                            style={{ backgroundColor: COLORS[index] }}
+                          />
+                          <span className="text-[11px] font-medium text-slate-700">
+                            {item.reason}
+                          </span>
+                        </div>
+
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-[11px] font-semibold text-slate-800">
+                            {item.qty}
+                          </span>
+                          <span className="text-[9px] font-medium text-slate-400">
+                            ({pctOfTotal}%)
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* level / proportion bar */}
+                      <div className="mt-1 h-1 w-full overflow-hidden rounded bg-slate-100">
+                        <motion.div
+                          className="h-full rounded-full"
                           style={{ backgroundColor: COLORS[index] }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${barWidth}%` }}
+                          transition={{
+                            delay: 0.15 + index * 0.05,
+                            duration: 0.5,
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
                         />
-                        <span className="text-[11px] font-medium text-slate-700">
-                          {item.reason}
-                        </span>
                       </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
 
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-[11px] font-semibold text-slate-800">
-                          {item.qty}
-                        </span>
-                        <span className="text-[9px] font-medium text-slate-400">
-                          ({pctOfTotal}%)
-                        </span>
-                      </div>
-                    </div>
+            {/* KPI Cards */}
 
-                    {/* level / proportion bar */}
-                    <div className="mt-1 h-1 w-full overflow-hidden rounded bg-slate-100">
-                      <motion.div
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: COLORS[index] }}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${barWidth}%` }}
-                        transition={{
-                          delay: 0.15 + index * 0.05,
-                          duration: 0.5,
-                          ease: [0.22, 1, 0.36, 1],
-                        }}
-                      />
-                    </div>
-                  </motion.div>
-                );
-              })}
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              {/* Highest */}
+
+              <motion.div
+                whileHover={{ y: -2 }}
+                className="rounded bg-red-50 px-2.5 py-1.5"
+              >
+                <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">
+                  Highest
+                </p>
+                <h5 className="mt-0.5 truncate text-[12px] font-bold leading-none text-red-600">
+                  {topReason.reason}
+                </h5>
+                <p className="mt-1 text-[10px] leading-none text-slate-500">
+                  {topReason.qty} Nos
+                </p>
+              </motion.div>
+
+              {/* Reject % */}
+
+              <motion.div
+                whileHover={{ y: -2 }}
+                className="rounded bg-orange-50 px-2.5 py-1.5"
+              >
+                <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">
+                  Reject %
+                </p>
+                <h5 className="mt-0.5 text-base font-bold leading-none text-orange-600">
+                  {rejectionRate}%
+                </h5>
+                <p className="mt-1 text-[10px] leading-none text-slate-500">
+                  Overall
+                </p>
+              </motion.div>
             </div>
           </div>
-
-          {/* KPI Cards */}
-
-          <div className="mt-2.5 grid grid-cols-2 gap-2">
-            {/* Highest */}
-
-            <motion.div
-              whileHover={{ y: -2 }}
-              className="rounded bg-red-50 px-2.5 py-1.5"
-            >
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">
-                Highest
-              </p>
-              <h5 className="mt-0.5 truncate text-[12px] font-bold leading-none text-red-600">
-                {topReason.reason}
-              </h5>
-              <p className="mt-1 text-[10px] leading-none text-slate-500">
-                {topReason.qty} Nos
-              </p>
-            </motion.div>
-
-            {/* Reject % */}
-
-            <motion.div
-              whileHover={{ y: -2 }}
-              className="rounded bg-orange-50 px-2.5 py-1.5"
-            >
-              <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">
-                Reject %
-              </p>
-              <h5 className="mt-0.5 text-base font-bold leading-none text-orange-600">
-                {rejectionRate}%
-              </h5>
-              <p className="mt-1 text-[10px] leading-none text-slate-500">
-                Overall
-              </p>
-            </motion.div>
-          </div>
         </div>
-      </div>
+      )}
     </motion.div>
   );
 };

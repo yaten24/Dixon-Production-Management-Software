@@ -12,16 +12,9 @@ import {
   LabelList,
 } from "recharts";
 import { HiOutlineCube } from "react-icons/hi2";
+import useProductionOverview from "../../hooks/useProductionOverview";
 
 /* ---------- matches dashboard accent family: blue -> indigo -> purple ---------- */
-
-const productionData = [
-  { hall: "Hall-1", target: 12000, actual: 11450, rejection: 220 },
-  { hall: "Hall-2", target: 9500, actual: 9100, rejection: 180 },
-  { hall: "Hall-3", target: 15000, actual: 14600, rejection: 260 },
-  { hall: "Hall-4", target: 18500, actual: 17950, rejection: 340 },
-  { hall: "C-8", target: 8200, actual: 7900, rejection: 120 },
-];
 
 const summaryConfig = [
   { key: "target", label: "Target", color: "text-blue-600", dot: "bg-blue-600" },
@@ -30,6 +23,8 @@ const summaryConfig = [
 ];
 
 const ProductionChart = () => {
+  const { data: productionData, loading, error, refetch } = useProductionOverview();
+
   const totalTarget = productionData.reduce((sum, item) => sum + item.target, 0);
   const totalActual = productionData.reduce((sum, item) => sum + item.actual, 0);
   const totalReject = productionData.reduce((sum, item) => sum + item.rejection, 0);
@@ -77,66 +72,86 @@ const ProductionChart = () => {
         </span>
       </div>
 
-      {/* ================= Chart ================= */}
+      {/* ================= Chart / Loading / Error ================= */}
 
-      <div className="flex-1 px-2.5 pt-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={productionData}
-            margin={{ top: 14, right: 8, left: -22, bottom: 0 }}
+      {loading ? (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="h-[220px] w-[92%] animate-pulse rounded bg-slate-100" />
+        </div>
+      ) : error ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
+          <p className="text-[12px] text-red-600">{error}</p>
+          <button
+            onClick={refetch}
+            className="rounded bg-red-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-red-700"
           >
-            <CartesianGrid strokeDasharray="2 2" vertical={false} stroke="#eef1f5" />
+            Retry
+          </button>
+        </div>
+      ) : productionData.length === 0 ? (
+        <div className="flex flex-1 items-center justify-center">
+          <p className="text-[12px] text-slate-400">Aaj ke liye koi data nahi hai</p>
+        </div>
+      ) : (
+        <div className="flex-1 px-2.5 pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={productionData}
+              margin={{ top: 14, right: 8, left: -22, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="2 2" vertical={false} stroke="#eef1f5" />
 
-            <XAxis dataKey="hall" tick={{ fontSize: 10.5, fontWeight: 600 }} />
+              <XAxis dataKey="hall" tick={{ fontSize: 10.5, fontWeight: 600 }} />
 
-            <YAxis tick={{ fontSize: 9.5 }} />
+              <YAxis tick={{ fontSize: 9.5 }} />
 
-            <Tooltip
-              cursor={{ fill: "#f8fafc" }}
-              contentStyle={{
-                border: "1px solid #E2E4E9",
-                borderRadius: 8,
-                fontSize: 11,
-                boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
-              }}
-            />
-
-            <Legend wrapperStyle={{ fontSize: 10.5 }} iconSize={8} />
-
-            {/* ================= TARGET ================= */}
-
-            <Bar dataKey="target" name="Target" fill="#2563EB" maxBarSize={30} radius={[3, 3, 0, 0]}>
-              <LabelList
-                dataKey="target"
-                position="top"
-                formatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                style={{ fontSize: 9.5, fontWeight: 600, fill: "#64748b" }}
+              <Tooltip
+                cursor={{ fill: "#f8fafc" }}
+                contentStyle={{
+                  border: "1px solid #E2E4E9",
+                  borderRadius: 8,
+                  fontSize: 11,
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+                }}
               />
-            </Bar>
 
-            {/* ================= ACTUAL ================= */}
+              <Legend wrapperStyle={{ fontSize: 10.5 }} iconSize={8} />
 
-            <Bar dataKey="actual" name="Actual" fill="#10B981" maxBarSize={30} radius={[3, 3, 0, 0]}>
-              <LabelList
-                dataKey="actual"
-                position="top"
-                formatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                style={{ fontSize: 9.5, fontWeight: 600, fill: "#64748b" }}
-              />
-            </Bar>
+              {/* ================= TARGET ================= */}
 
-            {/* ================= REJECTION ================= */}
+              <Bar dataKey="target" name="Target" fill="#2563EB" maxBarSize={30} radius={[3, 3, 0, 0]}>
+                <LabelList
+                  dataKey="target"
+                  position="top"
+                  formatter={(value) => `${(value / 1000).toFixed(1)}k`}
+                  style={{ fontSize: 9.5, fontWeight: 600, fill: "#64748b" }}
+                />
+              </Bar>
 
-            <Bar dataKey="rejection" name="Reject" fill="#DC2626" maxBarSize={30} radius={[3, 3, 0, 0]}>
-              <LabelList
-                dataKey="rejection"
-                position="top"
-                style={{ fontSize: 9.5, fontWeight: 600, fill: "#94a3b8" }}
-              />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+              {/* ================= ACTUAL ================= */}
+
+              <Bar dataKey="actual" name="Actual" fill="#10B981" maxBarSize={30} radius={[3, 3, 0, 0]}>
+                <LabelList
+                  dataKey="actual"
+                  position="top"
+                  formatter={(value) => `${(value / 1000).toFixed(1)}k`}
+                  style={{ fontSize: 9.5, fontWeight: 600, fill: "#64748b" }}
+                />
+              </Bar>
+
+              {/* ================= REJECTION ================= */}
+
+              <Bar dataKey="rejection" name="Reject" fill="#DC2626" maxBarSize={30} radius={[3, 3, 0, 0]}>
+                <LabelList
+                  dataKey="rejection"
+                  position="top"
+                  style={{ fontSize: 9.5, fontWeight: 600, fill: "#94a3b8" }}
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* ================= Summary ================= */}
 

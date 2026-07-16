@@ -8,6 +8,7 @@ import RejectionAnalysis from "../compenents/dashboard/RejectionAnalysis";
 import LossTimeAnalysis from "../compenents/dashboard/LossTimeAnalysis";
 import AttendanceWidget from "../compenents/dashboard/RejectionLossTrend";
 import ProductionStats from "../compenents/dashboard/ProductionStats";
+import TargetSummary from "../compenents/dashboard/TargetSummary";
 
 const Dashboard = () => {
   return (
@@ -35,6 +36,9 @@ const Dashboard = () => {
     "
           >
             <div className="space-y-1">
+              {/* Shift A / Shift B / Overall target — plan tables se */}
+              <TargetSummary />
+
               <ProductionStats />
 
               <div className="grid grid-cols-1 gap-1 xl:grid-cols-2">
