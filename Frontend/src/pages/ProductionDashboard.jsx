@@ -30,7 +30,7 @@ const ProductionDashboard = () => {
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden p-1.5">
+        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden p-1">
           <DashboardFilters
             date={date}
             setDate={setDate}

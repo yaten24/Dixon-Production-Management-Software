@@ -58,9 +58,9 @@ export const HALL_ACCENT = {
 };
 
 export const halls = [
-  "All",
-  "Hall-1",
-  "Hall-2",
-  "Hall-3",
-  "Hall-4",
+  "Hall 1",
+  "Hall 2",
+  "Hall 3",
+  "Hall 4",
+  "C8",
 ];

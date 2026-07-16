@@ -18,11 +18,9 @@ const Dashboard = () => {
 
       {/* Right Section */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Header */}
-        <Header />
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-100 mt-12 p-1">
+        <main className="flex-1 overflow-y-auto bg-slate-100 p-1">
           <div
             className="
       w-full

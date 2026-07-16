@@ -284,8 +284,7 @@ export default function ActivityLogs() {
       <Sidebar />
 
       {/* Main */}
-      <div className="flex flex-col flex-1 mt-12 overflow-hidden">
-        <Header />
+      <div className="flex flex-col flex-1 overflow-hidden">
 
         <main className="flex-1 overflow-y-auto bg-white">
           <motion.div
