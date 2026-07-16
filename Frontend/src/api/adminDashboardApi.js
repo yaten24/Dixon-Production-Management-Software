@@ -45,4 +45,22 @@ export const fetchRejectionAnalysis = async (params = {}) => {
   return response.data; // { success, date, data: [{ reason, qty }], totalReject, rejectionRate }
 };
 
+/**
+ * Fetch reason-wise downtime breakdown for the LossTimeAnalysis donut.
+ * @param {{date?: string, hall?: string, shift?: string}} params
+ */
+export const fetchLossTimeAnalysis = async (params = {}) => {
+  const response = await api.get("/admin/dashboard/loss-time-analysis", { params });
+  return response.data; // { success, date, data: [{ reason, minutes }], totalLoss, lossPercentage }
+};
+
+/**
+ * Fetch daily rejection + loss time trend (zero-filled rolling window).
+ * @param {{days?: number, endDate?: string, hall?: string, shift?: string}} params
+ */
+export const fetchRejectionLossTrend = async (params = {}) => {
+  const response = await api.get("/admin/dashboard/rejection-loss-trend", { params });
+  return response.data; // { success, startDate, endDate, data: [{ date, day, rejection, lossTime }] }
+};
+
 export default api;

@@ -30,7 +30,7 @@ const getShiftWiseTarget = async (planningDate, hall) => {
      JOIN production_plan_details d ON d.plan_id = h.plan_id
      WHERE ${whereClause}
      GROUP BY h.shift`,
-    params,
+    params
   );
 
   // Defaults so a shift with no plan yet still returns clean zeros, not undefined
@@ -76,8 +76,8 @@ const getProductionStats = async (req, res) => {
       shift === "A"
         ? targetSummary.shiftA.targetQty
         : shift === "B"
-          ? targetSummary.shiftB.targetQty
-          : targetSummary.overall.targetQty;
+        ? targetSummary.shiftB.targetQty
+        : targetSummary.overall.targetQty;
 
     // ---------- 2) ACTUALS from production_entries ----------
     const filters = ["entry_date = ?"];
@@ -104,7 +104,7 @@ const getProductionStats = async (req, res) => {
          COUNT(DISTINCT machine_id)       AS activeMachines
        FROM production_entries
        WHERE ${whereClause}`,
-      params,
+      params
     );
 
     const stats = rows[0];
@@ -201,7 +201,7 @@ const getProductionOverview = async (req, res) => {
        JOIN production_plan_details d ON d.plan_id = h.plan_id
        WHERE ${targetFilters.join(" AND ")}
        GROUP BY h.hall`,
-      targetParams,
+      targetParams
     );
 
     // ---------- ACTUAL + REJECTION per hall, from entries ----------
@@ -219,7 +219,7 @@ const getProductionOverview = async (req, res) => {
        FROM production_entries
        WHERE ${entryFilters.join(" AND ")}
        GROUP BY hall`,
-      entryParams,
+      entryParams
     );
 
     // ---------- merge target + actual by hall name ----------
@@ -243,7 +243,7 @@ const getProductionOverview = async (req, res) => {
     });
 
     const data = Object.values(hallMap).sort((a, b) =>
-      a.hall.localeCompare(b.hall, undefined, { numeric: true }),
+      a.hall.localeCompare(b.hall, undefined, { numeric: true })
     );
 
     return res.status(200).json({
@@ -297,7 +297,7 @@ const getRejectionAnalysis = async (req, res) => {
        GROUP BY rr.id, rr.reason_name
        HAVING qty > 0
        ORDER BY qty DESC`,
-      params,
+      params
     );
 
     // ---------- total actual qty for the same filter, to compute rejection % ----------
@@ -305,19 +305,14 @@ const getRejectionAnalysis = async (req, res) => {
       `SELECT COALESCE(SUM(actual_qty), 0) AS totalActual
        FROM production_entries pe
        WHERE ${whereClause}`,
-      params,
+      params
     );
 
-    const data = reasonRows.map((r) => ({
-      reason: r.reason,
-      qty: Number(r.qty),
-    }));
+    const data = reasonRows.map((r) => ({ reason: r.reason, qty: Number(r.qty) }));
     const totalReject = data.reduce((sum, r) => sum + r.qty, 0);
     const totalActual = Number(actualRows[0].totalActual);
     const rejectionRate =
-      totalActual > 0
-        ? Number(((totalReject / totalActual) * 100).toFixed(2))
-        : 0;
+      totalActual > 0 ? Number(((totalReject / totalActual) * 100).toFixed(2)) : 0;
 
     return res.status(200).json({
       success: true,
@@ -335,9 +330,177 @@ const getRejectionAnalysis = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/dashboard/loss-time-analysis
+ * Optional query params: date (YYYY-MM-DD, default today), hall, shift
+ *
+ * Reason-wise downtime minutes from production_loss_times, joined to
+ * production_entries (for the date/hall/shift filter) and loss_reasons
+ * (for the display name + category).
+ *
+ * lossPercentage is computed against total available minutes for the
+ * machines that actually reported entries (activeMachines * 1440), not a
+ * flat /1440 — more honest when hall/shift filters narrow it to a few machines.
+ *
+ * Response: { success, date, data: [{ reason, minutes }], totalLoss, lossPercentage }
+ */
+const getLossTimeAnalysis = async (req, res) => {
+  try {
+    const { date, hall, shift } = req.query;
+    const entryDate = date || new Date().toISOString().slice(0, 10);
+
+    const filters = ["pe.entry_date = ?"];
+    const params = [entryDate];
+    if (hall) {
+      filters.push("pe.hall = ?");
+      params.push(hall);
+    }
+    if (shift) {
+      filters.push("pe.shift = ?");
+      params.push(shift);
+    }
+    const whereClause = filters.join(" AND ");
+
+    // ---------- reason-wise breakdown ----------
+    const [reasonRows] = await pool.query(
+      `SELECT lr.reason_name AS reason, COALESCE(SUM(plt.loss_minutes), 0) AS minutes
+       FROM production_loss_times plt
+       JOIN production_entries pe ON pe.id = plt.production_entry_id
+       JOIN loss_reasons lr ON lr.id = plt.loss_reason_id
+       WHERE ${whereClause}
+       GROUP BY lr.id, lr.reason_name
+       HAVING minutes > 0
+       ORDER BY minutes DESC`,
+      params
+    );
+
+    // ---------- active machines for the same filter, for a fair % base ----------
+    const [machineRows] = await pool.query(
+      `SELECT COUNT(DISTINCT machine_id) AS activeMachines
+       FROM production_entries pe
+       WHERE ${whereClause}`,
+      params
+    );
+
+    const data = reasonRows.map((r) => ({
+      reason: r.reason,
+      minutes: Number(r.minutes),
+    }));
+    const totalLoss = data.reduce((sum, r) => sum + r.minutes, 0);
+    const activeMachines = Number(machineRows[0].activeMachines);
+    const availableMinutes = activeMachines * 1440;
+    const lossPercentage =
+      availableMinutes > 0
+        ? Number(((totalLoss / availableMinutes) * 100).toFixed(1))
+        : 0;
+
+    return res.status(200).json({
+      success: true,
+      date: entryDate,
+      data,
+      totalLoss,
+      activeMachines,
+      lossPercentage,
+    });
+  } catch (err) {
+    console.error("getLossTimeAnalysis error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch loss time analysis",
+    });
+  }
+};
+
+/**
+ * GET /api/dashboard/rejection-loss-trend
+ * Optional query params: days (default 6, max 31), endDate (YYYY-MM-DD, default today), hall, shift
+ *
+ * Daily rejection qty + loss minutes from production_entries for a rolling
+ * window. Missing days (no entries at all) are zero-filled so the chart's
+ * x-axis always has a continuous, evenly-spaced date range.
+ *
+ * Response: { success, startDate, endDate, data: [{ date, day, rejection, lossTime }] }
+ */
+const getRejectionLossTrend = async (req, res) => {
+  try {
+    const { days, endDate, hall, shift } = req.query;
+    const numDays = Math.min(Math.max(parseInt(days, 10) || 6, 1), 31);
+
+    const end = endDate ? new Date(`${endDate}T00:00:00`) : new Date();
+    end.setHours(0, 0, 0, 0);
+
+    // Build the rolling window of dates (oldest -> newest), e.g. last 6 days
+    const dateList = [];
+    for (let i = numDays - 1; i >= 0; i--) {
+      const d = new Date(end);
+      d.setDate(d.getDate() - i);
+      dateList.push(d.toISOString().slice(0, 10));
+    }
+
+    const startDateStr = dateList[0];
+    const endDateStr = dateList[dateList.length - 1];
+
+    const filters = ["entry_date BETWEEN ? AND ?"];
+    const params = [startDateStr, endDateStr];
+    if (hall) {
+      filters.push("hall = ?");
+      params.push(hall);
+    }
+    if (shift) {
+      filters.push("shift = ?");
+      params.push(shift);
+    }
+
+    const [rows] = await pool.query(
+      `SELECT entry_date,
+              COALESCE(SUM(reject_qty), 0)   AS rejection,
+              COALESCE(SUM(loss_minutes), 0) AS lossTime
+       FROM production_entries
+       WHERE ${filters.join(" AND ")}
+       GROUP BY entry_date`,
+      params
+    );
+
+    const rowMap = {};
+    rows.forEach((r) => {
+      rowMap[r.entry_date] = {
+        rejection: Number(r.rejection),
+        lossTime: Number(r.lossTime),
+      };
+    });
+
+    const dayLabel = (dateStr) =>
+      new Date(`${dateStr}T00:00:00`).toLocaleDateString("en-US", {
+        weekday: "short",
+      });
+
+    const data = dateList.map((dateStr) => ({
+      date: dateStr,
+      day: dayLabel(dateStr),
+      rejection: rowMap[dateStr]?.rejection || 0,
+      lossTime: rowMap[dateStr]?.lossTime || 0,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      startDate: startDateStr,
+      endDate: endDateStr,
+      data,
+    });
+  } catch (err) {
+    console.error("getRejectionLossTrend error:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch rejection & loss trend",
+    });
+  }
+};
+
 module.exports = {
   getProductionStats,
   getTargetSummary,
   getProductionOverview,
   getRejectionAnalysis,
+  getLossTimeAnalysis,
+  getRejectionLossTrend,
 };

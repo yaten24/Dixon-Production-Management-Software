@@ -12,17 +12,9 @@ import {
   Legend,
 } from "recharts";
 import { HiOutlineChartBar } from "react-icons/hi2";
+import useRejectionLossTrend from "../../hooks/useRejectionLossTrend";
 
 /* ---------- matches dashboard accent family; violet accent for header, semantic colors kept in KPIs/lines ---------- */
-
-const trendData = [
-  { day: "Mon", rejection: 180, lossTime: 35 },
-  { day: "Tue", rejection: 240, lossTime: 42 },
-  { day: "Wed", rejection: 150, lossTime: 28 },
-  { day: "Thu", rejection: 130, lossTime: 22 },
-  { day: "Fri", rejection: 210, lossTime: 48 },
-  { day: "Sat", rejection: 140, lossTime: 25 },
-];
 
 const kpiConfig = [
   { key: "reject", label: "Reject", suffix: "", unit: "Total Qty", bg: "bg-red-50", color: "text-red-600" },
@@ -32,10 +24,46 @@ const kpiConfig = [
 ];
 
 const RejectionLossTrend = () => {
+  const { data: trendData, loading, error, refetch } = useRejectionLossTrend({ days: 6 });
+
+  // ================= Loading =================
+  if (loading) {
+    return (
+      <div className="flex h-full min-h-[300px] flex-col overflow-hidden rounded border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-3.5 py-2.5">
+          <div className="h-4 w-40 animate-pulse rounded bg-slate-100" />
+        </div>
+        <div className="grid grid-cols-2 gap-2 px-2.5 pt-2.5 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-[58px] animate-pulse rounded bg-slate-100" />
+          ))}
+        </div>
+        <div className="flex-1 px-2.5 pb-2.5 pt-3">
+          <div className="h-full w-full animate-pulse rounded bg-slate-100" />
+        </div>
+      </div>
+    );
+  }
+
+  // ================= Error =================
+  if (error) {
+    return (
+      <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-2 rounded border border-red-200 bg-white p-4 text-center shadow-sm">
+        <p className="text-[12px] text-red-600">{error}</p>
+        <button
+          onClick={refetch}
+          className="rounded bg-red-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-red-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   const totalReject = trendData.reduce((sum, item) => sum + item.rejection, 0);
   const totalLoss = trendData.reduce((sum, item) => sum + item.lossTime, 0);
-  const avgReject = Math.round(totalReject / trendData.length);
-  const avgLoss = Math.round(totalLoss / trendData.length);
+  const avgReject = trendData.length ? Math.round(totalReject / trendData.length) : 0;
+  const avgLoss = trendData.length ? Math.round(totalLoss / trendData.length) : 0;
 
   const kpiValues = {
     reject: totalReject,
@@ -71,7 +99,7 @@ const RejectionLossTrend = () => {
               Rejection &amp; Loss Trend
             </h3>
             <p className="mt-1 text-[10px] leading-none text-slate-500">
-              Last 6 Days Performance
+              Last {trendData.length} Days Performance
             </p>
           </div>
         </div>

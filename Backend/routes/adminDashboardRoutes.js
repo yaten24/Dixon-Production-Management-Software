@@ -6,6 +6,8 @@ const {
   getTargetSummary,
   getProductionOverview,
   getRejectionAnalysis,
+  getLossTimeAnalysis,
+  getRejectionLossTrend,
 } = require("../controllers/adminDashboardController");
 
 // GET /api/dashboard/production-stats?date=2026-07-16&hall=Hall-1&shift=A
@@ -22,5 +24,13 @@ router.get("/production-overview", getProductionOverview);
 // GET /api/dashboard/rejection-analysis?date=2026-07-16&hall=Hall-1&shift=A
 // Reason-wise rejection breakdown (RejectionAnalysis donut ke liye)
 router.get("/rejection-analysis", getRejectionAnalysis);
+
+// GET /api/dashboard/loss-time-analysis?date=2026-07-16&hall=Hall-1&shift=A
+// Reason-wise downtime breakdown (LossTimeAnalysis donut ke liye)
+router.get("/loss-time-analysis", getLossTimeAnalysis);
+
+// GET /api/dashboard/rejection-loss-trend?days=6&endDate=2026-07-16&hall=Hall-1&shift=A
+// Daily rejection + loss time trend, zero-filled (RejectionLossTrend chart ke liye)
+router.get("/rejection-loss-trend", getRejectionLossTrend);
 
 module.exports = router;
