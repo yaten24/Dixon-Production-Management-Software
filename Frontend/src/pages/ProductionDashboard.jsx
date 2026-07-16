@@ -23,17 +23,14 @@ const ProductionDashboard = () => {
 
   const handleExportExcel = () => {
     console.log("Export Excel", { date });
-    // Future: Excel Export API
   };
 
   return (
-    <div className="flex h-screen max-h-screen overflow-hidden bg-slate-100">
+    <div className="flex h-screen max-h-screen overflow-hidden bg-[#F5F5F5]">
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Everything below fits within the viewport height — no page scroll */}
-        <main className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden p-1">
-          {/* Filters — fixed height */}
+        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden p-1.5">
           <DashboardFilters
             date={date}
             setDate={setDate}
@@ -46,7 +43,6 @@ const ProductionDashboard = () => {
             </div>
           )}
 
-          {/* Summary cards — always show all halls; zero-fill + warning if no data */}
           <SummaryCards
             overall={summary.overall}
             hallSummary={summary.hallSummary}
@@ -55,7 +51,6 @@ const ProductionDashboard = () => {
             onSelectHall={handleViewHallData}
           />
 
-          {/* Chart — takes all remaining vertical space */}
           <div className="min-h-0 flex-1">
             <OverallProductionChart
               data={hourlyData}

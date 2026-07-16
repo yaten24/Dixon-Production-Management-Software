@@ -1,10 +1,14 @@
 import React from "react";
+import { motion } from "framer-motion";
 import { FaChevronRight } from "react-icons/fa";
 
 const ChartCard = ({ icon, iconBg, title, subtitle, onViewHall, full, children }) => {
   return (
-    <div
-      className={`flex h-full min-h-0 flex-col rounded border border-gray-100 bg-white p-2 shadow-sm ${
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className={`flex h-full min-h-0 flex-col rounded border border-[#C6C6C6]/50 bg-white p-2 shadow-sm ${
         full ? "w-full" : ""
       }`}
     >
@@ -17,24 +21,25 @@ const ChartCard = ({ icon, iconBg, title, subtitle, onViewHall, full, children }
             {icon}
           </div>
           <div>
-            <h3 className="text-xs font-semibold text-gray-800">{title}</h3>
-            <p className="text-[9px] text-gray-500">{subtitle}</p>
+            <h3 className="text-xs font-bold text-[#0F1D24]">{title}</h3>
+            <p className="text-[9px] text-[#9B9B9B]">{subtitle}</p>
           </div>
         </div>
 
         {onViewHall && (
-          <button
+          <motion.button
             onClick={onViewHall}
-            className="flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:text-blue-700"
+            whileHover={{ x: 2 }}
+            className="flex items-center gap-1 text-[10px] font-semibold text-[#0F1D24] transition-colors hover:text-[#0F1D24]/70"
           >
             View Details
             <FaChevronRight className="text-[8px]" />
-          </button>
+          </motion.button>
         )}
       </div>
 
       <div className="min-h-0 flex-1">{children}</div>
-    </div>
+    </motion.div>
   );
 };
 

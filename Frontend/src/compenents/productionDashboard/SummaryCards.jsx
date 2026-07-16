@@ -1,17 +1,11 @@
 import React from "react";
+import { motion } from "framer-motion";
 import { FaExclamationTriangle } from "react-icons/fa";
 import SummaryCard from "./SummaryCard";
 
-/**
- * halls: static list of all hall names, e.g. ["Hall 1","Hall 2","Hall 3","Hall 4","C-8"]
- * hallSummary: array from API — only contains halls that HAVE entries for the selected date
- * overall: { target, actual, rejection } for the whole day (may be all-zero)
- */
 const SummaryCards = ({ overall, hallSummary = [], halls = [], hallAccent, onSelectHall }) => {
-  // Map API data by hall name for quick lookup
   const summaryMap = new Map(hallSummary.map((h) => [h.hall, h]));
 
-  // Always render every hall — fill missing ones with zeros
   const normalizedHallCards = halls.map((hallName) => {
     const existing = summaryMap.get(hallName);
     return {
@@ -29,27 +23,30 @@ const SummaryCards = ({ overall, hallSummary = [], halls = [], hallAccent, onSel
       target: Number(overall?.target) || 0,
       actual: Number(overall?.actual) || 0,
       rejection: Number(overall?.rejection) || 0,
-      color: "#2563EB",
+      color: "#0F1D24",
       isOverall: true,
     },
     ...normalizedHallCards.map((h) => ({
       ...h,
-      color: hallAccent[h.hall] || "#2563EB",
+      color: hallAccent[h.hall] || "#0F1D24",
     })),
   ];
 
-  // No hall has any entry for this date at all
   const noDataAtAll = normalizedHallCards.every((h) => !h.hasData);
 
   return (
     <div className="w-full flex-shrink-0 space-y-1.5">
       {noDataAtAll && (
-        <div className="flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-700">
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-700"
+        >
           <FaExclamationTriangle className="flex-shrink-0 text-amber-500" />
           <span>
             No production data uploaded by the supervisor for this date — showing 0 for all halls.
           </span>
-        </div>
+        </motion.div>
       )}
 
       <div
@@ -58,7 +55,7 @@ const SummaryCards = ({ overall, hallSummary = [], halls = [], hallAccent, onSel
           gridTemplateColumns: `repeat(${allCards.length}, minmax(140px, 1fr))`,
         }}
       >
-        {allCards.map((card) => (
+        {allCards.map((card, index) => (
           <SummaryCard
             key={card.hall}
             hall={card.hall}

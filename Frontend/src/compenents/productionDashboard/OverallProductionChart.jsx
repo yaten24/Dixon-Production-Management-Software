@@ -4,19 +4,16 @@ import ChartCard from "./ChartCard";
 
 const MIN_HEIGHT = 160;
 
-// ---- Shift config ----
-const SHIFT_A_START = 8;   // 08:00 (8 AM)
-const SHIFT_A_END = 20;    // upto 20:00 (8 PM), exclusive
+const SHIFT_A_START = 8;
+const SHIFT_A_END = 20;
 const SHIFT_COLORS = {
-  A: { band: "#FEF3C7", label: "#B45309", swatch: "#F59E0B", border: "#F59E0B" }, // amber — Day
-  B: { band: "#DBEAFE", label: "#1D4ED8", swatch: "#3B82F6", border: "#3B82F6" }, // blue — Night
+  A: { band: "#FDC94D22", label: "#0F1D24", swatch: "#FDC94D", border: "#FDC94D" }, // gold — Day
+  B: { band: "#0F1D2414", label: "#0F1D24", swatch: "#0F1D24", border: "#0F1D24" }, // navy — Night
 };
 
 const getShift = (hourIdx) =>
   hourIdx >= SHIFT_A_START && hourIdx < SHIFT_A_END ? "A" : "B";
 
-// Build 24 slots, REORDERED to start from Shift A's start hour so the two
-// shifts render as two clean, contiguous, non-split blocks left-to-right.
 const buildFullDayData = (data) => {
   const map = new Map();
   (data || []).forEach((d) => {
@@ -45,7 +42,6 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
   const containerRef = useRef(null);
   const [size, setSize] = useState({ width: 700, height: 320 });
 
-  // ---- Responsive width AND height tracking ----
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -64,7 +60,6 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
 
   const { width, height } = size;
 
-  // Padding scales down a bit on shorter containers
   const compact = height < 280;
   const PADDING = compact
     ? { top: 46, right: 10, bottom: 32, left: 38 }
@@ -113,7 +108,6 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
       Math.round((niceMax / tickCount) * i)
     );
 
-    // Data is reordered to start at Shift A -> exactly two segments, no wrap-split.
     const segments = [];
     computed.forEach((b) => {
       const last = segments[segments.length - 1];
@@ -137,8 +131,8 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
 
   return (
     <ChartCard
-      icon={<FaChartLine className="text-[10px] text-white" />}
-      iconBg="#1d4ed8"
+      icon={<FaChartLine className="text-[10px] text-[#FDC94D]" />}
+      iconBg="#0F1D24"
       title="Overall Production — All Halls"
       subtitle={`Combined hourly target vs actual · Day starts ${String(
         SHIFT_A_START
@@ -158,41 +152,41 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
       `}</style>
 
       {loading ? (
-        <div className="flex h-full min-h-[160px] items-center justify-center text-[11px] text-gray-400">
+        <div className="flex h-full min-h-[160px] items-center justify-center text-[11px] text-[#9B9B9B]">
           Loading hourly data...
         </div>
       ) : (
         <div ref={containerRef} className="relative flex h-full min-h-0 w-full flex-col">
           {/* Legend */}
           <div className="mb-1 flex flex-shrink-0 flex-wrap items-center justify-end gap-2 pr-1">
-            <div className="flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5">
+            <div className="flex items-center gap-1.5 rounded-full border border-[#FDC94D]/50 bg-[#FDC94D]/10 px-2 py-0.5">
               <span
                 className="h-2 w-2 rounded-full"
                 style={{ background: SHIFT_COLORS.A.swatch }}
               />
-              <span className="text-[10px] font-semibold text-amber-700">
+              <span className="text-[10px] font-semibold text-[#0F1D24]">
                 Shift A · {String(SHIFT_A_START).padStart(2, "0")}:00–
                 {String(SHIFT_A_END).padStart(2, "0")}:00
               </span>
             </div>
-            <div className="flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5">
+            <div className="flex items-center gap-1.5 rounded-full border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-2 py-0.5">
               <span
                 className="h-2 w-2 rounded-full"
                 style={{ background: SHIFT_COLORS.B.swatch }}
               />
-              <span className="text-[10px] font-semibold text-blue-700">
+              <span className="text-[10px] font-semibold text-[#0F1D24]">
                 Shift B · {String(SHIFT_A_END).padStart(2, "0")}:00–
                 {String(SHIFT_A_START).padStart(2, "0")}:00
               </span>
             </div>
-            <div className="mx-1 h-4 w-px bg-gray-200" />
+            <div className="mx-1 h-4 w-px bg-[#C6C6C6]" />
             <div className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-[2px] bg-[#94A3B8]" />
-              <span className="text-[10px] font-medium text-gray-500">Target</span>
+              <span className="h-2.5 w-2.5 rounded-[2px] bg-[#C6C6C6]" />
+              <span className="text-[10px] font-medium text-[#9B9B9B]">Target</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-[2px] bg-[#2563EB]" />
-              <span className="text-[10px] font-medium text-gray-500">Actual</span>
+              <span className="h-2.5 w-2.5 rounded-[2px] bg-[#0F1D24]" />
+              <span className="text-[10px] font-medium text-[#9B9B9B]">Actual</span>
             </div>
           </div>
 
@@ -210,7 +204,6 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
               className="block"
               preserveAspectRatio="none"
             >
-              {/* Shift background bands */}
               {shiftSegments.map((seg, i) => (
                 <rect
                   key={`seg-${i}`}
@@ -219,26 +212,24 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                   width={seg.endX - seg.startX}
                   height={chartH}
                   fill={SHIFT_COLORS[seg.shift].band}
-                  opacity={0.55}
+                  opacity={0.7}
                   stroke={SHIFT_COLORS[seg.shift].border}
-                  strokeOpacity={0.4}
+                  strokeOpacity={0.3}
                   strokeWidth={1}
                 />
               ))}
 
-              {/* Solid divider exactly at shift boundary */}
               {shiftSegments.length > 1 && (
                 <line
                   x1={shiftSegments[1].startX}
                   x2={shiftSegments[1].startX}
                   y1={PADDING.top - (compact ? 16 : 26)}
                   y2={PADDING.top + chartH}
-                  stroke="#475569"
+                  stroke="#0F1D24"
                   strokeWidth={1.5}
                 />
               )}
 
-              {/* Shift header pills */}
               {shiftSegments.map((seg, i) => {
                 const cx = (seg.startX + seg.endX) / 2;
                 const pillW = compact ? 56 : 70;
@@ -259,7 +250,7 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                       textAnchor="middle"
                       fontSize={compact ? "8.5" : "10"}
                       fontWeight="700"
-                      fill="#ffffff"
+                      fill={seg.shift === "A" ? "#0F1D24" : "#FDC94D"}
                     >
                       Shift {seg.shift}
                     </text>
@@ -267,7 +258,6 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                 );
               })}
 
-              {/* Grid lines + Y labels */}
               {yTicks.map((tick, i) => {
                 const y = PADDING.top + chartH - (tick / maxVal) * chartH;
                 return (
@@ -277,7 +267,7 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                       x2={width - PADDING.right}
                       y1={y}
                       y2={y}
-                      stroke="#F1F5F9"
+                      stroke="#F5F5F5"
                       strokeWidth={1}
                     />
                     <text
@@ -285,7 +275,7 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                       y={y + 3}
                       textAnchor="end"
                       fontSize="9"
-                      fill="#94A3B8"
+                      fill="#9B9B9B"
                       fontFamily="ui-monospace, monospace"
                     >
                       {tick}
@@ -294,7 +284,6 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                 );
               })}
 
-              {/* Bars */}
               {bars.map((b, i) => (
                 <g key={i}>
                   <rect
@@ -303,7 +292,7 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                     width={b.barW}
                     height={b.targetH}
                     rx={2}
-                    fill={hoverIdx === i ? "#7C8BA1" : "#94A3B8"}
+                    fill={hoverIdx === i ? "#9B9B9B" : "#C6C6C6"}
                     style={{
                       transformOrigin: `${b.targetX + b.barW / 2}px ${PADDING.top + chartH}px`,
                       animation: `growBar 500ms ease-out ${i * 20}ms both`,
@@ -316,7 +305,7 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                     width={b.barW}
                     height={b.actualH}
                     rx={2}
-                    fill={hoverIdx === i ? "#1d4ed8" : "#2563EB"}
+                    fill={hoverIdx === i ? "#1a2e38" : "#0F1D24"}
                     style={{
                       transformOrigin: `${b.actualX + b.barW / 2}px ${PADDING.top + chartH}px`,
                       animation: `growBar 500ms ease-out ${i * 20 + 40}ms both`,
@@ -324,7 +313,6 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                     }}
                   />
 
-                  {/* Value labels */}
                   {!compact && b.target > 0 && (
                     <text
                       x={b.targetX + b.barW / 2}
@@ -332,7 +320,7 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                       textAnchor="middle"
                       fontSize="8"
                       fontWeight="700"
-                      fill="#64748B"
+                      fill="#9B9B9B"
                       fontFamily="ui-monospace, monospace"
                       style={{
                         opacity: 0,
@@ -349,7 +337,7 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                       textAnchor="middle"
                       fontSize="8"
                       fontWeight="700"
-                      fill="#1d4ed8"
+                      fill="#0F1D24"
                       fontFamily="ui-monospace, monospace"
                       style={{
                         opacity: 0,
@@ -362,7 +350,6 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                 </g>
               ))}
 
-              {/* X labels (all 24 hours, starting from Shift A start) */}
               {bars.map((b, i) => (
                 <text
                   key={`label-${i}`}
@@ -371,25 +358,23 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                   textAnchor="middle"
                   fontSize={compact ? "7.5" : "8.5"}
                   fontWeight="600"
-                  fill="#64748B"
+                  fill="#9B9B9B"
                 >
                   {b.hour}
                 </text>
               ))}
 
-              {/* X axis title */}
               <text
                 x={PADDING.left + chartW / 2}
                 y={height - (compact ? 4 : 6)}
                 textAnchor="middle"
                 fontSize={compact ? "9" : "10"}
                 fontWeight="700"
-                fill="#475569"
+                fill="#0F1D24"
               >
                 Hour of Day (starts at Shift A)
               </text>
 
-              {/* Y axis title (rotated) */}
               {!compact && (
                 <text
                   x={14}
@@ -397,14 +382,13 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                   textAnchor="middle"
                   fontSize="10"
                   fontWeight="700"
-                  fill="#475569"
+                  fill="#0F1D24"
                   transform={`rotate(-90, 14, ${PADDING.top + chartH / 2})`}
                 >
                   Quantity (Units)
                 </text>
               )}
 
-              {/* Hover overlay */}
               {bars.map((b, i) => (
                 <rect
                   key={`hover-${i}`}
@@ -421,10 +405,9 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
             </svg>
           </div>
 
-          {/* Tooltip */}
           {hovered && (
             <div
-              className="pointer-events-none absolute z-10 rounded border border-[#E2E4E9] bg-white px-2 py-1.5 text-[10px] shadow-md"
+              className="pointer-events-none absolute z-10 rounded border border-[#C6C6C6]/60 bg-white px-2 py-1.5 text-[10px] shadow-md"
               style={{
                 left: `${Math.min(
                   Math.max(
@@ -438,23 +421,26 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
               }}
             >
               <div className="mb-1 flex items-center justify-between gap-3">
-                <span className="font-semibold text-gray-700">{hovered.hour}</span>
+                <span className="font-semibold text-[#0F1D24]">{hovered.hour}</span>
                 <span
-                  className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold text-white"
-                  style={{ background: SHIFT_COLORS[hovered.shift].swatch }}
+                  className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold"
+                  style={{
+                    background: SHIFT_COLORS[hovered.shift].swatch,
+                    color: hovered.shift === "A" ? "#0F1D24" : "#FDC94D",
+                  }}
                 >
                   Shift {hovered.shift}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-gray-500">Target</span>
-                <span className="font-mono font-semibold text-[#64748B]">
+                <span className="text-[#9B9B9B]">Target</span>
+                <span className="font-mono font-semibold text-[#9B9B9B]">
                   {hovered.target}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-gray-500">Actual</span>
-                <span className="font-mono font-semibold text-[#2563EB]">
+                <span className="text-[#9B9B9B]">Actual</span>
+                <span className="font-mono font-semibold text-[#0F1D24]">
                   {hovered.actual}
                 </span>
               </div>
