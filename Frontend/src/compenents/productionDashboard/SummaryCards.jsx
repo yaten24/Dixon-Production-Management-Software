@@ -1,43 +1,10 @@
-import React, { useMemo } from "react";
+import React from "react";
 import SummaryCard from "./SummaryCard";
 
-const SummaryCards = ({ hallHourlyData, hallAccent }) => {
-  const summaryData = useMemo(() => {
-    const hallSummary = Object.entries(hallHourlyData).map(
-      ([hall, rows]) => {
-        const target = rows.reduce((sum, row) => sum + row.target, 0);
-        const actual = rows.reduce((sum, row) => sum + row.actual, 0);
-
-        // Demo rejection (Replace with API later)
-        const rejection = Math.round(actual * 0.03);
-
-        return { hall, target, actual, rejection };
-      }
-    );
-
-    const overall = hallSummary.reduce(
-      (acc, hall) => {
-        acc.target += hall.target;
-        acc.actual += hall.actual;
-        acc.rejection += hall.rejection;
-        return acc;
-      },
-      { target: 0, actual: 0, rejection: 0 }
-    );
-
-    return { overall, hallSummary };
-  }, [hallHourlyData]);
-
+const SummaryCards = ({ overall, hallSummary, hallAccent, onSelectHall }) => {
   const allCards = [
-    {
-      hall: "Overall Production",
-      ...summaryData.overall,
-      color: "#2563EB",
-    },
-    ...summaryData.hallSummary.map((hall) => ({
-      ...hall,
-      color: hallAccent[hall.hall],
-    })),
+    { hall: "Overall Production", ...overall, color: "#2563EB", isOverall: true },
+    ...hallSummary.map((h) => ({ ...h, color: hallAccent[h.hall] || "#2563EB" })),
   ];
 
   return (
@@ -56,6 +23,7 @@ const SummaryCards = ({ hallHourlyData, hallAccent }) => {
             actual={card.actual}
             rejection={card.rejection}
             color={card.color}
+            onClick={() => onSelectHall(card.isOverall ? "All" : card.hall)}
           />
         ))}
       </div>

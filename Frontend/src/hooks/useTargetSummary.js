@@ -1,4 +1,3 @@
-// frontend/src/hooks/useTargetSummary.js
 import { useState, useEffect, useCallback } from "react";
 import { fetchTargetSummary } from "../api/adminDashboardApi";
 

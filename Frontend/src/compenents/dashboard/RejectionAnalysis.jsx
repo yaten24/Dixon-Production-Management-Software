@@ -104,7 +104,7 @@ const RejectionAnalysis = () => {
           <div className="h-4 w-40 animate-pulse rounded bg-slate-100" />
         </div>
         <div className="flex flex-1 items-center justify-center gap-4 p-4">
-          <div className="h-32 w-32 animate-pulse rounded-full bg-slate-100" />
+          <div className="h-32 w-32 animate-pulse rounded bg-slate-100" />
           <div className="flex-1 space-y-2">
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="h-3 animate-pulse rounded bg-slate-100" />

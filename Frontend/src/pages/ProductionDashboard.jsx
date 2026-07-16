@@ -2,43 +2,28 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Sidebar from "../compenents/dashboard/Sidebar";
-import Header from "../compenents/dashboard/Header";
-
 import DashboardFilters from "../compenents/productionDashboard/DashboardFilters";
 import OverallProductionChart from "../compenents/productionDashboard/OverallProductionChart";
-import HallChartsGrid from "../compenents/productionDashboard/HallChartsGrid";
-
-import { halls, hallHourlyData, HALL_ACCENT } from "../data/productionData";
-
-import { overallHourlyData } from "../config/productionHelpers";
 import SummaryCards from "../compenents/productionDashboard/SummaryCards";
+
+import { HALL_ACCENT } from "../data/productionData";
+import useProductionDashboard from "../hooks/useProductionDashboard";
+
+const getToday = () => new Date().toISOString().split("T")[0];
 
 const ProductionDashboard = () => {
   const navigate = useNavigate();
+  const [date, setDate] = useState(getToday());
 
-  // ----------------------------
-  // States
-  // ----------------------------
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [selectedHall, setSelectedHall] = useState("All");
+  const { summary, hourlyData, loading, error } = useProductionDashboard(date);
 
-  // ----------------------------
-  // Handlers
-  // ----------------------------
-  const handleViewHallData = (hall = selectedHall) => {
+  const handleViewHallData = (hall) => {
     navigate(`/hall-data/${hall}`);
   };
 
   const handleExportExcel = () => {
-    console.log("Export Excel", {
-      fromDate,
-      toDate,
-      selectedHall,
-    });
-
-    // Future
-    // Excel Export API
+    console.log("Export Excel", { date });
+    // Future: Excel Export API
   };
 
   return (
@@ -46,39 +31,31 @@ const ProductionDashboard = () => {
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
-
-        <main className="mt-12 flex-1 overflow-y-auto p-1">
+        <main className="flex-1 overflow-y-auto p-1">
           <div className="mx-auto max-w-[1600px] space-y-1">
-            {/* Filters */}
             <DashboardFilters
-              fromDate={fromDate}
-              toDate={toDate}
-              selectedHall={selectedHall}
-              setFromDate={setFromDate}
-              setToDate={setToDate}
-              setSelectedHall={setSelectedHall}
-              halls={halls}
-              onViewHall={() => handleViewHallData(selectedHall)}
+              date={date}
+              setDate={setDate}
               onExport={handleExportExcel}
             />
 
+            {error && (
+              <div className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-600">
+                {error}
+              </div>
+            )}
+
             <SummaryCards
-              hallHourlyData={hallHourlyData}
+              overall={summary.overall}
+              hallSummary={summary.hallSummary}
               hallAccent={HALL_ACCENT}
+              onSelectHall={handleViewHallData}
             />
 
-            {/* Overall Chart */}
             <OverallProductionChart
-              data={overallHourlyData}
+              data={hourlyData}
               onViewHall={handleViewHallData}
-            />
-
-            {/* Hall Charts */}
-            <HallChartsGrid
-              hallHourlyData={hallHourlyData}
-              hallAccent={HALL_ACCENT}
-              onViewHall={handleViewHallData}
+              loading={loading}
             />
           </div>
         </main>

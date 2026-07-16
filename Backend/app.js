@@ -16,6 +16,7 @@ const reportRoutes = require("./routes/Reportroutes");
 const productionPlanRoutes = require("./routes/productionPlanRoutes");
 const productionHistoryRoutes = require("./routes/productuonHistoryRoutes");
 const adminDashboardRoutes = require("./routes/adminDashboardRoutes");
+const productionDashboardRoutes = require("./routes/productionDashboardRoutes");
 const cookieParser = require("cookie-parser");
 
 const app = express();
@@ -44,6 +45,7 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/production/history", productionHistoryRoutes);
 app.use("/api/production-plan", productionPlanRoutes);
 app.use("/api/mould-change", require("./routes/mouldChangeRoutes"));
+app.use("/api/production-dashboard", productionDashboardRoutes);
 
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 

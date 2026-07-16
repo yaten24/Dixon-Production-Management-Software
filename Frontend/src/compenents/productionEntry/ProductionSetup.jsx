@@ -17,7 +17,7 @@ const HALL_OPTIONS = [
   { code: "Hall 2", label: "Hall 2" },
   { code: "Hall 3", label: "Hall 3" },
   { code: "Hall 4", label: "Hall 4" },
-  { code: "C 8", label: "C8" },
+  { code: "C8", label: "C8" },
 ];
 
 const SHIFT_OPTIONS = [

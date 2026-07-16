@@ -14,7 +14,9 @@ import {
 import { FaChartLine } from "react-icons/fa";
 import ChartCard from "./ChartCard";
 
-const OverallProductionChart = ({ data, onViewHall }) => {
+const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
+  const hasData = Array.isArray(data) && data.length > 0;
+
   return (
     <ChartCard
       icon={<FaChartLine className="text-[10px] text-white" />}
@@ -24,82 +26,83 @@ const OverallProductionChart = ({ data, onViewHall }) => {
       onViewHall={() => onViewHall("All")}
       full
     >
-      <ResponsiveContainer width="100%" height={220}>
-        <LineChart
-          data={data}
-          margin={{
-            top: 18,
-            right: 15,
-            left: -10,
-            bottom: 0,
-          }}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="#F1F5F9"
-          />
-
-          <XAxis
-            dataKey="hour"
-            tick={{
-              fontSize: 10,
-              fontWeight: 600,
+      {loading ? (
+        <div className="flex h-[220px] items-center justify-center text-[11px] text-gray-400">
+          Loading hourly data...
+        </div>
+      ) : !hasData ? (
+        <div className="flex h-[220px] items-center justify-center text-[11px] text-gray-400">
+          No production data found for this date
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart
+            data={data}
+            margin={{
+              top: 18,
+              right: 15,
+              left: -10,
+              bottom: 0,
             }}
-            tickLine={false}
-            axisLine={false}
-          />
-
-          <YAxis
-            tick={{ fontSize: 9 }}
-            tickLine={false}
-            axisLine={false}
-          />
-
-          <Tooltip
-            contentStyle={{
-              fontSize: 11,
-            }}
-          />
-
-          <Legend
-            wrapperStyle={{
-              fontSize: 10,
-            }}
-          />
-
-          <Line
-            type="monotone"
-            dataKey="target"
-            stroke="#94A3B8"
-            strokeWidth={2}
-            dot={{ r: 3 }}
           >
-            <LabelList
+            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+
+            <XAxis
+              dataKey="hour"
+              tick={{ fontSize: 10, fontWeight: 600 }}
+              tickLine={false}
+              axisLine={false}
+            />
+
+            <YAxis
+              tick={{ fontSize: 9 }}
+              tickLine={false}
+              axisLine={false}
+              allowDecimals={false}
+            />
+
+            <Tooltip contentStyle={{ fontSize: 11 }} />
+
+            <Legend wrapperStyle={{ fontSize: 10 }} />
+
+            <Line
+              type="monotone"
               dataKey="target"
-              position="bottom"
-              fontSize={9}
-              fontWeight={700}
-              fill="#64748B"
-            />
-          </Line>
+              name="Target"
+              stroke="#94A3B8"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+              isAnimationActive={false}
+            >
+              <LabelList
+                dataKey="target"
+                position="bottom"
+                fontSize={9}
+                fontWeight={700}
+                fill="#64748B"
+              />
+            </Line>
 
-          <Line
-            type="monotone"
-            dataKey="actual"
-            stroke="#2563EB"
-            strokeWidth={2.5}
-            dot={{ r: 3 }}
-          >
-            <LabelList
+            <Line
+              type="monotone"
               dataKey="actual"
-              position="top"
-              fontSize={9}
-              fontWeight={700}
-              fill="#1d4ed8"
-            />
-          </Line>
-        </LineChart>
-      </ResponsiveContainer>
+              name="Actual"
+              stroke="#2563EB"
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
+              isAnimationActive={false}
+            >
+              <LabelList
+                dataKey="actual"
+                position="top"
+                fontSize={9}
+                fontWeight={700}
+                fill="#1d4ed8"
+              />
+            </Line>
+          </LineChart>
+        </ResponsiveContainer>
+      )}
     </ChartCard>
   );
 };
