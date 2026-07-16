@@ -136,11 +136,9 @@ const MouldChangeDashboard = () => {
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
 
-        <Header />
-
         {/* Content */}
 
-        <main className="flex-1 overflow-y-auto p-1 mt-12">
+        <main className="flex-1 overflow-y-auto p-1">
           <DashboardHeader fromDate={fromDate} setFromDate={setFromDate} toDate={toDate} setToDate={setToDate} />
 
           {/* <KPISection

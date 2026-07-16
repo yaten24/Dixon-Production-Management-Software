@@ -200,9 +200,7 @@ const Employees = () => {
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden bg-slate-100">
-        <Header />
-
-        <main className="flex-1 overflow-y-auto mt-12 p-1">
+        <main className="flex-1 overflow-y-auto p-1">
           <div className="mx-auto w-full rounded border border-slate-200 bg-white shadow-sm p-1 lg:p-1">
             <div className="space-y-1">
               <TopPerformerBanner topPerformers={topPerformers} />

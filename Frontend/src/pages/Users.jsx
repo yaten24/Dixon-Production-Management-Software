@@ -366,10 +366,9 @@ const Users = () => {
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <Header />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-1 mt-12">
+        <main className="flex-1 overflow-y-auto p-1">
           {/* Error banner */}
           {(error || actionError) && (
             <div className="mb-2 rounded-sm border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600 flex items-center justify-between">

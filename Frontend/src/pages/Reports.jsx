@@ -50,9 +50,8 @@ const Reports = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        <Header />
 
-        <div className="p-1 mt-12 space-y-2">
+        <div className="p-1 space-y-2">
 
           {/* Page Header */}
           <motion.div

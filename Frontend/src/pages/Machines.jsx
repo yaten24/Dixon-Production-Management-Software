@@ -108,9 +108,8 @@ const Machines = () => {
       <Sidebar />
 
       <div className="flex-1 flex flex-col">
-        <Header />
 
-        <div className="flex-1 p-1 mt-12 space-y-1 overflow-auto">
+        <div className="flex-1 p-1 space-y-1 overflow-auto">
           <MachineToolbar
             halls={halls}
             selectedHall={selectedHall}

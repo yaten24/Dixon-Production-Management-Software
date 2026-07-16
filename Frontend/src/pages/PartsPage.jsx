@@ -169,8 +169,7 @@ const PartsPage = () => {
     <div className="flex h-screen bg-slate-100">
       <Sidebar />
 
-      <div className="flex flex-1 flex-col overflow-hidden mt-12">
-        <Header />
+      <div className="flex flex-1 flex-col overflow-hidden">
 
         <main className="flex-1 overflow-y-auto p-1">
           {loading ? (

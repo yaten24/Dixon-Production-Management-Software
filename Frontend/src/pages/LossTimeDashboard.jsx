@@ -107,9 +107,8 @@ const LossTimeDashboard = () => {
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
 
-        <main className="mt-12 flex-1 overflow-y-auto p-1">
+        <main className="flex-1 overflow-y-auto p-1">
           <div className="mx-auto max-w-[1600px] space-y-1">
             {/* Filters Box */}
                 <LossFilters
