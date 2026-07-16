@@ -1,7 +1,7 @@
 import React from "react";
 import { FaIndustry } from "react-icons/fa";
 
-const SummaryCard = ({ hall, target, actual, rejection, color, onClick }) => {
+const SummaryCard = ({ hall, target, actual, rejection, color, hasData = true, onClick }) => {
   const efficiency = target === 0 ? 0 : ((actual / target) * 100).toFixed(1);
 
   const effColor =
@@ -14,24 +14,32 @@ const SummaryCard = ({ hall, target, actual, rejection, color, onClick }) => {
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left rounded border border-gray-100 bg-white p-2 shadow-sm transition-all duration-200 hover:shadow-md hover:border-blue-300 active:scale-[0.98] cursor-pointer"
+      className={`relative w-full text-left rounded border bg-white p-1.5 shadow-sm transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer ${
+        hasData ? "border-gray-100 hover:border-blue-300" : "border-amber-200 hover:border-amber-300"
+      }`}
     >
-      <div className="mb-2 flex items-center gap-2.5">
+      {!hasData && (
+        <span className="absolute right-1.5 top-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[8px] font-semibold text-amber-700">
+          No Data
+        </span>
+      )}
+
+      <div className="mb-1.5 flex items-center gap-2">
         <div
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded text-white text-sm shadow-sm"
-          style={{ background: color }}
+          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-white text-[11px] shadow-sm"
+          style={{ background: hasData ? color : "#CBD5E1" }}
         >
           <FaIndustry />
         </div>
         <div className="min-w-0">
-          <h2 className="truncate text-sm font-semibold text-gray-800">{hall}</h2>
-          <p className="text-[10px] uppercase tracking-wide text-gray-400">
+          <h2 className="truncate text-[11px] font-semibold text-gray-800">{hall}</h2>
+          <p className="text-[8px] uppercase tracking-wide text-gray-400">
             Production Summary
           </p>
         </div>
       </div>
 
-      <div className="space-y-1.5 text-xs">
+      <div className="space-y-1 text-[10px]">
         <div className="flex items-center justify-between">
           <span className="text-gray-500">Target</span>
           <span className="font-semibold text-gray-800">{target}</span>
@@ -46,14 +54,16 @@ const SummaryCard = ({ hall, target, actual, rejection, color, onClick }) => {
         </div>
       </div>
 
-      <div className="mt-2.5 border-t border-gray-100 pt-2">
+      <div className="mt-1.5 border-t border-gray-100 pt-1.5">
         <div className="mb-1 flex items-center justify-between">
-          <span className="text-xs text-gray-500">Efficiency</span>
-          <span className={`text-sm font-bold ${effColor}`}>{efficiency}%</span>
+          <span className="text-[10px] text-gray-500">Efficiency</span>
+          <span className={`text-xs font-bold ${hasData ? effColor : "text-gray-400"}`}>
+            {efficiency}%
+          </span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
           <div
-            className={`h-full rounded ${barColor} transition-all duration-300`}
+            className={`h-full rounded ${hasData ? barColor : "bg-gray-300"} transition-all duration-300`}
             style={{ width: `${Math.min(efficiency, 100)}%` }}
           />
         </div>

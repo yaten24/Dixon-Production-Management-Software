@@ -3,8 +3,12 @@ import { FaChevronRight } from "react-icons/fa";
 
 const ChartCard = ({ icon, iconBg, title, subtitle, onViewHall, full, children }) => {
   return (
-    <div className={`rounded border border-gray-100 bg-white p-2 shadow-sm ${full ? "w-full" : ""}`}>
-      <div className="mb-2 flex items-center justify-between">
+    <div
+      className={`flex h-full min-h-0 flex-col rounded border border-gray-100 bg-white p-2 shadow-sm ${
+        full ? "w-full" : ""
+      }`}
+    >
+      <div className="mb-2 flex flex-shrink-0 items-center justify-between">
         <div className="flex items-center gap-2">
           <div
             className="flex h-6 w-6 items-center justify-center rounded shadow-sm"
@@ -29,7 +33,7 @@ const ChartCard = ({ icon, iconBg, title, subtitle, onViewHall, full, children }
         )}
       </div>
 
-      {children}
+      <div className="min-h-0 flex-1">{children}</div>
     </div>
   );
 };

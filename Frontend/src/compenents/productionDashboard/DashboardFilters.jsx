@@ -3,7 +3,7 @@ import { FaDownload, FaChartLine } from "react-icons/fa";
 
 const DashboardFilters = ({ date, setDate, onExport }) => {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 bg-white p-1 shadow-sm">
+    <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-2 rounded border border-gray-200 bg-white p-1 shadow-sm">
       <div className="flex items-center gap-2">
         <div className="flex h-7 w-7 items-center justify-center rounded bg-blue-600 shadow-sm">
           <FaChartLine className="text-[11px] text-white" />
