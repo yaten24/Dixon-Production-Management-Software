@@ -23,7 +23,7 @@ import { useAuth } from "../context/AuthContext";
 const normalizeRole = (role) => (role || "").replace(/\s+/g, "").toLowerCase();
 
 const ROLE_REDIRECTS = {
-  [normalizeRole("Admin")]: "/admin/dashboard",
+  [normalizeRole("Admin")]: "/dashboard",
   [normalizeRole("Supervisor")]: "/dashboard",
   [normalizeRole("Operator")]: "/production-entry",
   [normalizeRole("Assistant Manager")]: "/user/home",

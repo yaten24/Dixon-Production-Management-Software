@@ -1,36 +1,111 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaFilter, FaUndo, FaIndustry, FaChevronRight } from "react-icons/fa";
+import { FaFilter, FaUndo, FaIndustry, FaChevronRight, FaSearch } from "react-icons/fa";
+import { getAllMachines } from "../../api/lossTimeApi";
+
+// Searchable combobox for picking one of the 85 machines
+const MachineFilter = ({ value, onChange }) => {
+  const [query, setQuery] = useState("");
+  const [options, setOptions] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [selectedLabel, setSelectedLabel] = useState("");
+  const boxRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      getAllMachines(query)
+        .then(setOptions)
+        .catch((err) => console.error("Machine search failed:", err));
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    if (!value) setSelectedLabel("");
+  }, [value]);
+
+  return (
+    <div className="relative" ref={boxRef}>
+      <div
+        className="flex h-7 w-44 cursor-text items-center gap-1 rounded border border-slate-300 bg-white px-2 text-[11px] text-slate-700 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100"
+        onClick={() => setOpen(true)}
+      >
+        <FaSearch className="shrink-0 text-[9px] text-slate-400" />
+        <input
+          type="text"
+          placeholder="Search machine..."
+          value={open ? query : selectedLabel}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            if (!e.target.value) onChange("");
+          }}
+          className="w-full bg-transparent outline-none"
+        />
+      </div>
+
+      {open && (
+        <div className="absolute z-40 mt-1 max-h-48 w-56 overflow-y-auto rounded border border-slate-200 bg-white shadow-lg">
+          <button
+            type="button"
+            onClick={() => {
+              onChange("");
+              setQuery("");
+              setSelectedLabel("");
+              setOpen(false);
+            }}
+            className="block w-full px-2 py-1 text-left text-[11px] text-slate-500 hover:bg-slate-50"
+          >
+            All Machines
+          </button>
+          {options.map((m) => (
+            <button
+              type="button"
+              key={m.id}
+              onClick={() => {
+                onChange(String(m.id));
+                setQuery("");
+                setSelectedLabel(m.name);
+                setOpen(false);
+              }}
+              className="block w-full truncate px-2 py-1 text-left text-[11px] text-slate-700 hover:bg-blue-50"
+            >
+              {m.name} <span className="text-slate-400">· {m.hall}</span>
+            </button>
+          ))}
+          {options.length === 0 && (
+            <p className="px-2 py-1 text-[10px] text-slate-400">No machines found</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const LossFilters = ({
-  fromDate,
-  toDate,
   selectedReason,
-  selectedHall, // navigation ke liye use hoga (dropdown nahi dikhega)
+  selectedMachine,
+  selectedHall, // used for "View Hall Data" navigation only
 
   reasons,
 
-  onFromDateChange,
-  onToDateChange,
   onReasonChange,
+  onMachineChange,
 
   onApply,
   onReset,
 }) => {
-  const fromDateRef = useRef(null);
-  const toDateRef = useRef(null);
   const navigate = useNavigate();
 
-  const openPicker = (ref) => {
-    if (ref.current?.showPicker) {
-      ref.current.showPicker();
-    } else {
-      ref.current?.focus();
-    }
-  };
-
   const handleViewHallData = () => {
-    // Route ko apne app ke actual path se replace kar lena
     navigate(`/hall-data/${selectedHall}`);
   };
 
@@ -71,27 +146,8 @@ const LossFilters = ({
 
       {/* Right: Filters + Buttons */}
       <div className="flex flex-wrap items-end gap-2">
-        {/* From Date */}
-        <div className="cursor-pointer" onClick={() => openPicker(fromDateRef)}>
-          <input
-            ref={fromDateRef}
-            type="date"
-            value={fromDate}
-            onChange={(e) => onFromDateChange(e.target.value)}
-            className={inputClass}
-          />
-        </div>
-
-        {/* To Date */}
-        <div className="cursor-pointer" onClick={() => openPicker(toDateRef)}>
-          <input
-            ref={toDateRef}
-            type="date"
-            value={toDate}
-            onChange={(e) => onToDateChange(e.target.value)}
-            className={inputClass}
-          />
-        </div>
+        {/* Machine (searchable, 85 machines) */}
+        <MachineFilter value={selectedMachine} onChange={onMachineChange} />
 
         {/* Reason */}
         <div>
@@ -100,10 +156,10 @@ const LossFilters = ({
             onChange={(e) => onReasonChange(e.target.value)}
             className={inputClass}
           >
-            <option value="">All</option>
+            <option value="">All Reasons</option>
             {reasons.map((reason) => (
-              <option key={reason} value={reason}>
-                {reason}
+              <option key={reason.id} value={reason.id}>
+                {reason.name}
               </option>
             ))}
           </select>
