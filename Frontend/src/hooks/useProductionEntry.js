@@ -298,6 +298,8 @@ const useProductionEntry = () => {
       const carryPartId = prevSnapshot?.formData?.part_id || null;
       const carryPartName = prevSnapshot?.formData?.part || "";
       const carryStandardCT = prevSnapshot?.formData?.standardCycleTime || "";
+      // FIX: actualCycleTime bhi carry-forward karo (pehle sirf standardCT carry hota tha)
+      const carryActualCT = prevSnapshot?.formData?.actualCycleTime || "";
 
       const prevHadMould =
         prevSnapshot?.formData?.mouldChange && prevSnapshot?.formData?.new_part_id;
@@ -307,12 +309,31 @@ const useProductionEntry = () => {
       const operatorCode = planDetail?.operator_id || carryOperatorCode;
       const partId = planDetail ? planDetail.part_id || null : carryPartId;
       const partName = planDetail?.part_name || carryPartName;
-      const standardCT = planDetail?.cycle_time || carryStandardCT;
+
+      // FIX: std CT aur actual CT — plan se ek hi jagah (parts table) se aati hain
+      // (cycle_time / actual_cycle_time), dono usually equal hote hain.
+      const standardCT = planDetail?.cycle_time ?? carryStandardCT;
+      const actualCT =
+        planDetail?.actual_cycle_time ?? planDetail?.cycle_time ?? carryActualCT;
+
       const target = planDetail?.target_qty ? String(planDetail.target_qty) : "";
 
       const plannedMould = (planDetail?.mould_changes || []).find(
         (mc) => mc.status === "Planned",
       );
+
+      // FIX: mould change ke naye part ka std CT / actual CT / target ab
+      // plan response se seedha aa raha hai (new_part_standard_cycle_time,
+      // new_part_actual_cycle_time, new_part_target_quantity) — pehle ye
+      // 3 fields set hi nahi ho rahi thi, form khaali dikhta tha.
+      const mouldStdCT = plannedMould?.new_part_standard_cycle_time || "";
+      const mouldActualCT =
+        plannedMould?.new_part_actual_cycle_time ||
+        plannedMould?.new_part_standard_cycle_time ||
+        "";
+      const mouldTargetQty = plannedMould?.new_part_target_quantity
+        ? String(plannedMould.new_part_target_quantity)
+        : "";
 
       setFormData((prev) => ({
         ...baseFormData,
@@ -327,6 +348,7 @@ const useProductionEntry = () => {
         part: partName,
         part_id: partId,
         standardCycleTime: standardCT,
+        actualCycleTime: actualCT,
         target,
 
         old_part_id: carryOldPartId,
@@ -337,6 +359,13 @@ const useProductionEntry = () => {
         new_part_number: plannedMould?.new_part_number || "",
         mouldPart: plannedMould?.new_part_name || "",
         mould_remarks: plannedMould?.reason || "",
+
+        // FIX: mould section ke naye part ki std/actual CT aur target ab
+        // auto-fill hoti hai, aur inputs pehle se editable hain (ProductionForm /
+        // MouldChangeSection me koi extra change nahi chahiye).
+        mouldStandardCycleTime: mouldStdCT,
+        mouldActualCycleTime: mouldActualCT,
+        mouldTarget: mouldTargetQty,
 
         plan_detail_id: planDetail?.detail_id || null,
       }));
@@ -354,6 +383,22 @@ const useProductionEntry = () => {
       planDetailsByMachineCode,
     ],
   );
+
+  // ==========================================================
+  // FIX: pehli machine (ya hall/shift switch ke baad ki pehli machine)
+  // auto-load nahi hoti thi kyunki loadMachineData sirf Next/Prev pe
+  // call hoti thi. Ye effect currentMachine badalte hi — ya plan load
+  // hone ke baad — auto-fill kar dega, bas tab jab us machine ka data
+  // abhi tak khaali hai (user ne kuch edit nahi kiya / already saved nahi hai).
+  // ==========================================================
+  useEffect(() => {
+    if (!currentMachine) return;
+    if (machineEntries[currentMachine.id]) return; // already saved, don't overwrite
+    if (formData.part_id || formData.operatorId) return; // already filled, don't overwrite user's typing
+
+    loadMachineData(currentMachine);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMachine?.id, plan]);
 
   const progress = useMemo(() => {
     if (!filteredMachines.length) return 0;

@@ -69,7 +69,7 @@ const getPlanById = async (planId) => {
 
   if (!header) return null;
 
-const [details] = await pool.query(
+  const [details] = await pool.query(
     `SELECT
         d.detail_id, d.plan_id, d.machine_code,
         m.machine_name,
@@ -98,7 +98,13 @@ const [details] = await pool.query(
           mc.mould_change_id, mc.detail_id, mc.production_id, mc.status,
           mc.change_type, mc.scheduled_time, mc.reason,
           mc.old_part_id, op.part_number AS old_part_number,
-          mc.new_part_id, np.part_number AS new_part_number, np.part_name AS new_part_name
+          op.standard_cycle_time AS old_part_standard_cycle_time,
+          op.actual_cycle_time AS old_part_actual_cycle_time,
+          mc.new_part_id, np.part_number AS new_part_number, np.part_name AS new_part_name,
+          np.standard_cycle_time AS new_part_standard_cycle_time,
+          mc.target_qty AS new_part_target_quantity,
+          np.actual_cycle_time AS new_part_actual_cycle_time
+          
        FROM mould_changes mc
        LEFT JOIN parts op ON op.id = mc.old_part_id
        LEFT JOIN parts np ON np.id = mc.new_part_id

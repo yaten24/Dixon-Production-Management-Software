@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { getOperatorByCode, createOperator, searchOperators } from "../api/operatorApi";
 import { searchParts, addPartQuick } from "../api/partApi";
 
-import { FaIndustry } from "react-icons/fa";
+import { FaIndustry, FaCheckCircle, FaExclamationTriangle, FaClipboardCheck } from "react-icons/fa";
 
 import useProductionEntry from "../hooks/useProductionEntry";
 
@@ -163,9 +164,6 @@ const AdvProductionEntry = () => {
     }
   };
 
-  // NEW: when the Production Plan auto-fills operatorId (a code) for the
-  // current machine but operator_id (numeric) is still missing, resolve
-  // it automatically instead of forcing the user to click "Find".
   useEffect(() => {
     if (formData.operatorId && !formData.operator_id) {
       fetchOperator(formData.operatorId);
@@ -173,7 +171,6 @@ const AdvProductionEntry = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMachine?.id]);
 
-  // search-as-you-type suggestions (code OR name)
   const fetchOperatorSuggestions = async (keyword) => {
     if (!keyword || keyword.trim().length < 2) {
       setOperatorSuggestions([]);
@@ -396,7 +393,6 @@ const AdvProductionEntry = () => {
     }
   };
 
-  // finalSubmit saves only the current (last) machine's entry.
   const handleFinalSubmit = async () => {
     setSubmitResult(null);
     const results = await finalSubmit();
@@ -424,43 +420,69 @@ const AdvProductionEntry = () => {
 
   if (loadingMaster) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-slate-600">
-          <FaIndustry className="animate-pulse text-3xl" />
-          <p className="font-medium">Loading machines and reasons...</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#F5F5F5]">
+        <div className="flex flex-col items-center gap-3 text-[#0F1D24]">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0F1D24]"
+          >
+            <FaIndustry className="text-lg text-[#FDC94D]" />
+          </motion.div>
+          <p className="text-sm font-medium text-[#9B9B9B]">Loading machines and reasons...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-[#F5F5F5]">
       <Header />
 
-      <div className="max-w-7xl mx-auto p-2 mt-11">
+      <div className="mx-auto mt-11 max-w-full p-2">
         {masterError && (
-          <div className="mb-4 bg-red-50 border border-red-300 text-red-700 rounded p-3 text-sm">
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-2 flex items-center gap-1.5 rounded border border-red-200 bg-red-50 p-2.5 text-xs text-red-600"
+          >
+            <FaExclamationTriangle className="shrink-0 text-[11px]" />
             {masterError}
-          </div>
+          </motion.div>
         )}
 
         {submitError && (
-          <div className="mb-4 bg-red-50 border border-red-300 text-red-700 rounded p-3 text-sm">
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-2 flex items-center gap-1.5 rounded border border-red-200 bg-red-50 p-2.5 text-xs text-red-600"
+          >
+            <FaExclamationTriangle className="shrink-0 text-[11px]" />
             {submitError}
-          </div>
+          </motion.div>
         )}
 
-        {submitResult && (
-          <div
-            className={`mb-4 rounded p-3 text-sm border ${
-              submitResult.type === "success"
-                ? "bg-green-50 border-green-300 text-green-700"
-                : "bg-red-50 border-red-300 text-red-700"
-            }`}
-          >
-            {submitResult.message}
-          </div>
-        )}
+        <AnimatePresence>
+          {submitResult && (
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6 }}
+              className={`mb-2 flex items-center gap-1.5 rounded border p-2.5 text-xs font-medium ${
+                submitResult.type === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-red-200 bg-red-50 text-red-600"
+              }`}
+            >
+              {submitResult.type === "success" ? (
+                <FaCheckCircle className="shrink-0 text-[11px]" />
+              ) : (
+                <FaExclamationTriangle className="shrink-0 text-[11px]" />
+              )}
+              {submitResult.message}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {!setupComplete ? (
           <ProductionSetup
@@ -474,23 +496,37 @@ const AdvProductionEntry = () => {
           />
         ) : (
           <>
-            {/* NEW — Production Plan status banner */}
+            {/* Production Plan status banner */}
             {planLoading && (
-              <div className="mb-1 text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded p-2">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mb-1 rounded border border-[#0F1D24]/15 bg-[#0F1D24]/5 p-2 text-xs text-[#0F1D24]"
+              >
                 Checking for a published production plan for this date/hall/shift...
-              </div>
+              </motion.div>
             )}
             {planError && (
-              <div className="mb-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-1 flex items-center gap-1.5 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700"
+              >
+                <FaExclamationTriangle className="shrink-0 text-[10px]" />
                 {planError}
-              </div>
+              </motion.div>
             )}
             {plan?.header && (
-              <div className="mb-1 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-2">
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-1 flex items-center gap-1.5 rounded border border-[#FDC94D]/50 bg-[#FDC94D]/10 p-2 text-xs text-[#0F1D24]"
+              >
+                <FaClipboardCheck className="shrink-0 text-[10px] text-[#0F1D24]" />
                 Plan <strong>{plan.header.plan_number}</strong> loaded — operator,
                 part &amp; target pre-filled for {plan.details.length} machine
                 {plan.details.length === 1 ? "" : "s"}. Just confirm actuals below.
-              </div>
+              </motion.div>
             )}
 
             <MachineNavigator
@@ -572,10 +608,15 @@ const AdvProductionEntry = () => {
               totalLossMinutes={totalLossMinutes}
             />
 
-            <div className="mt-2 bg-white border border-slate-200 rounded p-3 shadow-sm">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="mt-2 rounded border border-[#C6C6C6]/50 bg-white p-3 shadow-sm"
+            >
               <label
                 htmlFor="remarks"
-                className="text-xs font-medium text-slate-600 block mb-1"
+                className="mb-1 block text-xs font-medium text-[#9B9B9B]"
               >
                 Remarks
               </label>
@@ -587,9 +628,9 @@ const AdvProductionEntry = () => {
                 placeholder="Add any additional notes here..."
                 value={formData.remarks}
                 onChange={handleChange}
-                className="w-full border border-slate-300 rounded px-3 py-2 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
+                className="w-full resize-none rounded border border-[#C6C6C6] px-3 py-2 text-xs text-[#0F1D24] outline-none transition-all duration-200 placeholder:text-[#9B9B9B] focus:border-[#FDC94D] focus:ring-2 focus:ring-[#FDC94D]/30"
               />
-            </div>
+            </motion.div>
 
             <FooterActions
               currentMachineIndex={currentMachineIndex}

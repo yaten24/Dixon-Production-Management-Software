@@ -1,3 +1,4 @@
+// ProductionForm.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ClipboardCheck } from "lucide-react";
@@ -13,7 +14,6 @@ const ProductionForm = ({
   onAddOperator,
   addingOperator,
 
-  // operator search-and-select (like Part search)
   fetchOperatorSuggestions,
   operatorSuggestions = [],
   setOperatorSuggestions,
@@ -33,24 +33,22 @@ const ProductionForm = ({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [operatorSelectedIndex, setOperatorSelectedIndex] = useState(-1);
 
-  // NEW: true whenever this machine's data was seeded from a Production
-  // Plan row (see useProductionEntry -> loadMachineData -> plan_detail_id).
-  // Purely cosmetic — a small badge so the operator knows the value came
-  // from the plan and isn't something they typed by mistake. Editing the
-  // field normally still works exactly as before.
   const isFromPlan = !!formData.plan_detail_id;
 
   const numberInputProps = {
-    onWheel: (e) => {
-      e.target.blur();
-    },
-
+    onWheel: (e) => e.target.blur(),
     onKeyDown: (e) => {
-      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-        e.preventDefault();
-      }
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
     },
   };
+
+  // ===========================
+  // THEME TOKENS (brand palette)
+  // highlight #0F1D24 — icon chips, headings, hover fills
+  // gray      #9B9B9B — secondary text
+  // accent    #FDC94D — focus rings, badges, CTA
+  // darken    #C6C6C6 — borders, dividers
+  // ===========================
 
   const inputClass = `
     w-full
@@ -58,29 +56,29 @@ const ProductionForm = ({
     px-2.5
     text-xs
     bg-white
+    text-[#0F1D24]
+    placeholder:text-[#9B9B9B]
     border
-    border-[#E2E4E9]
-    rounded-sm
+    border-[#C6C6C6]/60
+    rounded
     outline-none
-    focus:border-blue-500
-    focus:ring-1
-    focus:ring-blue-500
+    focus:border-[#FDC94D]
+    focus:ring-2
+    focus:ring-[#FDC94D]/30
     transition-all
+    duration-200
     [appearance:textfield]
     [&::-webkit-inner-spin-button]:appearance-none
     [&::-webkit-outer-spin-button]:appearance-none
   `;
 
   const planBadge = (
-    <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-1.5 py-0.5 ml-1.5 align-middle">
+    <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-[#0F1D24] bg-[#FDC94D]/25 border border-[#FDC94D]/50 rounded-full px-1.5 py-0.5 ml-1.5 align-middle">
       <ClipboardCheck size={9} />
       Plan
     </span>
   );
 
-  // ===========================
-  // TARGET — editable (user can override the calculated value)
-  // ===========================
   const calculatedTarget = useMemo(() => {
     const ct = Number(formData.actualCycleTime);
     return ct > 0 ? Math.round(3600 / ct) : "";
@@ -93,23 +91,15 @@ const ProductionForm = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [calculatedTarget]);
 
-  // ===========================
-  // LOSS TIME (minutes)
-  // ===========================
   const lossMinutes = useMemo(() => {
     const target = Number(formData.target) || 0;
     const actual = Number(formData.actual) || 0;
     const cycleTime = Number(formData.actualCycleTime) || 0;
-
     const shortfall = Math.max(target - actual, 0);
     const lossSeconds = shortfall * cycleTime;
-
     return Number((lossSeconds / 60).toFixed(1));
   }, [formData.target, formData.actual, formData.actualCycleTime]);
 
-  // ===========================
-  // OPERATOR — search box + inline add form
-  // ===========================
   const [showAddOperator, setShowAddOperator] = useState(false);
   const [newOperator, setNewOperator] = useState({
     operator_name: "",
@@ -151,15 +141,9 @@ const ProductionForm = ({
     }
   };
 
-  // type-to-search handler for the operator field — typing 2+ chars shows
-  // a dropdown of matching operators (by code OR name) you can click to
-  // select, same UX as the Part search box below.
   const handleOperatorChange = (e) => {
     handleChange(e);
     handleChange({ target: { name: "operator_id", value: null } });
-    // Editing manually after a plan pre-fill means this is no longer
-    // strictly "the plan's" value — clear the plan_detail_id link so the
-    // badge disappears and future auto-behaviour doesn't get confused.
     if (formData.plan_detail_id) {
       handleChange({ target: { name: "plan_detail_id", value: null } });
     }
@@ -211,9 +195,6 @@ const ProductionForm = ({
     }
   };
 
-  // ===========================
-  // PART — inline add form
-  // ===========================
   const [showAddPart, setShowAddPart] = useState(false);
   const [newPart, setNewPart] = useState({
     part_name: "",
@@ -242,10 +223,6 @@ const ProductionForm = ({
     }
   };
 
-  // ===========================
-  // PART SEARCH
-  // ===========================
-
   const handlePartChange = async (e) => {
     handleChange(e);
 
@@ -261,41 +238,20 @@ const ProductionForm = ({
       setPartSuggestions([]);
       setSelectedIndex(-1);
       setShowAddPart(false);
-
       return;
     }
 
     fetchPartSuggestions(value);
-
     setSelectedIndex(-1);
     setShowAddPart(false);
   };
 
   const selectPart = (part) => {
+    handleChange({ target: { name: "part", value: part.part_name } });
+    handleChange({ target: { name: "part_id", value: part.id } });
     handleChange({
-      target: {
-        name: "part",
-        value: part.part_name,
-      },
+      target: { name: "standardCycleTime", value: part.standard_cycle_time },
     });
-
-    handleChange({
-      target: {
-        name: "part_id",
-        value: part.id,
-      },
-    });
-
-    handleChange({
-      target: {
-        name: "standardCycleTime",
-        value: part.standard_cycle_time,
-      },
-    });
-
-    // FIX: actual_cycle_time bhi part se copy karo — pehle ye missing tha,
-    // isliye Actual CT field khali reh jaata tha part select karne ke baad.
-    // Fallback standard_cycle_time pe agar actual_cycle_time DB me 0/null hai.
     handleChange({
       target: {
         name: "actualCycleTime",
@@ -314,44 +270,26 @@ const ProductionForm = ({
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-
         setSelectedIndex((prev) =>
           prev < partSuggestions.length - 1 ? prev + 1 : prev,
         );
-
         break;
-
       case "ArrowUp":
         e.preventDefault();
-
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
-
         break;
-
       case "Enter":
         e.preventDefault();
-
-        if (selectedIndex >= 0) {
-          selectPart(partSuggestions[selectedIndex]);
-        }
-
+        if (selectedIndex >= 0) selectPart(partSuggestions[selectedIndex]);
         break;
-
       case "Escape":
         setPartSuggestions([]);
-
         setSelectedIndex(-1);
-
         break;
-
       default:
         break;
     }
   };
-
-  // ===========================
-  // CLICK OUTSIDE
-  // ===========================
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -369,42 +307,40 @@ const ProductionForm = ({
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [setPartSuggestions, setOperatorSuggestions]);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white border border-[#E2E4E9] rounded-sm p-3"
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="group relative overflow-hidden rounded border border-[#C6C6C6]/50 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.05)]"
     >
+      {/* top accent bar */}
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-[#FDC94D]" />
+
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-bold text-slate-800">Production Entry</h2>
+        <h2 className="text-sm font-bold tracking-tight text-[#0F1D24]">
+          Production Entry
+        </h2>
         {isFromPlan && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#0F1D24] bg-[#FDC94D]/25 border border-[#FDC94D]/50 rounded-full px-2 py-0.5">
             <ClipboardCheck size={10} />
             Pre-filled from Plan
           </span>
         )}
       </div>
 
-      {/* ===========================
-          EDITABLE FIELDS
-      =========================== */}
-
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
-        {/* OPERATOR ID — search & select */}
-
+        {/* OPERATOR */}
         <div
           ref={operatorWrapperRef}
           className="relative col-span-2 md:col-span-1"
         >
-          <label className="text-[11px] font-medium text-slate-600 block mb-1">
+          <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
             Operator ID / Name
-            {isFromPlan && formData.operatorId && planBadge}
+            {/* {isFromPlan && formData.operatorId && planBadge} */}
           </label>
 
           <div className="flex gap-1.5">
@@ -419,32 +355,33 @@ const ProductionForm = ({
               className={`${inputClass} flex-1`}
             />
 
-            <button
+            <motion.button
               type="button"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => fetchOperator(formData.operatorId)}
-              className="px-3 h-9 rounded-sm bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-medium transition-colors"
+              className="px-3 h-9 rounded bg-[#0F1D24] hover:bg-[#0F1D24]/90 text-[#FDC94D] text-xs font-semibold transition-colors"
             >
               Find
-            </button>
+            </motion.button>
           </div>
 
-          {/* SEARCH SUGGESTIONS */}
           {operatorSuggestions.length > 0 && (
-            <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E2E4E9] rounded-sm shadow-lg max-h-72 overflow-y-auto z-50">
+            <div className="absolute left-0 right-0 mt-1 bg-white border border-[#C6C6C6]/60 rounded shadow-lg max-h-72 overflow-y-auto z-50">
               {operatorSuggestions.map((op, index) => (
                 <div
                   key={op.id}
                   onClick={() => selectOperator(op)}
-                  className={`px-2.5 py-1.5 cursor-pointer border-b border-[#E2E4E9] last:border-b-0 ${
+                  className={`px-2.5 py-1.5 cursor-pointer border-b border-[#C6C6C6]/40 last:border-b-0 ${
                     operatorSelectedIndex === index
-                      ? "bg-blue-50"
-                      : "hover:bg-slate-50"
+                      ? "bg-[#FDC94D]/15"
+                      : "hover:bg-[#F5F5F5]"
                   }`}
                 >
-                  <div className="text-xs font-semibold text-slate-800">
+                  <div className="text-xs font-semibold text-[#0F1D24]">
                     {op.operator_name}
                   </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">
+                  <div className="text-[10px] text-[#9B9B9B] mt-0.5">
                     Code: {op.operator_code} &middot; Shift: {op.shift} &middot;
                     Hall: {op.hall}
                   </div>
@@ -453,9 +390,8 @@ const ProductionForm = ({
             </div>
           )}
 
-          {/* FOUND — show details */}
           {operatorDetails && (
-            <div className="mt-1.5 border border-emerald-200 bg-emerald-50 rounded-sm px-2 py-1.5">
+            <div className="mt-1.5 border border-emerald-200 bg-emerald-50 rounded px-2 py-1.5">
               <div className="flex items-center gap-1">
                 <div className="text-xs font-semibold text-emerald-700">
                   {operatorDetails.operator_name}
@@ -464,31 +400,31 @@ const ProductionForm = ({
                   <ArrowRight size={10} className="text-emerald-600" />
                 )}
               </div>
-
-              <div className="text-[11px] text-slate-500 mt-0.5">
+              <div className="text-[11px] text-[#9B9B9B] mt-0.5">
                 Shift: {operatorDetails.shift} &middot; Hall:{" "}
                 {operatorDetails.hall}
               </div>
             </div>
           )}
 
-          {/* NOT FOUND — offer to add */}
           {(operatorNotFound || noOperatorResults) &&
             !operatorDetails &&
             operatorSuggestions.length === 0 && (
-              <div className="mt-1.5 border border-amber-200 bg-amber-50 rounded-sm p-2">
+              <div className="mt-1.5 border border-[#FDC94D]/50 bg-[#FDC94D]/10 rounded p-2">
                 {!showAddOperator ? (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-amber-700 font-medium">
+                    <span className="text-[11px] text-[#0F1D24] font-medium">
                       No operator found for "{formData.operatorId}".
                     </span>
-                    <button
+                    <motion.button
                       type="button"
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.96 }}
                       onClick={() => setShowAddOperator(true)}
-                      className="h-6 px-2 shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-semibold rounded-sm"
+                      className="h-6 px-2 shrink-0 bg-[#0F1D24] hover:bg-[#0F1D24]/90 text-[#FDC94D] text-[10px] font-semibold rounded"
                     >
                       + Add Operator
-                    </button>
+                    </motion.button>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-1.5">
@@ -548,18 +484,20 @@ const ProductionForm = ({
                     )}
 
                     <div className="flex gap-1.5">
-                      <button
+                      <motion.button
                         type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={submitNewOperator}
                         disabled={addingOperator}
-                        className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-sm disabled:opacity-50"
+                        className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded disabled:opacity-50"
                       >
                         {addingOperator ? "Saving..." : "Save & Use"}
-                      </button>
+                      </motion.button>
                       <button
                         type="button"
                         onClick={() => setShowAddOperator(false)}
-                        className="h-7 px-2 bg-slate-200 hover:bg-slate-300 text-slate-600 text-[11px] rounded-sm"
+                        className="h-7 px-2 bg-[#F5F5F5] hover:bg-[#EBEBEB] text-[#0F1D24] text-[11px] rounded border border-[#C6C6C6]/50"
                       >
                         Cancel
                       </button>
@@ -571,11 +509,10 @@ const ProductionForm = ({
         </div>
 
         {/* PART SEARCH */}
-
         <div ref={wrapperRef} className="relative col-span-2 md:col-span-1">
-          <label className="text-[11px] font-medium text-slate-600 block mb-1">
+          <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
             Part Name / Number
-            {isFromPlan && formData.part && planBadge}
+            {/* {isFromPlan && formData.part && planBadge} */}
           </label>
 
           <input
@@ -589,26 +526,23 @@ const ProductionForm = ({
             className={inputClass}
           />
 
-          {/* SUGGESTIONS FOUND */}
           {partSuggestions.length > 0 && (
-            <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E2E4E9] rounded-sm shadow-lg max-h-72 overflow-y-auto z-50">
+            <div className="absolute left-0 right-0 mt-1 bg-white border border-[#C6C6C6]/60 rounded shadow-lg max-h-72 overflow-y-auto z-50">
               {partSuggestions.map((part, index) => (
                 <div
                   key={part.id}
                   onClick={() => selectPart(part)}
-                  className={`px-2.5 py-1.5 cursor-pointer border-b border-[#E2E4E9] last:border-b-0 ${
-                    selectedIndex === index ? "bg-blue-50" : "hover:bg-slate-50"
+                  className={`px-2.5 py-1.5 cursor-pointer border-b border-[#C6C6C6]/40 last:border-b-0 ${
+                    selectedIndex === index ? "bg-[#FDC94D]/15" : "hover:bg-[#F5F5F5]"
                   }`}
                 >
-                  <div className="text-xs font-semibold text-slate-800">
+                  <div className="text-xs font-semibold text-[#0F1D24]">
                     {part.part_name}
                   </div>
-
-                  <div className="text-[10px] text-slate-400 mt-0.5">
+                  <div className="text-[10px] text-[#9B9B9B] mt-0.5">
                     {part.part_number} &middot; {part.product_category} &middot;{" "}
                     {part.customer}
                   </div>
-
                   <div className="text-[10px] text-emerald-600 font-semibold font-mono">
                     Std CT: {part.standard_cycle_time}
                   </div>
@@ -617,24 +551,25 @@ const ProductionForm = ({
             </div>
           )}
 
-          {/* NO RESULTS — offer to add */}
           {noPartResults && !formData.part_id && (
-            <div className="absolute left-0 right-0 mt-1 bg-white border border-amber-200 rounded-sm shadow-lg z-50 p-2">
+            <div className="absolute left-0 right-0 mt-1 bg-white border border-[#FDC94D]/50 rounded shadow-lg z-50 p-2">
               {!showAddPart ? (
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-amber-700 font-medium">
+                  <span className="text-[11px] text-[#0F1D24] font-medium">
                     No part found for "{formData.part}".
                   </span>
-                  <button
+                  <motion.button
                     type="button"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={() => {
                       setNewPart((p) => ({ ...p, part_name: formData.part }));
                       setShowAddPart(true);
                     }}
-                    className="h-6 px-2 shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-semibold rounded-sm"
+                    className="h-6 px-2 shrink-0 bg-[#0F1D24] hover:bg-[#0F1D24]/90 text-[#FDC94D] text-[10px] font-semibold rounded"
                   >
                     + Add Part
-                  </button>
+                  </motion.button>
                 </div>
               ) : (
                 <div className="flex flex-col gap-1.5">
@@ -668,18 +603,20 @@ const ProductionForm = ({
                   )}
 
                   <div className="flex gap-1.5">
-                    <button
+                    <motion.button
                       type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
                       onClick={submitNewPart}
                       disabled={addingPart}
-                      className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-sm disabled:opacity-50"
+                      className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded disabled:opacity-50"
                     >
                       {addingPart ? "Saving..." : "Save & Use"}
-                    </button>
+                    </motion.button>
                     <button
                       type="button"
                       onClick={() => setShowAddPart(false)}
-                      className="h-7 px-2 bg-slate-200 hover:bg-slate-300 text-slate-600 text-[11px] rounded-sm"
+                      className="h-7 px-2 bg-[#F5F5F5] hover:bg-[#EBEBEB] text-[#0F1D24] text-[11px] rounded border border-[#C6C6C6]/50"
                     >
                       Cancel
                     </button>
@@ -691,12 +628,10 @@ const ProductionForm = ({
         </div>
 
         {/* ACTUAL CT */}
-
         <div>
-          <label className="text-[11px] font-medium text-slate-600 block mb-1">
+          <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
             Actual CT
           </label>
-
           <input
             type="number"
             name="actualCycleTime"
@@ -708,12 +643,10 @@ const ProductionForm = ({
         </div>
 
         {/* ACTUAL */}
-
         <div>
-          <label className="text-[11px] font-medium text-slate-600 block mb-1">
+          <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
             Actual
           </label>
-
           <input
             type="number"
             name="actual"
@@ -725,12 +658,10 @@ const ProductionForm = ({
         </div>
 
         {/* REJECT */}
-
         <div>
-          <label className="text-[11px] font-medium text-slate-600 block mb-1">
+          <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
             Reject
           </label>
-
           <input
             type="number"
             name="reject"
@@ -742,44 +673,37 @@ const ProductionForm = ({
         </div>
       </div>
 
-      {/* ===========================
-          AUTO-CALCULATED + EDITABLE TARGET SECTION
-      =========================== */}
-
-      <div className="mt-3 pt-2.5 border-t border-[#E2E4E9]">
-        <p className="text-[10px] uppercase tracking-wide text-slate-400 font-medium mb-1.5">
+      <div className="mt-3 pt-2.5 border-t border-[#C6C6C6]/40">
+        <p className="text-[10px] uppercase tracking-wide text-[#9B9B9B] font-medium mb-1.5">
           Auto-calculated &amp; Editable
           {isFromPlan && formData.target && (
-            <span className="ml-1.5 normal-case text-indigo-500 font-semibold">
+            <span className="ml-1.5 normal-case text-[#0F1D24] font-semibold">
               (Target from Plan)
             </span>
           )}
         </p>
 
         <div className="grid grid-cols-5 gap-2">
-          {/* Standard CT (from part) */}
-          <div className="border border-[#E2E4E9] bg-slate-50 rounded-sm px-2 py-1.5">
-            <p className="text-[9px] uppercase tracking-wide text-slate-400 leading-none">
+          <div className="border border-[#C6C6C6]/50 bg-[#F9F9F9] rounded px-2 py-1.5">
+            <p className="text-[9px] uppercase tracking-wide text-[#9B9B9B] leading-none">
               Standard CT
             </p>
-            <p className="text-xs font-bold font-mono mt-1 text-slate-500">
+            <p className="text-xs font-bold font-mono mt-1 text-[#0F1D24]">
               {formData.standardCycleTime || "-"}
             </p>
           </div>
 
-          {/* Calculated target (read-only) */}
-          <div className="border border-[#E2E4E9] bg-slate-50 rounded-sm px-2 py-1.5">
-            <p className="text-[9px] uppercase tracking-wide text-slate-400 leading-none">
+          <div className="border border-[#C6C6C6]/50 bg-[#F9F9F9] rounded px-2 py-1.5">
+            <p className="text-[9px] uppercase tracking-wide text-[#9B9B9B] leading-none">
               Calc Target
             </p>
-            <p className="text-xs font-bold font-mono mt-1 text-slate-500">
+            <p className="text-xs font-bold font-mono mt-1 text-[#0F1D24]">
               {calculatedTarget === "" ? "-" : calculatedTarget}
             </p>
           </div>
 
-          {/* Editable target */}
-          <div className="border border-[#E2E4E9] bg-blue-50 rounded-sm px-2 py-1.5">
-            <label className="text-[9px] uppercase tracking-wide text-blue-400 leading-none block">
+          <div className="border border-[#FDC94D]/60 bg-[#FDC94D]/15 rounded px-2 py-1.5">
+            <label className="text-[9px] uppercase tracking-wide text-[#0F1D24] leading-none block font-semibold">
               Target (editable)
             </label>
             <input
@@ -788,12 +712,11 @@ const ProductionForm = ({
               value={formData.target}
               onChange={handleChange}
               {...numberInputProps}
-              className="w-full h-5 px-1 text-xs font-bold font-mono text-blue-600 bg-transparent border-0 outline-none"
+              className="w-full h-5 px-1 text-xs font-bold font-mono text-[#0F1D24] bg-transparent border-0 outline-none"
             />
           </div>
 
-          {/* Loss minutes */}
-          <div className="border border-[#E2E4E9] bg-red-50 rounded-sm px-2 py-1.5">
+          <div className="border border-red-200 bg-red-50 rounded px-2 py-1.5">
             <p className="text-[9px] uppercase tracking-wide text-red-400 leading-none">
               Loss (min)
             </p>
@@ -802,8 +725,7 @@ const ProductionForm = ({
             </p>
           </div>
 
-          {/* Efficiency */}
-          <div className="border border-[#E2E4E9] bg-orange-50 rounded-sm px-2 py-1.5">
+          <div className="border border-orange-200 bg-orange-50 rounded px-2 py-1.5">
             <p className="text-[9px] uppercase tracking-wide text-orange-400 leading-none">
               Efficiency
             </p>

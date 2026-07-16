@@ -1,6 +1,21 @@
 import React from "react";
+import { motion } from "framer-motion";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { FaBullseye, FaGaugeHigh } from "react-icons/fa6";
+
+// Brand palette: highlight #0F1D24 (navy) · gray #9B9B9B · accent #FDC94D (gold) · darken #C6C6C6 (borders)
+// Actual/Reject stay semantic (green/red) — good vs bad production outcomes
+// need universal color scanning. Target & Efficiency are neutral brand metrics.
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 10, scale: 0.97 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 260, damping: 22 },
+  },
+};
 
 const SummaryCards = ({ target, actual, reject, efficiency }) => {
   const cards = [
@@ -9,11 +24,12 @@ const SummaryCards = ({ target, actual, reject, efficiency }) => {
       value: target || 0,
       suffix: "",
       icon: FaBullseye,
-      accent: "#2563EB",
-      bg: "bg-blue-50",
-      border: "border-blue-100",
-      iconBg: "bg-blue-600",
-      valueColor: "text-blue-700",
+      accent: "#0F1D24",
+      bg: "bg-[#0F1D24]/[0.04]",
+      border: "border-[#0F1D24]/15",
+      iconBg: "bg-[#0F1D24]",
+      iconColor: "text-[#FDC94D]",
+      valueColor: "text-[#0F1D24]",
     },
     {
       label: "Actual",
@@ -24,6 +40,7 @@ const SummaryCards = ({ target, actual, reject, efficiency }) => {
       bg: "bg-green-50",
       border: "border-green-100",
       iconBg: "bg-green-600",
+      iconColor: "text-white",
       valueColor: "text-green-700",
     },
     {
@@ -35,6 +52,7 @@ const SummaryCards = ({ target, actual, reject, efficiency }) => {
       bg: "bg-red-50",
       border: "border-red-100",
       iconBg: "bg-red-600",
+      iconColor: "text-white",
       valueColor: "text-red-700",
     },
     {
@@ -42,22 +60,28 @@ const SummaryCards = ({ target, actual, reject, efficiency }) => {
       value: efficiency || 0,
       suffix: "%",
       icon: FaGaugeHigh,
-      accent: "#EA580C",
-      bg: "bg-orange-50",
-      border: "border-orange-100",
-      iconBg: "bg-orange-600",
-      valueColor: "text-orange-700",
+      accent: "#FDC94D",
+      bg: "bg-[#FDC94D]/10",
+      border: "border-[#FDC94D]/40",
+      iconBg: "bg-[#0F1D24]",
+      iconColor: "text-[#FDC94D]",
+      valueColor: "text-[#0F1D24]",
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-1 mb-1">
-      {cards.map((card) => {
+    <div className="mb-1 grid grid-cols-2 gap-1.5 lg:grid-cols-4">
+      {cards.map((card, index) => {
         const Icon = card.icon;
         return (
-          <div
+          <motion.div
             key={card.label}
-            className={`relative flex items-center justify-between overflow-hidden rounded border ${card.border} ${card.bg} pl-3.5 pr-3 py-2.5 shadow-sm`}
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: index * 0.05 }}
+            whileHover={{ y: -2 }}
+            className={`relative flex items-center justify-between overflow-hidden rounded border ${card.border} ${card.bg} py-2.5 pl-3.5 pr-3 shadow-sm transition-shadow duration-300 hover:shadow-md`}
           >
             {/* Left accent bar */}
             <span
@@ -66,23 +90,27 @@ const SummaryCards = ({ target, actual, reject, efficiency }) => {
             />
 
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider leading-tight">
+              <p className="text-[10px] font-semibold uppercase leading-tight tracking-wider text-[#9B9B9B]">
                 {card.label}
               </p>
-              <h3
-                className={`text-xl font-extrabold leading-tight mt-0.5 ${card.valueColor}`}
+              <motion.h3
+                key={card.value}
+                initial={{ scale: 1.1 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 350, damping: 18 }}
+                className={`mt-0.5 text-xl font-extrabold leading-tight ${card.valueColor}`}
               >
                 {card.value}
                 {card.suffix}
-              </h3>
+              </motion.h3>
             </div>
 
             <div
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded ${card.iconBg} shadow-sm`}
             >
-              <Icon className="text-white text-sm" />
+              <Icon className={`text-sm ${card.iconColor}`} />
             </div>
-          </div>
+          </motion.div>
         );
       })}
     </div>

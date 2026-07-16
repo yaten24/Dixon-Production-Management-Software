@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Brand palette (from client's color reference):
+// highlight #0F1D24 (deep navy)  — primary: icons, titles, hover fills
+// gray      #9B9B9B              — secondary text
+// accent    #FDC94D (warm gold)  — sparing highlight: eyebrow, bar, focus
+// darken    #C6C6C6              — borders, dividers, neutral surfaces
+
 const MouldChangeSection = ({
   showMouldSection,
   handleMouldToggle,
@@ -34,14 +40,17 @@ const MouldChangeSection = ({
     px-2.5
     text-xs
     bg-white
+    text-[#0F1D24]
+    placeholder:text-[#9B9B9B]
     border
-    border-[#E2E4E9]
-    rounded-sm
+    border-[#C6C6C6]/60
+    rounded
     outline-none
-    focus:border-orange-400
-    focus:ring-1
-    focus:ring-orange-400
+    focus:border-[#FDC94D]
+    focus:ring-2
+    focus:ring-[#FDC94D]/30
     transition-all
+    duration-200
     [appearance:textfield]
     [&::-webkit-inner-spin-button]:appearance-none
     [&::-webkit-outer-spin-button]:appearance-none
@@ -168,6 +177,9 @@ const MouldChangeSection = ({
     handleChange({ target: { name: "new_part_id", value: null } });
     handleChange({ target: { name: "new_part_number", value: "" } });
     handleChange({ target: { name: "mouldStandardCycleTime", value: "" } });
+    // FIX: mouldActualCycleTime bhi clear karo taaki purani part ki Actual CT
+    // stale na reh jaaye jab tak naya part select na ho jaaye.
+    handleChange({ target: { name: "mouldActualCycleTime", value: "" } });
 
     if (value.trim().length < 2) {
       setMouldPartSuggestions([]);
@@ -187,6 +199,15 @@ const MouldChangeSection = ({
       target: {
         name: "mouldStandardCycleTime",
         value: part.standard_cycle_time,
+      },
+    });
+
+    // FIX: mouldActualCycleTime ab part select karte hi set ho jaati hai
+    // (fallback standard_cycle_time pe agar actual DB me 0/null hai).
+    handleChange({
+      target: {
+        name: "mouldActualCycleTime",
+        value: part.actual_cycle_time || part.standard_cycle_time || "",
       },
     });
 
@@ -253,17 +274,20 @@ const MouldChangeSection = ({
   return (
     <div className="mt-3">
       {/* CHECKBOX */}
-      <label className="flex items-center gap-2 cursor-pointer select-none">
+      <motion.label
+        whileTap={{ scale: 0.98 }}
+        className="flex items-center gap-2 cursor-pointer select-none"
+      >
         <input
           type="checkbox"
           checked={showMouldSection}
           onChange={handleMouldToggle}
-          className="h-3.5 w-3.5 accent-orange-600"
+          className="h-3.5 w-3.5 accent-[#FDC94D]"
         />
-        <span className="text-xs font-semibold text-orange-600">
+        <span className="text-xs font-semibold text-[#0F1D24]">
           Mould Change Entry
         </span>
-      </label>
+      </motion.label>
 
       <AnimatePresence>
         {showMouldSection && (
@@ -271,11 +295,14 @@ const MouldChangeSection = ({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
             className="overflow-hidden"
           >
-            <div className="mt-2.5 border border-[#E2E4E9] bg-orange-50/40 rounded-sm p-3">
-              <h3 className="text-sm font-bold text-slate-800 mb-3">
+            <div className="group relative mt-2.5 overflow-hidden rounded border border-[#C6C6C6]/50 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
+              {/* top accent bar */}
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-[#FDC94D]" />
+
+              <h3 className="text-sm font-bold tracking-tight text-[#0F1D24] mb-3">
                 Mould Change Production Entry
               </h3>
 
@@ -284,23 +311,29 @@ const MouldChangeSection = ({
               =========================== */}
               <div className="grid grid-cols-2 gap-2.5 mb-2.5">
                 <div>
-                  <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                  <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
                     Old Part (current)
                   </label>
-                  <div className="h-9 px-2.5 text-xs bg-slate-100 border border-[#E2E4E9] rounded-sm flex items-center text-slate-600 font-medium truncate">
+                  <div className="h-9 px-2.5 text-xs bg-[#F5F5F5] border border-[#C6C6C6]/50 rounded flex items-center text-[#0F1D24] font-medium truncate">
                     {formData.old_part_number || formData.part || "—"}
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                  <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
                     New Part
                   </label>
-                  <div className="h-9 px-2.5 text-xs bg-emerald-50 border border-emerald-200 rounded-sm flex items-center text-emerald-700 font-semibold truncate">
+                  <motion.div
+                    key={formData.new_part_number || formData.mouldPart}
+                    initial={{ opacity: 0.5 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                    className="h-9 px-2.5 text-xs bg-emerald-50 border border-emerald-200 rounded flex items-center text-emerald-700 font-semibold truncate"
+                  >
                     {formData.new_part_number ||
                       formData.mouldPart ||
                       "Search below ↓"}
-                  </div>
+                  </motion.div>
                 </div>
               </div>
 
@@ -311,7 +344,7 @@ const MouldChangeSection = ({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                 {/* PART NAME SEARCH (this sets the NEW part) */}
                 <div className="relative" ref={wrapperRef}>
-                  <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                  <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
                     Search New Part
                   </label>
 
@@ -326,157 +359,177 @@ const MouldChangeSection = ({
                     className={inputClass}
                   />
 
-                  {mouldPartSuggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 mt-1 bg-white border border-[#E2E4E9] rounded-sm shadow-lg z-50 max-h-72 overflow-y-auto">
-                      {mouldPartSuggestions.map((part, index) => (
-                        <div
-                          key={part.id}
-                          onClick={() => selectMouldPart(part)}
-                          className={`px-2.5 py-1.5 cursor-pointer border-b border-[#E2E4E9] last:border-b-0 ${
-                            selectedIndex === index
-                              ? "bg-orange-50"
-                              : "hover:bg-slate-50"
-                          }`}
-                        >
-                          <div className="text-xs font-semibold text-slate-800">
-                            {part.part_name}
-                          </div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">
-                            {part.part_number} &middot; {part.product_category}{" "}
-                            &middot; {part.customer}
-                          </div>
-                          <div className="text-[10px] text-emerald-600 font-semibold font-mono">
-                            Std CT: {part.standard_cycle_time}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {noMouldPartResults && !formData.new_part_id && (
-                    <div className="absolute left-0 right-0 mt-1 bg-white border border-amber-200 rounded-sm shadow-lg z-50 p-2">
-                      {!showAddPart ? (
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] text-amber-700 font-medium">
-                            No part found for "{formData.mouldPart}".
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setNewPart((p) => ({
-                                ...p,
-                                part_name: formData.mouldPart,
-                              }));
-                              setShowAddPart(true);
-                            }}
-                            className="h-6 px-2 shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-semibold rounded-sm"
+                  <AnimatePresence>
+                    {mouldPartSuggestions.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute left-0 right-0 mt-1 bg-white border border-[#C6C6C6]/60 rounded shadow-lg z-50 max-h-72 overflow-y-auto"
+                      >
+                        {mouldPartSuggestions.map((part, index) => (
+                          <div
+                            key={part.id}
+                            onClick={() => selectMouldPart(part)}
+                            className={`px-2.5 py-1.5 cursor-pointer border-b border-[#C6C6C6]/40 last:border-b-0 ${
+                              selectedIndex === index
+                                ? "bg-[#FDC94D]/15"
+                                : "hover:bg-[#F5F5F5]"
+                            }`}
                           >
-                            + Add Part
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-1.5">
-                          <input
-                            type="text"
-                            placeholder="Part Number"
-                            value={newPart.part_number}
-                            onChange={(e) =>
-                              setNewPart((p) => ({
-                                ...p,
-                                part_number: e.target.value,
-                              }))
-                            }
-                            className={inputClass}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Part Name"
-                            value={newPart.part_name}
-                            onChange={(e) =>
-                              setNewPart((p) => ({
-                                ...p,
-                                part_name: e.target.value,
-                              }))
-                            }
-                            className={inputClass}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Product Category"
-                            value={newPart.product_category}
-                            onChange={(e) =>
-                              setNewPart((p) => ({
-                                ...p,
-                                product_category: e.target.value,
-                              }))
-                            }
-                            className={inputClass}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Source"
-                            value={newPart.source}
-                            onChange={(e) =>
-                              setNewPart((p) => ({
-                                ...p,
-                                source: e.target.value,
-                              }))
-                            }
-                            className={inputClass}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Customer"
-                            value={newPart.customer}
-                            onChange={(e) =>
-                              setNewPart((p) => ({
-                                ...p,
-                                customer: e.target.value,
-                              }))
-                            }
-                            className={inputClass}
-                          />
-                          <input
-                            type="number"
-                            placeholder="Standard Cycle Time (sec)"
-                            value={newPart.standard_cycle_time}
-                            {...numberInputProps}
-                            onChange={(e) =>
-                              setNewPart((p) => ({
-                                ...p,
-                                standard_cycle_time: e.target.value,
-                              }))
-                            }
-                            className={`${inputClass} font-mono`}
-                          />
-
-                          {addPartError && (
-                            <p className="text-[10px] text-red-600">
-                              {addPartError}
-                            </p>
-                          )}
-
-                          <div className="flex gap-1.5">
-                            <button
-                              type="button"
-                              onClick={submitNewPart}
-                              disabled={addingMouldPart}
-                              className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-sm disabled:opacity-50"
-                            >
-                              {addingMouldPart ? "Saving..." : "Save & Use"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setShowAddPart(false)}
-                              className="h-7 px-2 bg-slate-200 hover:bg-slate-300 text-slate-600 text-[11px] rounded-sm"
-                            >
-                              Cancel
-                            </button>
+                            <div className="text-xs font-semibold text-[#0F1D24]">
+                              {part.part_name}
+                            </div>
+                            <div className="text-[10px] text-[#9B9B9B] mt-0.5">
+                              {part.part_number} &middot; {part.product_category}{" "}
+                              &middot; {part.customer}
+                            </div>
+                            <div className="text-[10px] text-emerald-600 font-semibold font-mono">
+                              Std CT: {part.standard_cycle_time}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <AnimatePresence>
+                    {noMouldPartResults && !formData.new_part_id && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute left-0 right-0 mt-1 bg-white border border-[#FDC94D]/50 rounded shadow-lg z-50 p-2"
+                      >
+                        {!showAddPart ? (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-[#0F1D24] font-medium">
+                              No part found for "{formData.mouldPart}".
+                            </span>
+                            <motion.button
+                              type="button"
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.96 }}
+                              onClick={() => {
+                                setNewPart((p) => ({
+                                  ...p,
+                                  part_name: formData.mouldPart,
+                                }));
+                                setShowAddPart(true);
+                              }}
+                              className="h-6 px-2 shrink-0 bg-[#0F1D24] hover:bg-[#0F1D24]/90 text-[#FDC94D] text-[10px] font-semibold rounded"
+                            >
+                              + Add Part
+                            </motion.button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-1.5">
+                            <input
+                              type="text"
+                              placeholder="Part Number"
+                              value={newPart.part_number}
+                              onChange={(e) =>
+                                setNewPart((p) => ({
+                                  ...p,
+                                  part_number: e.target.value,
+                                }))
+                              }
+                              className={inputClass}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Part Name"
+                              value={newPart.part_name}
+                              onChange={(e) =>
+                                setNewPart((p) => ({
+                                  ...p,
+                                  part_name: e.target.value,
+                                }))
+                              }
+                              className={inputClass}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Product Category"
+                              value={newPart.product_category}
+                              onChange={(e) =>
+                                setNewPart((p) => ({
+                                  ...p,
+                                  product_category: e.target.value,
+                                }))
+                              }
+                              className={inputClass}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Source"
+                              value={newPart.source}
+                              onChange={(e) =>
+                                setNewPart((p) => ({
+                                  ...p,
+                                  source: e.target.value,
+                                }))
+                              }
+                              className={inputClass}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Customer"
+                              value={newPart.customer}
+                              onChange={(e) =>
+                                setNewPart((p) => ({
+                                  ...p,
+                                  customer: e.target.value,
+                                }))
+                              }
+                              className={inputClass}
+                            />
+                            <input
+                              type="number"
+                              placeholder="Standard Cycle Time (sec)"
+                              value={newPart.standard_cycle_time}
+                              {...numberInputProps}
+                              onChange={(e) =>
+                                setNewPart((p) => ({
+                                  ...p,
+                                  standard_cycle_time: e.target.value,
+                                }))
+                              }
+                              className={`${inputClass} font-mono`}
+                            />
+
+                            {addPartError && (
+                              <p className="text-[10px] text-red-600">
+                                {addPartError}
+                              </p>
+                            )}
+
+                            <div className="flex gap-1.5">
+                              <motion.button
+                                type="button"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.97 }}
+                                onClick={submitNewPart}
+                                disabled={addingMouldPart}
+                                className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded disabled:opacity-50"
+                              >
+                                {addingMouldPart ? "Saving..." : "Save & Use"}
+                              </motion.button>
+                              <button
+                                type="button"
+                                onClick={() => setShowAddPart(false)}
+                                className="h-7 px-2 bg-[#F5F5F5] hover:bg-[#EBEBEB] text-[#0F1D24] text-[11px] rounded border border-[#C6C6C6]/50"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {formData.mouldPart && !formData.new_part_id && (
                     <p className="text-[10px] text-red-500 mt-1">
@@ -487,7 +540,7 @@ const MouldChangeSection = ({
 
                 {/* ACTUAL CT */}
                 <div>
-                  <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                  <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
                     Actual CT
                   </label>
                   <input
@@ -502,7 +555,7 @@ const MouldChangeSection = ({
 
                 {/* ACTUAL */}
                 <div>
-                  <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                  <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
                     Actual
                   </label>
                   <input
@@ -517,7 +570,7 @@ const MouldChangeSection = ({
 
                 {/* REJECT */}
                 <div>
-                  <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                  <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
                     Reject
                   </label>
                   <input
@@ -535,33 +588,33 @@ const MouldChangeSection = ({
                   AUTO-CALCULATED + EDITABLE TARGET
               =========================== */}
 
-              <div className="mt-3 pt-2.5 border-t border-[#E2E4E9]">
-                <p className="text-[10px] uppercase tracking-wide text-slate-400 font-medium mb-1.5">
+              <div className="mt-3 pt-2.5 border-t border-[#C6C6C6]/40">
+                <p className="text-[10px] uppercase tracking-wide text-[#9B9B9B] font-medium mb-1.5">
                   Auto-calculated &amp; Editable
                 </p>
 
                 <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                  <div className="border border-[#E2E4E9] bg-white rounded-sm px-2 py-1.5">
-                    <p className="text-[9px] uppercase tracking-wide text-slate-400 leading-none">
+                  <div className="border border-[#C6C6C6]/50 bg-[#F9F9F9] rounded px-2 py-1.5">
+                    <p className="text-[9px] uppercase tracking-wide text-[#9B9B9B] leading-none">
                       Standard CT
                     </p>
-                    <p className="text-xs font-bold font-mono mt-1 text-slate-700">
+                    <p className="text-xs font-bold font-mono mt-1 text-[#0F1D24]">
                       {formData.mouldStandardCycleTime || "-"}
                     </p>
                   </div>
 
-                  <div className="border border-[#E2E4E9] bg-white rounded-sm px-2 py-1.5">
-                    <p className="text-[9px] uppercase tracking-wide text-slate-400 leading-none">
+                  <div className="border border-[#C6C6C6]/50 bg-[#F9F9F9] rounded px-2 py-1.5">
+                    <p className="text-[9px] uppercase tracking-wide text-[#9B9B9B] leading-none">
                       Calc Target
                     </p>
-                    <p className="text-xs font-bold font-mono mt-1 text-slate-500">
+                    <p className="text-xs font-bold font-mono mt-1 text-[#0F1D24]">
                       {calculatedMouldTarget === "" ? "-" : calculatedMouldTarget}
                     </p>
                   </div>
 
                   {/* Editable target */}
-                  <div className="border border-[#E2E4E9] bg-blue-50 rounded-sm px-2 py-1.5">
-                    <label className="text-[9px] uppercase tracking-wide text-blue-400 leading-none block">
+                  <div className="border border-[#FDC94D]/60 bg-[#FDC94D]/15 rounded px-2 py-1.5">
+                    <label className="text-[9px] uppercase tracking-wide text-[#0F1D24] leading-none block font-semibold">
                       Target (editable)
                     </label>
                     <input
@@ -570,11 +623,11 @@ const MouldChangeSection = ({
                       value={formData.mouldTarget}
                       onChange={handleChange}
                       {...numberInputProps}
-                      className="w-full h-5 px-1 text-xs font-bold font-mono text-blue-600 bg-transparent border-0 outline-none"
+                      className="w-full h-5 px-1 text-xs font-bold font-mono text-[#0F1D24] bg-transparent border-0 outline-none"
                     />
                   </div>
 
-                  <div className="border border-[#E2E4E9] bg-white rounded-sm px-2 py-1.5">
+                  <div className="border border-red-200 bg-red-50 rounded px-2 py-1.5">
                     <p className="text-[9px] uppercase tracking-wide text-red-400 leading-none">
                       Loss (min)
                     </p>
@@ -583,7 +636,7 @@ const MouldChangeSection = ({
                     </p>
                   </div>
 
-                  <div className="border border-[#E2E4E9] bg-white rounded-sm px-2 py-1.5">
+                  <div className="border border-orange-200 bg-orange-50 rounded px-2 py-1.5">
                     <p className="text-[9px] uppercase tracking-wide text-orange-400 leading-none">
                       Efficiency
                     </p>
@@ -592,8 +645,8 @@ const MouldChangeSection = ({
                     </p>
                   </div>
 
-                  {/* NEW: Mould Change Duration — 60 - (old part time + new part time) */}
-                  <div className="border border-purple-200 bg-purple-50 rounded-sm px-2 py-1.5">
+                  {/* Mould Change Duration — 60 - (old part time + new part time) */}
+                  <div className="border border-purple-200 bg-purple-50 rounded px-2 py-1.5">
                     <p className="text-[9px] uppercase tracking-wide text-purple-400 leading-none">
                       Mould Change (min)
                     </p>
@@ -604,10 +657,9 @@ const MouldChangeSection = ({
                 </div>
               </div>
 
-              {/* NEW: Mould Change Remarks — this was collected in state before
-                  but had no input anywhere, so it silently never saved. */}
+              {/* Mould Change Remarks */}
               <div className="mt-2.5">
-                <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                <label className="text-[11px] font-medium text-[#9B9B9B] block mb-1">
                   Mould Change Remarks
                 </label>
                 <input
