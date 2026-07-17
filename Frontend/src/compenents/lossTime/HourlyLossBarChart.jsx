@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import ChartCard from "../../compenents/productionDashboard/ChartCard";
+import ChartCard from "../productionDashboard/ChartCard";
 
 const MIN_HEIGHT = 160;
 

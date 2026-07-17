@@ -12,7 +12,6 @@ import ProductionPlanning from "../user/ProductionPlanning";
 import Login from "../auth/Login";
 import MouldChangeDashboard from "../pages/MouldChangeDashboard";
 import AllRejectionReasons from "../pages/AllRejectionReasons";
-import LossTimeDashboard from "../pages/LossTimeDashboard";
 import Users from "../pages/Users";
 // import Login from "../pages/UserLogin";
 import UserHome from "../pages/UserHome";
@@ -31,6 +30,7 @@ import AllocateMachineOperator from "../pages/AllocateMachineOperator";
 import UpdateMachineOperator from "../pages/UpdateMachineOperator";
 import ProductionHistoryPage from "../pages/ProductionHistoryPage";
 import AdvProductionEntry from "../pages/advProductionEnrty";
+import LossAnalysisDashboard from "../pages/LossTimeDashboard";
 
 const AppRoutes = () => {
   return (
@@ -49,7 +49,7 @@ const AppRoutes = () => {
       <Route path="/production/hall/:hallId" element={<HallDashboard />} />
       <Route path="/mould-change" element={<MouldChangeDashboard />} />
       <Route path="/rejection" element={<AllRejectionReasons />} />
-      <Route path="/loss-time" element={<LossTimeDashboard />} />
+      <Route path="/loss-time" element={<LossAnalysisDashboard />} />
       <Route path="/users" element={<Users />} />
       {/* <Route path="/user/login" element={<Login />} /> */}
       <Route path="/user/home" element={<UserHome />} />

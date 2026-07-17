@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 const LossFilters = ({
   selectedDate,
   selectedReason,
-  reasons,
+  reasons = [],
   onDateChange,
   onReasonChange,
   onApply,
@@ -43,14 +43,14 @@ const LossFilters = ({
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="flex flex-wrap items-center justify-between gap-2 rounded border border-[#C6C6C6]/50 bg-white px-2 py-1.5 shadow-sm"
+      className="flex h-10 flex-shrink-0 flex-nowrap items-center justify-between gap-2 overflow-x-auto rounded border border-[#C6C6C6]/50 bg-white px-2 py-1 shadow-sm"
     >
-      <div className="flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded bg-[#0F1D24]">
+      <div className="flex flex-shrink-0 items-center gap-2">
+        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded bg-[#0F1D24]">
           <FaFilter className="text-xs text-[#FDC94D]" />
         </div>
 
-        <div>
+        <div className="hidden sm:block">
           <h3 className="text-xs font-bold leading-tight text-[#0F1D24]">
             Loss Time Filters
           </h3>
@@ -60,9 +60,9 @@ const LossFilters = ({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-1.5">
+      <div className="flex flex-shrink-0 flex-nowrap items-center gap-1.5">
         <div
-          className="flex h-7 cursor-pointer items-center gap-1.5 rounded border border-[#C6C6C6] bg-white px-2 transition-colors hover:border-[#0F1D24]"
+          className="flex h-7 flex-shrink-0 cursor-pointer items-center gap-1.5 rounded border border-[#C6C6C6] bg-white px-2 transition-colors hover:border-[#0F1D24]"
           onClick={openPicker}
         >
           <FaCalendarAlt className="text-[10px] text-[#0F1D24]" />
@@ -71,14 +71,14 @@ const LossFilters = ({
             type="date"
             value={selectedDate}
             onChange={(e) => onDateChange(e.target.value)}
-            className="h-full border-none bg-transparent text-[11px] text-[#0F1D24] outline-none"
+            className="h-full w-[104px] border-none bg-transparent text-[11px] text-[#0F1D24] outline-none"
           />
         </div>
 
         <select
           value={selectedReason}
           onChange={(e) => onReasonChange(e.target.value)}
-          className={inputClass}
+          className={`${inputClass} max-w-[130px] flex-shrink-0`}
         >
           <option value="">All Reasons</option>
           {reasons.map((reason) => (
@@ -92,20 +92,20 @@ const LossFilters = ({
           onClick={onApply}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.96 }}
-          className="flex h-7 items-center gap-1.5 rounded bg-[#0F1D24] px-2 text-[11px] font-semibold text-[#FDC94D] transition-colors hover:bg-[#0F1D24]/90"
+          className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded bg-[#0F1D24] px-2 text-[11px] font-semibold text-[#FDC94D] transition-colors hover:bg-[#0F1D24]/90"
         >
           <FaFilter size={10} />
-          Apply
+          <span className="hidden md:inline">Apply</span>
         </motion.button>
 
         <motion.button
           onClick={onReset}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.96 }}
-          className="flex h-7 items-center gap-1.5 rounded border border-[#C6C6C6] bg-white px-2 text-[11px] font-semibold text-[#0F1D24] transition-colors hover:bg-[#F5F5F5]"
+          className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded border border-[#C6C6C6] bg-white px-2 text-[11px] font-semibold text-[#0F1D24] transition-colors hover:bg-[#F5F5F5]"
         >
           <FaUndo size={10} />
-          Reset
+          <span className="hidden md:inline">Reset</span>
         </motion.button>
       </div>
     </motion.div>
