@@ -7,9 +7,17 @@ import {
   getRecentRejections,
 } from "../api/productionRejectDetailsApi";
 import { getAllRejectionReasons } from "../api/rejectionReasonApi";
-import { getAllMachines } from "../api/machineApi";
 
 /* ---------------- Helpers ---------------- */
+
+// YYYY-MM-DD in local time (matches <input type="date"> format)
+const getTodayDate = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const sumBy = (rows, keyFn) => {
   const map = {};
@@ -32,8 +40,8 @@ const topEntry = (map) => {
 /* ---------------- Hook ---------------- */
 
 export const useRejectionDashboard = () => {
-  // Applied filters — actually sent to API
-  const [appliedDate, setAppliedDate] = useState("");
+  // ⭐ Default date = today, so dashboard shows today's data on first load
+  const [appliedDate, setAppliedDate] = useState(getTodayDate());
   const [appliedReasonId, setAppliedReasonId] = useState("All");
 
   // Raw data from backend
@@ -55,7 +63,6 @@ export const useRejectionDashboard = () => {
     (async () => {
       try {
         const reasons = await getAllRejectionReasons();
-        // Expecting [{ id, reason_name, status }]  — adjust key if backend differs
         setReasonOptions(
           (reasons || []).map((r) => ({
             id: r.id,
@@ -88,7 +95,7 @@ export const useRejectionDashboard = () => {
     }
   }, [appliedDate, appliedReasonId]);
 
-  /* ---------------- Fetch: hourly trend (independent of reason/hall filters, only date) ---------------- */
+  /* ---------------- Fetch: hourly trend (date-based only) ---------------- */
 
   const fetchTrendData = useCallback(async () => {
     setTrendLoading(true);
@@ -114,6 +121,8 @@ export const useRejectionDashboard = () => {
   /* ---------------- Actions ---------------- */
 
   const applyFilters = useCallback((date, reasonId) => {
+    // Agar user date clear kar de, to bhi "All dates" allow karo (empty string).
+    // Agar tumhe hamesha kisi na kisi date par lock rehna hai, yahan getTodayDate() fallback kar sakte ho.
     setAppliedDate(date);
     setAppliedReasonId(reasonId);
   }, []);
@@ -179,24 +188,20 @@ export const useRejectionDashboard = () => {
   }, [trendData]);
 
   return {
-    // raw
     rejectionData,
     reasonOptions,
     recentData,
 
-    // loading/error
     loading,
     trendLoading,
     error,
 
-    // filters
     appliedDate,
     appliedReasonId,
     applyFilters,
     refresh,
     loadRecent,
 
-    // derived
     totalRejectQty,
     highestReason,
     hallChartData,

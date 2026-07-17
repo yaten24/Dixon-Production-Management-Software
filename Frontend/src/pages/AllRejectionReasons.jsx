@@ -14,18 +14,34 @@ import RejectionHeatmapModal from "../compenents/rejection/RejectionHeatmapModal
 import { useRejectionDashboard } from "../hooks/useRejectionDashboard";
 import { exportRejectionDataToCSV } from "../utils/exportExcel";
 
+/* ---------------- Helpers ---------------- */
+
+// YYYY-MM-DD in local time (matches <input type="date"> format)
+const getTodayDate = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+/* ---------------- Component ---------------- */
+
 const RejectionDashboard = () => {
   const {
     rejectionData,
     reasonOptions,
     recentData,
+
     loading,
     error,
+
     appliedDate,
     appliedReasonId,
     applyFilters,
     refresh,
     loadRecent,
+
     totalRejectQty,
     highestReason,
     hallChartData,
@@ -36,14 +52,20 @@ const RejectionDashboard = () => {
     trendChartData,
   } = useRejectionDashboard();
 
-  // Pending (unapplied) filter inputs — separate from applied state in the hook
-  const [pendingDate, setPendingDate] = useState("");
+  // Pending (unapplied) filter inputs — default to today, same as the hook's initial applied state
+  const [pendingDate, setPendingDate] = useState(getTodayDate());
   const [pendingReasonId, setPendingReasonId] = useState("All");
 
   const [showRecent, setShowRecent] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
 
-  const handleApply = () => applyFilters(pendingDate, pendingReasonId);
+  const handleApply = () => {
+    applyFilters(pendingDate, pendingReasonId);
+  };
+
+  const handleRefresh = () => {
+    refresh();
+  };
 
   const handleShowRecent = () => {
     loadRecent(20);
@@ -56,12 +78,26 @@ const RejectionDashboard = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-100">
+      {/* Sidebar */}
       <Sidebar />
 
+      {/* Right Section */}
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-slate-100 p-1">
-          <div className="w-full rounded border border-slate-200 bg-white p-1 shadow-sm">
+          <div
+            className="
+              w-full
+              rounded
+              border
+              border-slate-200
+              bg-white
+              shadow-sm
+              p-1
+            "
+          >
             <div className="space-y-2">
+              {/* Filters */}
               <RejectionFilters
                 selectedDate={pendingDate}
                 setSelectedDate={setPendingDate}
@@ -69,24 +105,27 @@ const RejectionDashboard = () => {
                 setSelectedReason={setPendingReasonId}
                 reasonOptions={reasonOptions}
                 onApply={handleApply}
-                onRefresh={refresh}
+                onRefresh={handleRefresh}
                 onShowRecent={handleShowRecent}
                 onExport={handleExport}
                 onShowHeatmap={() => setShowHeatmap(true)}
               />
 
+              {/* Error state */}
               {error && (
                 <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
                   {error}
                 </div>
               )}
 
+              {/* Loading state */}
               {loading ? (
                 <div className="flex h-40 items-center justify-center text-sm text-slate-400">
                   Loading rejection data...
                 </div>
               ) : (
                 <>
+                  {/* Summary Cards */}
                   <RejectionSummaryCards
                     totalRejectQty={totalRejectQty}
                     highestReason={highestReason}
@@ -94,13 +133,16 @@ const RejectionDashboard = () => {
                     highestMachine={highestMachine}
                   />
 
+                  {/* Reason Pie + Hall Chart */}
                   <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
                     <RejectionPieChart data={reasonChartRows} />
                     <HallWiseChart data={hallChartData} />
                   </div>
 
+                  {/* Machine wise bar chart — pure CSS, no chart library */}
                   <MachineWiseBarChart data={machineChartData} />
 
+                  {/* Hourly trend — bottom */}
                   <RejectionTrendChart data={trendChartData} />
                 </>
               )}
@@ -109,6 +151,7 @@ const RejectionDashboard = () => {
         </main>
       </div>
 
+      {/* Recent Rejections Modal */}
       {showRecent && (
         <RecentRejectionsModal
           data={recentData}
@@ -116,6 +159,7 @@ const RejectionDashboard = () => {
         />
       )}
 
+      {/* Machine x Reason Heatmap Modal */}
       {showHeatmap && (
         <RejectionHeatmapModal
           data={rejectionData}
