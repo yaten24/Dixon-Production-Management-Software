@@ -21,6 +21,7 @@ const LossTimeDashboard = () => {
     applyFilters,
     resetFilters,
     filterOptions,
+    machinesList,
     summary,
     hallWiseData,
     reasonWiseData,
@@ -37,9 +38,8 @@ const LossTimeDashboard = () => {
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
 
-        <main className="mt-12 flex-1 overflow-y-auto p-1">
+        <main className="flex-1 overflow-y-auto p-1">
           <div className="mx-auto max-w-[1600px] space-y-1">
             {/* Filters Box - date + reason only */}
             <LossFilters
@@ -87,7 +87,7 @@ const LossTimeDashboard = () => {
             <HourlyLossBarChart data={hourlyData} />
 
             {/* Machine Heat Map (with zoom) - always all machines */}
-            <MachineHeatMap data={heatMapData} />
+            <MachineHeatMap data={heatMapData} machines={machinesList} />
 
             {/* Recent Events Timeline */}
             <RecentLossTimeline data={recentEvents} />

@@ -7,6 +7,7 @@ import {
   getHourlyLossTotals,
   getRecentEvents,
   getLossTimeFilters,
+  getAllMachines,
 } from "../api/lossTimeApi";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -32,15 +33,20 @@ const useLossTimeData = () => {
   const [hourlyData, setHourlyData] = useState([]);
   const [recentEvents, setRecentEvents] = useState([]);
   const [filterOptions, setFilterOptions] = useState({ reasons: [] });
+  const [machinesList, setMachinesList] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Dropdown options only need to load once
+  // Dropdown options + the full machine master list only need to load once
   useEffect(() => {
     getLossTimeFilters()
       .then(setFilterOptions)
       .catch((err) => console.error("Failed to load filter options:", err));
+
+    getAllMachines()
+      .then(setMachinesList)
+      .catch((err) => console.error("Failed to load machines list:", err));
   }, []);
 
   const fetchAll = useCallback(async (activeFilters) => {
@@ -96,6 +102,7 @@ const useLossTimeData = () => {
     applyFilters,
     resetFilters,
     filterOptions,
+    machinesList,
     summary,
     hallWiseData,
     reasonWiseData,
