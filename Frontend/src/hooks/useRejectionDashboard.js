@@ -7,6 +7,7 @@ import {
   getRecentRejections,
 } from "../api/productionRejectDetailsApi";
 import { getAllRejectionReasons } from "../api/rejectionReasonApi";
+import { getAllMachines } from "../api/machineApi";
 
 /* ---------------- Helpers ---------------- */
 
@@ -17,6 +18,26 @@ const getTodayDate = () => {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+// ⭐ Safely pull an array out of any common API response shape:
+// - [...]                         (plain array)
+// - { data: [...] }               (axios-style wrapper)
+// - { data: { data: [...] } }     (double-wrapped)
+// - { rows: [...] }, { result: [...] }, { items: [...] }
+// - anything else → []
+const asArray = (res) => {
+  if (Array.isArray(res)) return res;
+  if (!res || typeof res !== "object") return [];
+
+  if (Array.isArray(res.data)) return res.data;
+  if (res.data && Array.isArray(res.data.data)) return res.data.data;
+  if (Array.isArray(res.rows)) return res.rows;
+  if (Array.isArray(res.result)) return res.result;
+  if (Array.isArray(res.items)) return res.items;
+
+  console.warn("Unexpected API response shape, expected an array:", res);
+  return [];
 };
 
 const sumBy = (rows, keyFn) => {
@@ -40,14 +61,15 @@ const topEntry = (map) => {
 /* ---------------- Hook ---------------- */
 
 export const useRejectionDashboard = () => {
-  // ⭐ Default date = today, so dashboard shows today's data on first load
+  // Applied filters — actually sent to API. Default date = today.
   const [appliedDate, setAppliedDate] = useState(getTodayDate());
   const [appliedReasonId, setAppliedReasonId] = useState("All");
 
   // Raw data from backend
   const [rejectionData, setRejectionData] = useState([]);
   const [trendData, setTrendData] = useState([]);
-  const [reasonOptions, setReasonOptions] = useState([]);
+  const [reasonOptions, setReasonOptions] = useState([]); // [{ id, label }]
+  const [allHalls, setAllHalls] = useState([]); // full list of halls (from machines)
 
   // Recent rejections (fetched lazily when modal opens)
   const [recentData, setRecentData] = useState([]);
@@ -57,20 +79,41 @@ export const useRejectionDashboard = () => {
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  /* ---------------- Fetch: rejection reasons (for filter dropdown) ---------------- */
+  /* ---------------- Fetch: rejection reasons (for filter dropdown + full reason list) ---------------- */
 
   useEffect(() => {
     (async () => {
       try {
-        const reasons = await getAllRejectionReasons();
+        const res = await getAllRejectionReasons();
+        const reasons = asArray(res);
         setReasonOptions(
-          (reasons || []).map((r) => ({
+          reasons.map((r) => ({
             id: r.id,
-            label: r.reason_name || r.name || r.reason,
+            label: r.reason_name || r.name || r.reason || String(r.id),
           })),
         );
       } catch (err) {
         console.error("Failed to load rejection reasons", err);
+        setReasonOptions([]);
+      }
+    })();
+  }, []);
+
+  /* ---------------- Fetch: machines → derive full hall list ---------------- */
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getAllMachines();
+        const machines = asArray(res);
+        const halls = [
+          ...new Set(machines.map((m) => m.hall).filter(Boolean)),
+        ];
+        halls.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+        setAllHalls(halls);
+      } catch (err) {
+        console.error("Failed to load machines/halls", err);
+        setAllHalls([]);
       }
     })();
   }, []);
@@ -81,11 +124,11 @@ export const useRejectionDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getRejectionDashboardData({
+      const res = await getRejectionDashboardData({
         date: appliedDate,
         reasonId: appliedReasonId,
       });
-      setRejectionData(data || []);
+      setRejectionData(asArray(res));
     } catch (err) {
       console.error("Failed to load rejection dashboard data", err);
       setError("Failed to load rejection data. Please try again.");
@@ -100,8 +143,8 @@ export const useRejectionDashboard = () => {
   const fetchTrendData = useCallback(async () => {
     setTrendLoading(true);
     try {
-      const data = await getHourlyRejectionTrend({ date: appliedDate });
-      setTrendData(data || []);
+      const res = await getHourlyRejectionTrend({ date: appliedDate });
+      setTrendData(asArray(res));
     } catch (err) {
       console.error("Failed to load hourly trend", err);
       setTrendData([]);
@@ -121,8 +164,6 @@ export const useRejectionDashboard = () => {
   /* ---------------- Actions ---------------- */
 
   const applyFilters = useCallback((date, reasonId) => {
-    // Agar user date clear kar de, to bhi "All dates" allow karo (empty string).
-    // Agar tumhe hamesha kisi na kisi date par lock rehna hai, yahan getTodayDate() fallback kar sakte ho.
     setAppliedDate(date);
     setAppliedReasonId(reasonId);
   }, []);
@@ -133,8 +174,8 @@ export const useRejectionDashboard = () => {
 
   const loadRecent = useCallback(async (limit = 20) => {
     try {
-      const data = await getRecentRejections(limit);
-      setRecentData(data || []);
+      const res = await getRecentRejections(limit);
+      setRecentData(asArray(res));
     } catch (err) {
       console.error("Failed to load recent rejections", err);
       setRecentData([]);
@@ -187,21 +228,33 @@ export const useRejectionDashboard = () => {
       .map(([hour, qty]) => ({ hour, qty }));
   }, [trendData]);
 
+  // Full list of reason labels (for pie chart "always show all reasons")
+  const allReasonLabels = useMemo(
+    () => reasonOptions.map((r) => r.label).filter(Boolean),
+    [reasonOptions],
+  );
+
   return {
+    // raw
     rejectionData,
     reasonOptions,
+    allHalls,
+    allReasonLabels,
     recentData,
 
+    // loading/error
     loading,
     trendLoading,
     error,
 
+    // filters
     appliedDate,
     appliedReasonId,
     applyFilters,
     refresh,
     loadRecent,
 
+    // derived
     totalRejectQty,
     highestReason,
     hallChartData,
