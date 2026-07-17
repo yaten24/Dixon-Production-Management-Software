@@ -1,15 +1,13 @@
 import React, { useRef } from "react";
 import { FaFilter, FaUndo, FaCalendarAlt } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 const LossFilters = ({
   selectedDate,
   selectedReason,
-
   reasons,
-
   onDateChange,
   onReasonChange,
-
   onApply,
   onReset,
 }) => {
@@ -27,121 +25,90 @@ const LossFilters = ({
     h-7
     rounded
     border
-    border-slate-300
+    border-[#C6C6C6]
     bg-white
     px-2
     text-[11px]
-    text-slate-700
+    text-[#0F1D24]
     outline-none
     transition-all
     duration-200
-    focus:border-blue-500
+    focus:border-[#0F1D24]
     focus:ring-2
-    focus:ring-blue-100
+    focus:ring-[#0F1D24]/10
   `;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white px-2 py-1.5 shadow-sm">
-      {/* Left: Heading */}
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="flex flex-wrap items-center justify-between gap-2 rounded border border-[#C6C6C6]/50 bg-white px-2 py-1.5 shadow-sm"
+    >
       <div className="flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded bg-blue-100">
-          <FaFilter className="text-xs text-blue-600" />
+        <div className="flex h-7 w-7 items-center justify-center rounded bg-[#0F1D24]">
+          <FaFilter className="text-xs text-[#FDC94D]" />
         </div>
 
         <div>
-          <h3 className="text-xs font-semibold leading-tight text-slate-800">
+          <h3 className="text-xs font-bold leading-tight text-[#0F1D24]">
             Loss Time Filters
           </h3>
-          <p className="text-[9px] leading-tight text-slate-500">
+          <p className="text-[9px] leading-tight text-[#9B9B9B]">
             Filter production loss records
           </p>
         </div>
       </div>
 
-      {/* Right: Filters + Buttons */}
-      <div className="flex flex-wrap items-end gap-2">
-        {/* Date */}
+      <div className="flex flex-wrap items-end gap-1.5">
         <div
-          className="flex h-7 cursor-pointer items-center gap-1.5 rounded border border-slate-300 bg-white px-2"
+          className="flex h-7 cursor-pointer items-center gap-1.5 rounded border border-[#C6C6C6] bg-white px-2 transition-colors hover:border-[#0F1D24]"
           onClick={openPicker}
         >
-          <FaCalendarAlt className="text-[10px] text-slate-400" />
+          <FaCalendarAlt className="text-[10px] text-[#0F1D24]" />
           <input
             ref={dateRef}
             type="date"
             value={selectedDate}
             onChange={(e) => onDateChange(e.target.value)}
-            className="h-full border-none bg-transparent text-[11px] text-slate-700 outline-none"
+            className="h-full border-none bg-transparent text-[11px] text-[#0F1D24] outline-none"
           />
         </div>
 
-        {/* Reason */}
-        <div>
-          <select
-            value={selectedReason}
-            onChange={(e) => onReasonChange(e.target.value)}
-            className={inputClass}
-          >
-            <option value="">All Reasons</option>
-            {reasons.map((reason) => (
-              <option key={reason.id} value={reason.id}>
-                {reason.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <select
+          value={selectedReason}
+          onChange={(e) => onReasonChange(e.target.value)}
+          className={inputClass}
+        >
+          <option value="">All Reasons</option>
+          {reasons.map((reason) => (
+            <option key={reason.id} value={reason.id}>
+              {reason.name}
+            </option>
+          ))}
+        </select>
 
-        {/* Apply */}
-        <button
+        <motion.button
           onClick={onApply}
-          className="
-            flex
-            h-7
-            items-center
-            gap-1.5
-            rounded
-            bg-blue-600
-            px-2
-            text-[11px]
-            font-semibold
-            text-white
-            transition-all
-            duration-200
-            hover:bg-blue-700
-            active:scale-[0.97]
-          "
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.96 }}
+          className="flex h-7 items-center gap-1.5 rounded bg-[#0F1D24] px-2 text-[11px] font-semibold text-[#FDC94D] transition-colors hover:bg-[#0F1D24]/90"
         >
           <FaFilter size={10} />
           Apply
-        </button>
+        </motion.button>
 
-        {/* Reset */}
-        <button
+        <motion.button
           onClick={onReset}
-          className="
-            flex
-            h-7
-            items-center
-            gap-1.5
-            rounded
-            border
-            border-slate-300
-            bg-white
-            px-2
-            text-[11px]
-            font-semibold
-            text-slate-700
-            transition-all
-            duration-200
-            hover:bg-slate-100
-            active:scale-[0.97]
-          "
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.96 }}
+          className="flex h-7 items-center gap-1.5 rounded border border-[#C6C6C6] bg-white px-2 text-[11px] font-semibold text-[#0F1D24] transition-colors hover:bg-[#F5F5F5]"
         >
           <FaUndo size={10} />
           Reset
-        </button>
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

@@ -1,197 +1,92 @@
 import React, { useMemo } from "react";
-
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  LabelList,
-} from "recharts";
-
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, LabelList } from "recharts";
 import { FaChartLine } from "react-icons/fa";
-
 import { FaArrowTrendUp } from "react-icons/fa6";
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload || !payload.length) return null;
-
   const item = payload[0].payload;
 
   return (
-    <div className="bg-white border border-gray-200 shadow-xl rounded-md p-4 min-w-[190px]">
-      <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">
-        {item.date}
-      </h3>
-
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-gray-500">Loss Time</span>
-
-          <span className="font-bold text-blue-600">
-            {item.lossMinutes} min
-          </span>
-        </div>
+    <div className="min-w-[150px] rounded border border-[#C6C6C6]/60 bg-white p-2.5 shadow-xl">
+      <h3 className="mb-1.5 border-b border-[#C6C6C6]/40 pb-1 text-xs font-semibold text-[#0F1D24]">{item.date}</h3>
+      <div className="flex justify-between text-[11px]">
+        <span className="text-[#9B9B9B]">Loss Time</span>
+        <span className="font-bold text-red-600">{item.lossMinutes} min</span>
       </div>
     </div>
   );
 };
 
 const LossTrendChart = ({ data }) => {
-  const totalLoss = useMemo(() => {
-    return data.reduce((sum, item) => sum + item.lossMinutes, 0);
-  }, [data]);
-
-  const peakDay = useMemo(() => {
-    if (!data.length) return null;
-
-    return [...data].sort((a, b) => b.lossMinutes - a.lossMinutes)[0];
-  }, [data]);
+  const totalLoss = useMemo(() => data.reduce((s, i) => s + i.lossMinutes, 0), [data]);
+  const peakDay = useMemo(() => (!data.length ? null : [...data].sort((a, b) => b.lossMinutes - a.lossMinutes)[0]), [data]);
 
   return (
-    <div className="bg-white border border-gray-200 border-l-4 border-l-blue-600 shadow-sm">
-      {/* Header */}
-
-      <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+    <div className="overflow-hidden rounded border border-[#C6C6C6]/50 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-[#C6C6C6]/50 px-3 py-2">
         <div>
-          <div className="flex items-center gap-2">
-            <FaChartLine className="text-blue-600" />
-
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-700">
-              Daily Loss Trend
-            </h2>
+          <div className="flex items-center gap-1.5">
+            <FaChartLine className="text-[#0F1D24]" />
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#0F1D24]">Daily Loss Trend</h2>
           </div>
-
-          <p className="text-xs text-gray-500 mt-1">
-            Daily production downtime analysis
-          </p>
+          <p className="mt-0.5 text-[10px] text-[#9B9B9B]">Daily production downtime analysis</p>
         </div>
-
         <div className="text-right">
-          <p className="text-[11px] uppercase text-gray-500">Total Loss</p>
-
-          <h2 className="text-2xl font-bold text-red-600">{totalLoss} min</h2>
+          <p className="text-[9px] uppercase text-[#9B9B9B]">Total Loss</p>
+          <h2 className="text-lg font-bold text-red-600">{totalLoss} min</h2>
         </div>
       </div>
 
-      {/* KPI */}
-
-      <div className="grid grid-cols-2 border-b border-gray-200">
-        <div className="p-4">
-          <p className="text-[11px] uppercase text-gray-500">Peak Loss Day</p>
-
-          <h3 className="font-bold text-base mt-1">{peakDay?.date}</h3>
+      <div className="grid grid-cols-2 border-b border-[#C6C6C6]/40">
+        <div className="p-2.5">
+          <p className="text-[9px] uppercase text-[#9B9B9B]">Peak Loss Day</p>
+          <h3 className="mt-0.5 text-sm font-bold text-[#0F1D24]">{peakDay?.date}</h3>
         </div>
-
-        <div className="border-l border-gray-200 p-4">
-          <div className="flex justify-end items-center gap-2">
+        <div className="border-l border-[#C6C6C6]/40 p-2.5">
+          <div className="flex items-center justify-end gap-1.5">
             <FaArrowTrendUp className="text-red-500" />
-
-            <span className="text-xl font-bold text-red-600">
-              {peakDay?.lossMinutes}
-            </span>
+            <span className="text-base font-bold text-red-600">{peakDay?.lossMinutes}</span>
           </div>
-
-          <p className="text-right text-xs text-gray-500">Minutes</p>
+          <p className="text-right text-[10px] text-[#9B9B9B]">Minutes</p>
         </div>
       </div>
 
-      {/* Chart */}
-
-      <div className="p-4">
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart
-            data={data}
-            margin={{
-              top: 15,
-              right: 15,
-              left: 10,
-              bottom: 0,
-            }}
-          >
+      <div className="p-2.5">
+        <ResponsiveContainer width="100%" height={230}>
+          <AreaChart data={data} margin={{ top: 15, right: 15, left: 10, bottom: 0 }}>
             <defs>
               <linearGradient id="lossTrend" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#2563EB" stopOpacity={0.35} />
-
-                <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
+                <stop offset="0%" stopColor="#0F1D24" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#0F1D24" stopOpacity={0} />
               </linearGradient>
             </defs>
-
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#E5E7EB"
-              vertical={false}
-            />
-
-            <XAxis
-              dataKey="date"
-              tick={{
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-              tickLine={false}
-              axisLine={false}
-            />
-
-            <YAxis
-              tick={{
-                fontSize: 11,
-              }}
-              tickLine={false}
-              axisLine={false}
-            />
-
+            <CartesianGrid strokeDasharray="3 3" stroke="#F5F5F5" vertical={false} />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fontWeight: 600, fill: "#0F1D24" }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "#9B9B9B" }} tickLine={false} axisLine={false} />
             <Tooltip content={<CustomTooltip />} />
             <Area
               type="monotone"
               dataKey="lossMinutes"
-              stroke="#2563EB"
-              strokeWidth={3}
+              stroke="#0F1D24"
+              strokeWidth={2.5}
               fill="url(#lossTrend)"
               animationDuration={1200}
               animationEasing="ease-out"
-              activeDot={{
-                r: 7,
-                stroke: "#2563EB",
-                strokeWidth: 2,
-                fill: "#ffffff",
-              }}
-              dot={{
-                r: 4,
-                fill: "#2563EB",
-                stroke: "#ffffff",
-                strokeWidth: 2,
-              }}
+              activeDot={{ r: 6, stroke: "#0F1D24", strokeWidth: 2, fill: "#FDC94D" }}
+              dot={{ r: 3.5, fill: "#0F1D24", stroke: "#fff", strokeWidth: 2 }}
             >
-              <LabelList
-                dataKey="lossMinutes"
-                position="top"
-                offset={12}
-                formatter={(value) => `${value}m`}
-                style={{
-                  fill: "#111827",
-                  fontSize: 11,
-                  fontWeight: 700,
-                }}
-              />
+              <LabelList dataKey="lossMinutes" position="top" offset={10} formatter={(v) => `${v}m`} style={{ fill: "#0F1D24", fontSize: 10, fontWeight: 700 }} />
             </Area>
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Footer */}
-
-      <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-5 py-3">
-        <span className="text-xs text-gray-500">
-          Daily Production Loss Analysis
-        </span>
-
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-blue-600"></div>
-
-          <span className="text-xs text-gray-600">Loss Time (Minutes)</span>
+      <div className="flex items-center justify-between border-t border-[#C6C6C6]/40 bg-[#F5F5F5]/70 px-3 py-2">
+        <span className="text-[10px] text-[#9B9B9B]">Daily Production Loss Analysis</span>
+        <div className="flex items-center gap-1.5">
+          <div className="h-2 w-2 rounded-full bg-[#0F1D24]" />
+          <span className="text-[10px] text-[#9B9B9B]">Loss Time (Minutes)</span>
         </div>
       </div>
     </div>

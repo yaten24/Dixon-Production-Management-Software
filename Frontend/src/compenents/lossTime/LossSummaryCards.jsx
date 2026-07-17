@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 import {
   FaClock,
   FaBoxes,
@@ -9,39 +10,32 @@ import {
   FaTools,
 } from "react-icons/fa";
 
-const Card = ({
-  icon,
-  title,
-  value,
-  subtitle,
-  borderColor,
-  iconBg,
-  iconColor,
-}) => {
+const Card = ({ icon, title, value, subtitle, accent, index }) => {
   return (
-    <div
-      className={`bg-white border border-gray-200 border-l-[3px] ${borderColor} rounded shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-1`}
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04, duration: 0.2, ease: "easeOut" }}
+      whileHover={{ y: -2 }}
+      className="relative overflow-hidden rounded border border-[#C6C6C6]/50 bg-white p-1.5 shadow-sm transition-shadow duration-200 hover:shadow-md"
     >
-      <div className="flex items-center gap-2">
-        {/* Icon */}
-        <div
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded ${iconBg}`}
-        >
-          <span className={`text-xs ${iconColor}`}>{icon}</span>
+      <span className="absolute left-0 top-0 h-full w-[3px]" style={{ background: accent }} />
+      <div className="flex items-center gap-1.5 pl-1">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#0F1D24]">
+          <span className="text-[10px] text-[#FDC94D]">{icon}</span>
         </div>
 
-        {/* Text */}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[9px] font-semibold uppercase tracking-wide text-gray-500">
+          <p className="truncate text-[8px] font-semibold uppercase tracking-wide text-[#9B9B9B]">
             {title}
           </p>
-          <h2 className="truncate text-sm font-bold leading-tight text-gray-900">
+          <h2 className="truncate text-xs font-bold leading-tight text-[#0F1D24]">
             {value}
           </h2>
-          <p className="truncate text-[9px] text-gray-400">{subtitle}</p>
+          <p className="truncate text-[8px] text-[#9B9B9B]">{subtitle}</p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -54,77 +48,21 @@ const LossSummaryCards = ({
   highestMachine,
   highestReason,
 }) => {
+  const cards = [
+    { title: "Loss Time", value: `${totalLossMinutes}m`, subtitle: "Overall", icon: <FaClock />, accent: "#DC2626" },
+    { title: "Prod Loss", value: productionLoss, subtitle: "Quantity", icon: <FaBoxes />, accent: "#DC2626" },
+    { title: "Avg DT", value: `${averageDowntime}m`, subtitle: "Per Event", icon: <FaChartLine />, accent: "#0F1D24" },
+    { title: "Events", value: totalEvents, subtitle: "Recorded", icon: <FaExclamationTriangle />, accent: "#FDC94D" },
+    { title: "Top Hall", value: highestHall?.hall || "-", subtitle: `${highestHall?.lossMinutes || 0} min`, icon: <FaIndustry />, accent: "#0F1D24" },
+    { title: "Top Machine", value: highestMachine?.machine || "-", subtitle: `${highestMachine?.lossMinutes || 0} min`, icon: <FaCog />, accent: "#0F1D24" },
+    { title: "Top Reason", value: highestReason?.reason || "-", subtitle: `${highestReason?.lossMinutes || 0} min`, icon: <FaTools />, accent: "#FDC94D" },
+  ];
+
   return (
-    <div className="mb-1 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-      <Card
-        title="Loss Time"
-        value={`${totalLossMinutes}m`}
-        subtitle="Overall"
-        icon={<FaClock />}
-        borderColor="border-l-red-500"
-        iconBg="bg-red-50"
-        iconColor="text-red-500"
-      />
-
-      <Card
-        title="Prod Loss"
-        value={productionLoss}
-        subtitle="Quantity"
-        icon={<FaBoxes />}
-        borderColor="border-l-orange-500"
-        iconBg="bg-orange-50"
-        iconColor="text-orange-500"
-      />
-
-      <Card
-        title="Avg DT"
-        value={`${averageDowntime}m`}
-        subtitle="Per Event"
-        icon={<FaChartLine />}
-        borderColor="border-l-blue-500"
-        iconBg="bg-blue-50"
-        iconColor="text-blue-500"
-      />
-
-      <Card
-        title="Events"
-        value={totalEvents}
-        subtitle="Recorded"
-        icon={<FaExclamationTriangle />}
-        borderColor="border-l-purple-500"
-        iconBg="bg-purple-50"
-        iconColor="text-purple-500"
-      />
-
-      <Card
-        title="Top Hall"
-        value={highestHall?.hall || "-"}
-        subtitle={`${highestHall?.lossMinutes || 0} min`}
-        icon={<FaIndustry />}
-        borderColor="border-l-green-500"
-        iconBg="bg-green-50"
-        iconColor="text-green-500"
-      />
-
-      <Card
-        title="Top Machine"
-        value={highestMachine?.machine || "-"}
-        subtitle={`${highestMachine?.lossMinutes || 0} min`}
-        icon={<FaCog />}
-        borderColor="border-l-indigo-500"
-        iconBg="bg-indigo-50"
-        iconColor="text-indigo-500"
-      />
-
-      <Card
-        title="Top Reason"
-        value={highestReason?.reason || "-"}
-        subtitle={`${highestReason?.lossMinutes || 0} min`}
-        icon={<FaTools />}
-        borderColor="border-l-pink-500"
-        iconBg="bg-pink-50"
-        iconColor="text-pink-500"
-      />
+    <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 lg:grid-cols-7">
+      {cards.map((c, i) => (
+        <Card key={c.title} {...c} index={i} />
+      ))}
     </div>
   );
 };
