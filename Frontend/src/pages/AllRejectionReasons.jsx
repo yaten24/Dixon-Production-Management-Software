@@ -63,7 +63,7 @@ const RejectionDashboard = () => {
 
       {/* Right Section — fixed to viewport height, no page scroll */}
       <div className="flex h-screen flex-1 flex-col overflow-hidden">
-        <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-1.5">
+        <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0.5">
           <div className="flex h-full min-h-0 w-full flex-col rounded border border-slate-200 bg-white p-1.5 shadow-sm">
             {/* Filters — fixed height row */}
             <div className="shrink-0">
@@ -93,8 +93,8 @@ const RejectionDashboard = () => {
               </div>
             ) : (
               // Remaining height split: top row (Hall + Pie) gets more space, bottom row (trend) less.
-              <div className="mt-1.5 grid min-h-0 flex-1 grid-rows-[1.5fr_1fr] gap-1.5">
-                <div className="grid min-h-0 grid-cols-1 gap-1.5 lg:grid-cols-2">
+              <div className="mt-1.5 grid min-h-0 flex-1 grid-rows-[1fr_1.5fr] gap-1.5">
+                <div className="grid min-h-0 grid-cols-1 gap-1 lg:grid-cols-2">
                   <HallWiseChart data={hallChartData} allHalls={allHalls} />
                   <RejectionPieChart data={reasonChartRows} allReasons={allReasonLabels} />
                 </div>

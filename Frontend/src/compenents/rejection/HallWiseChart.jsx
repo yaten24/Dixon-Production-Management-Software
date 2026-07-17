@@ -1,7 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ResponsiveContainer,
-  BarChart,
+  ComposedChart,
   Bar,
   XAxis,
   YAxis,
@@ -9,230 +9,172 @@ import {
   Tooltip,
   LabelList,
   Cell,
+  ReferenceLine,
 } from "recharts";
-import { FaIndustry, FaExclamationTriangle } from "react-icons/fa";
+import { FaIndustry, FaCircleExclamation } from "react-icons/fa6";
 
-const barColor = (rank, total) => {
-  const t = total > 1 ? rank / (total - 1) : 0;
-  const start = [96, 165, 250];
-  const end = [30, 58, 138];
-  const r = Math.round(start[0] + (end[0] - start[0]) * t);
-  const g = Math.round(start[1] + (end[1] - start[1]) * t);
-  const b = Math.round(start[2] + (end[2] - start[2]) * t);
-  return `rgb(${r},${g},${b})`;
-};
+const COLORS = ["#0F1D24", "#3A5561", "#6B8894", "#9BB4BE", "#C6C6C6", "#FDC94D"];
 
-const CustomTooltip = ({ active, payload }) => {
-  if (!active || !payload?.length) return null;
-  const { hall, qty } = payload[0].payload;
+// The plant always has these 5 halls — show all of them regardless of
+// whether the backend returned data for every one, so the chart never
+// silently drops a hall just because it had zero rejection records.
+const ALL_HALLS = ["Hall 1", "Hall 2", "Hall 3", "Hall 4", "C8"];
+
+const CustomTooltip = ({ active, payload, totalRejectQty }) => {
+  if (!active || !payload || !payload.length) return null;
+  const data = payload[0].payload;
+  const share = totalRejectQty ? ((data.qty / totalRejectQty) * 100).toFixed(1) : 0;
+
   return (
-    <div className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 shadow-md">
-      <p className="text-[11px] font-semibold text-slate-700">{hall}</p>
-      <p className="text-xs font-bold text-blue-600">{qty} Qty</p>
+    <div className="min-w-[130px] rounded border border-[#C6C6C6]/60 bg-white p-2 shadow-xl">
+      <h3 className="mb-1 border-b border-[#C6C6C6]/40 pb-1 text-[10px] font-bold text-[#0F1D24]">
+        {data.hall}
+      </h3>
+      <div className="space-y-0.5 text-[9px]">
+        <div className="flex items-center justify-between">
+          <span className="text-[#9B9B9B]">Reject Qty</span>
+          <span className="font-bold text-red-600">{data.qty}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[#9B9B9B]">Share</span>
+          <span className="font-semibold text-[#0F1D24]">{share}%</span>
+        </div>
+      </div>
     </div>
   );
 };
 
 // data: [{hall, qty}] from filtered rejections
-// allHalls: string[] — full list of halls that exist in the plant (from machines)
-const HallWiseChart = ({ data = [], allHalls = [] }) => {
-  const mergedData = useMemo(() => {
+// `full` (default true): stretches to fill the parent's height, meant to
+// live inside a fixed-height grid cell so the page never needs to scroll.
+const HallWiseChart = ({ data = [], full = true }) => {
+  const [activeIndex, setActiveIndex] = useState(null);
+
+  // Always render all 5 halls — fill in 0 for any hall missing from the
+  // API response instead of just showing whatever halls happened to come back.
+  const { chartData, missingHalls } = useMemo(() => {
     const qtyMap = {};
-    data.forEach((d) => {
+    (data || []).forEach((d) => {
       qtyMap[d.hall] = (qtyMap[d.hall] || 0) + Number(d.qty || 0);
     });
 
-    // Base list = known halls; agar allHalls empty hai to jo bhi data mein aaya wahi use karo
-    const baseHalls = allHalls.length ? allHalls : Object.keys(qtyMap);
+    const missing = [];
+    const filled = ALL_HALLS.map((hall) => {
+      if (!(hall in qtyMap)) missing.push(hall);
+      return { hall, qty: qtyMap[hall] || 0 };
+    });
+    return { chartData: filled, missingHalls: missing };
+  }, [data]);
 
-    return baseHalls.map((hall) => ({
-      hall,
-      qty: qtyMap[hall] || 0,
-    }));
-  }, [data, allHalls]);
+  const sortedData = useMemo(() => [...chartData].sort((a, b) => b.qty - a.qty), [chartData]);
 
-  const sortedData = useMemo(
-    () => [...mergedData].sort((a, b) => b.qty - a.qty),
-    [mergedData],
-  );
-
-  const totalRejectQty = sortedData.reduce((sum, item) => sum + item.qty, 0);
-  const avgQty = sortedData.length > 0 ? totalRejectQty / sortedData.length : 0;
-  const highestHall = sortedData.length > 0 ? sortedData[0] : null;
-  const lowestHall = sortedData.length > 0 ? sortedData[sortedData.length - 1] : null;
-  const noHallsKnown = sortedData.length === 0;
-  const noData = totalRejectQty === 0 && !noHallsKnown;
-  const maxQty = highestHall ? highestHall.qty : 0;
+  const hasAnyData = chartData.some((d) => d.qty > 0);
+  const totalRejectQty = useMemo(() => chartData.reduce((s, i) => s + i.qty, 0), [chartData]);
+  const avgQty = useMemo(() => (chartData.length ? totalRejectQty / chartData.length : 0), [chartData, totalRejectQty]);
+  const highestHall = useMemo(() => (sortedData.length ? sortedData[0] : null), [sortedData]);
+  const lowestHall = useMemo(() => (sortedData.length ? sortedData[sortedData.length - 1] : null), [sortedData]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded border border-slate-200 bg-white p-1.5 shadow-sm">
-      {/* Header */}
-      <div className="flex shrink-0 flex-col gap-1.5 border-b border-slate-100 pb-1.5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded bg-gradient-to-br from-blue-500 to-blue-700 shadow-sm">
-            <FaIndustry className="text-[11px] text-white" />
+    <div
+      className={`flex ${full ? "h-full" : ""} min-h-0 flex-col overflow-hidden rounded border border-[#C6C6C6]/50 bg-white shadow-sm`}
+    >
+      <div className="flex flex-shrink-0 items-center justify-between bg-gradient-to-r from-[#0F1D24]/5 via-white to-[#F5F5F5] px-2.5 py-1.5">
+        <div className="flex items-center gap-1.5">
+          <div className="flex h-6 w-6 items-center justify-center rounded bg-[#0F1D24] shadow-sm">
+            <FaIndustry className="text-[10px] text-[#FDC94D]" />
           </div>
           <div>
-            <h2 className="text-[11px] font-semibold text-slate-800">
+            <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#0F1D24]">
               Hall Wise Rejection
             </h2>
-            <p className="text-[9px] text-slate-500">
-              {sortedData.length} halls tracked
-            </p>
+            <p className="text-[9px] text-[#9B9B9B]">Rejection comparison across halls</p>
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <div>
-            <p className="text-[8px] font-semibold uppercase tracking-wide text-slate-400">
-              Total
-            </p>
-            <p className="text-sm font-bold leading-none text-blue-600">
-              {totalRejectQty}
-            </p>
-          </div>
-          <div>
-            <p className="text-[8px] font-semibold uppercase tracking-wide text-slate-400">
-              Avg / Hall
-            </p>
-            <p className="text-sm font-bold leading-none text-slate-800">
-              {avgQty.toFixed(1)}
-            </p>
-          </div>
+        <div className="text-right">
+          <p className="text-[8px] font-medium uppercase tracking-wide text-[#9B9B9B]">Total Reject</p>
+          <h2 className="text-sm font-extrabold text-red-600">
+            {totalRejectQty}
+            <span className="ml-0.5 text-[9px] font-semibold text-[#9B9B9B]">qty</span>
+          </h2>
         </div>
       </div>
 
-      {/* Warning banner — halls known but no rejections recorded */}
-      {noData && (
-        <div className="mt-1.5 flex shrink-0 items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-700">
-          <FaExclamationTriangle className="text-[10px]" />
-          No rejection data for selected filters — showing all {sortedData.length}{" "}
-          halls with 0 qty.
+      <div className="grid flex-shrink-0 grid-cols-3 divide-x divide-[#C6C6C6]/40 border-y border-[#C6C6C6]/40 bg-[#F5F5F5]/70">
+        <div className="px-2 py-1">
+          <p className="text-[8px] uppercase tracking-wide text-[#9B9B9B]">Highest Hall</p>
+          <h3 className="mt-0.5 truncate text-[10px] font-bold text-[#0F1D24]">
+            {highestHall?.hall || "-"}
+          </h3>
+        </div>
+        <div className="px-2 py-1">
+          <p className="text-[8px] uppercase tracking-wide text-[#9B9B9B]">Avg / Hall</p>
+          <h3 className="mt-0.5 text-[10px] font-bold text-[#0F1D24]">{avgQty.toFixed(1)}</h3>
+        </div>
+        <div className="px-2 py-1">
+          <p className="text-[8px] uppercase tracking-wide text-[#9B9B9B]">Peak</p>
+          <h3 className="mt-0.5 text-[10px] font-bold text-red-600">{highestHall?.qty || 0}</h3>
+        </div>
+      </div>
+
+      {missingHalls.length > 0 && (
+        <div className="flex flex-shrink-0 items-center gap-1.5 border-b border-amber-100 bg-amber-50 px-2.5 py-1 text-[9px] font-medium text-amber-700">
+          <FaCircleExclamation className="shrink-0 text-[10px] text-amber-500" />
+          {hasAnyData ? (
+            <span>
+              No data for {missingHalls.join(", ")} — showing all {ALL_HALLS.length} halls (0 where missing).
+            </span>
+          ) : (
+            <span>
+              No rejection data uploaded for this date — showing all {ALL_HALLS.length} halls with 0.
+            </span>
+          )}
         </div>
       )}
 
-      {/* Body */}
-      {noHallsKnown ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-slate-400">
-          <FaExclamationTriangle className="text-lg opacity-50" />
-          <p className="text-xs">Hall list unavailable — check machines data</p>
-        </div>
-      ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 pt-1.5 lg:grid-cols-[1.4fr_1fr]">
-          {/* Chart */}
-          <div className="min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={sortedData}
-                margin={{ top: 16, right: 8, left: 0, bottom: 0 }}
-                barCategoryGap={18}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis
-                  dataKey="hall"
-                  tick={{ fontSize: 10, fill: "#475569" }}
-                  axisLine={{ stroke: "#e2e8f0" }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 9, fill: "#94a3b8" }}
-                  axisLine={{ stroke: "#e2e8f0" }}
-                  tickLine={false}
-                  width={24}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  cursor={{ fill: "rgba(37,99,235,0.06)" }}
-                  content={<CustomTooltip />}
-                />
-                <Bar dataKey="qty" name="Reject Qty" radius={[5, 5, 0, 0]} maxBarSize={40}>
-                  {sortedData.map((entry, index) => (
-                    <Cell
-                      key={entry.hall}
-                      fill={
-                        entry.qty === 0
-                          ? "#e2e8f0"
-                          : barColor(index, sortedData.length)
-                      }
-                    />
-                  ))}
-                  <LabelList
-                    dataKey="qty"
-                    position="top"
-                    fontSize={10}
-                    fontWeight={600}
-                    fill="#1e293b"
-                  />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Chart fills whatever space is left instead of a fixed pixel height */}
+      <div className="min-h-0 flex-1 p-1.5">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={sortedData} margin={{ top: 16, right: 10, left: 0, bottom: 0 }} onMouseLeave={() => setActiveIndex(null)}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F5F5F5" />
+            <XAxis dataKey="hall" tick={{ fontSize: 9, fontWeight: 600, fill: "#0F1D24" }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 9, fill: "#9B9B9B" }} tickLine={false} axisLine={false} width={24} allowDecimals={false} />
+            <ReferenceLine y={avgQty} stroke="#9B9B9B" strokeDasharray="4 4" strokeWidth={1} label={{ value: `Avg ${avgQty.toFixed(1)}`, position: "insideTopRight", fontSize: 8, fill: "#9B9B9B", fontWeight: 600 }} />
+            <Tooltip content={<CustomTooltip totalRejectQty={totalRejectQty} />} cursor={{ fill: "rgba(15,29,36,0.05)" }} />
+            <Bar dataKey="qty" radius={[4, 4, 0, 0]} maxBarSize={28} animationDuration={800} animationEasing="ease-out" onMouseEnter={(_, i) => setActiveIndex(i)}>
+              {sortedData.map((entry, index) => (
+                <Cell key={entry.hall} fill={entry.qty === 0 ? "#C6C6C6" : COLORS[index % COLORS.length]} opacity={activeIndex === null || activeIndex === index ? 1 : 0.45} style={{ transition: "opacity 0.2s ease" }} />
+              ))}
+              <LabelList dataKey="qty" position="top" offset={4} fontSize={9} fontWeight="700" fill="#0F1D24" />
+            </Bar>
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
 
-          {/* Ranked breakdown list */}
-          <div className="flex min-h-0 flex-col gap-1 overflow-y-auto rounded border border-slate-100 bg-slate-50/60 p-1">
-            {sortedData.map((item, index) => {
-              const pct = totalRejectQty > 0 ? (item.qty / totalRejectQty) * 100 : 0;
-              const barPct = maxQty > 0 ? (item.qty / maxQty) * 100 : 0;
-
-              return (
-                <div
-                  key={item.hall}
-                  className="flex items-center gap-2 rounded bg-white px-2 py-1.5 shadow-sm"
-                >
-                  <span
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white"
-                    style={{ backgroundColor: barColor(index, sortedData.length) }}
-                  >
-                    {index + 1}
-                  </span>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="truncate text-[10px] font-semibold text-slate-700">
-                        {item.hall}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-600">
-                        {item.qty}
-                      </span>
-                    </div>
-                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded bg-slate-100">
-                      <div
-                        className="h-full rounded transition-all duration-700"
-                        style={{
-                          width: `${barPct}%`,
-                          backgroundColor: barColor(index, sortedData.length),
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <span className="w-8 shrink-0 text-right text-[9px] font-medium text-slate-400">
-                    {pct.toFixed(0)}%
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Best/Worst strip — only meaningful when there's real data */}
-      {!noHallsKnown && !noData && (
-        <div className="mt-1.5 grid shrink-0 grid-cols-2 gap-2">
+      {!hasAnyData ? null : (
+        <div className="grid flex-shrink-0 grid-cols-2 gap-1.5 px-2.5 py-1.5">
           <div className="flex items-center justify-between rounded bg-red-50 px-2 py-1">
             <span className="text-[9px] font-medium text-red-700">Highest</span>
             <span className="text-[10px] font-bold text-red-700">
               {highestHall?.hall} · {highestHall?.qty}
             </span>
           </div>
-          <div className="flex items-center justify-between rounded bg-green-50 px-2 py-1">
-            <span className="text-[9px] font-medium text-green-700">Lowest</span>
-            <span className="text-[10px] font-bold text-green-700">
+          <div className="flex items-center justify-between rounded bg-emerald-50 px-2 py-1">
+            <span className="text-[9px] font-medium text-emerald-700">Lowest</span>
+            <span className="text-[10px] font-bold text-emerald-700">
               {lowestHall?.hall} · {lowestHall?.qty}
             </span>
           </div>
         </div>
       )}
+
+      <div className="flex flex-shrink-0 items-center justify-between border-t border-[#C6C6C6]/40 bg-[#F5F5F5]/70 px-2.5 py-1">
+        <p className="text-[9px] text-[#9B9B9B]">Production Hall Comparison</p>
+        <div className="flex items-center gap-1">
+          <div className="h-1.5 w-1.5 rounded-full bg-red-600" />
+          <span className="text-[9px] text-[#9B9B9B]">Reject Qty</span>
+        </div>
+      </div>
     </div>
   );
 };
