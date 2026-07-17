@@ -57,53 +57,58 @@ const RejectionDashboard = () => {
   const handleExport = () => exportRejectionDataToCSV(rejectionData, "rejection_data.csv");
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-slate-100">
-      {/* Sidebar */}
+    <div className="flex h-screen min-h-0 overflow-hidden bg-[#F5F5F5]">
       <Sidebar />
 
-      {/* Right Section — fixed to viewport height, no page scroll */}
-      <div className="flex h-screen flex-1 flex-col overflow-hidden">
-        <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0.5">
-          <div className="flex h-full min-h-0 w-full flex-col rounded border border-slate-200 bg-white p-1.5 shadow-sm">
-            {/* Filters — fixed height row */}
-            <div className="shrink-0">
-              <RejectionFilters
-                selectedDate={pendingDate}
-                setSelectedDate={setPendingDate}
-                selectedReason={pendingReasonId}
-                setSelectedReason={setPendingReasonId}
-                reasonOptions={reasonOptions}
-                onApply={handleApply}
-                onRefresh={handleRefresh}
-                onShowRecent={handleShowRecent}
-                onExport={handleExport}
-                onShowHeatmap={() => setShowHeatmap(true)}
-              />
-            </div>
-
-            {error && (
-              <div className="mt-1.5 shrink-0 rounded border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600">
-                {error}
-              </div>
-            )}
-
-            {loading ? (
-              <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
-                Loading rejection data...
-              </div>
-            ) : (
-              // Remaining height split: top row (Hall + Pie) gets more space, bottom row (trend) less.
-              <div className="mt-1.5 grid min-h-0 flex-1 grid-rows-[1fr_1.5fr] gap-1.5">
-                <div className="grid min-h-0 grid-cols-1 gap-1 lg:grid-cols-2">
-                  <HallWiseChart data={hallChartData} allHalls={allHalls} />
-                  <RejectionPieChart data={reasonChartRows} allReasons={allReasonLabels} />
-                </div>
-
-                <RejectionTrendChart data={trendChartData} />
-              </div>
-            )}
+      {/* Everything to the right of the sidebar fits exactly one viewport
+          height — nothing here scrolls at the page level. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden p-1">
+        {/* Filters row — fixed height, loading indicator sits inline so it
+            never adds vertical space of its own. */}
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <RejectionFilters
+              selectedDate={pendingDate}
+              setSelectedDate={setPendingDate}
+              selectedReason={pendingReasonId}
+              setSelectedReason={setPendingReasonId}
+              reasonOptions={reasonOptions}
+              onApply={handleApply}
+              onRefresh={handleRefresh}
+              onShowRecent={handleShowRecent}
+              onExport={handleExport}
+              onShowHeatmap={() => setShowHeatmap(true)}
+            />
           </div>
-        </main>
+          {loading && (
+            <span className="flex-shrink-0 whitespace-nowrap text-[10px] font-medium text-[#9B9B9B]">
+              Loading latest data…
+            </span>
+          )}
+        </div>
+
+        {error && (
+          <div className="flex-shrink-0 rounded border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] text-red-600">
+            {error}
+          </div>
+        )}
+
+        {/* Remaining height split: top row (Hall + Pie) gets more space,
+            bottom row (trend) less. */}
+        <div className="grid min-h-0 flex-1 grid-rows-[1fr_1.5fr] gap-1.5">
+          <div className="grid min-h-0 grid-cols-1 gap-1.5 xl:grid-cols-2">
+            <div className="min-h-0">
+              <HallWiseChart data={hallChartData} allHalls={allHalls} />
+            </div>
+            <div className="min-h-0">
+              <RejectionPieChart data={reasonChartRows} allReasons={allReasonLabels} />
+            </div>
+          </div>
+
+          <div className="min-h-0">
+            <RejectionTrendChart data={trendChartData} />
+          </div>
+        </div>
       </div>
 
       {/* Recent Rejections Modal */}

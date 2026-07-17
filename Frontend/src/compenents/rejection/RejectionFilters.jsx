@@ -292,17 +292,7 @@ const RejectionFilters = ({
 
   return (
     <div className="flex min-h-10 flex-shrink-0 flex-wrap items-center gap-2 rounded border border-[#C6C6C6]/50 bg-white px-2 py-1.5 shadow-sm">
-      {/* Icon + Label */}
-      <div className="flex flex-shrink-0 items-center gap-2">
-        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded bg-[#0F1D24]">
-          <FaFilter className="text-xs text-[#FDC94D]" />
-        </div>
-        <span className="hidden text-xs font-bold uppercase tracking-wide text-[#0F1D24] sm:block">
-          Filters
-        </span>
-      </div>
 
-      <div className="hidden h-5 w-px flex-shrink-0 bg-[#C6C6C6] sm:block" />
 
       {/* Date + Reason */}
       <CustomDatePicker value={selectedDate} onChange={setSelectedDate} />

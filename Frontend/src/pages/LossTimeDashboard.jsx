@@ -66,12 +66,6 @@ const LossTimeDashboard = () => {
           </div>
         )}
 
-        {showWarning && (
-          <div className="flex flex-shrink-0 items-center gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-medium text-amber-800">
-            <FaExclamationTriangle className="shrink-0 text-amber-500" />
-            No production data uploaded by the supervisor for this date — showing 0 for all halls.
-          </div>
-        )}
 
         {/* <LossSummaryCards
           totalLossMinutes={summary?.totalLossMinutes || 0}
