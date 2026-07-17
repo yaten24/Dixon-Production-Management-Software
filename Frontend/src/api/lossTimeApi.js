@@ -1,4 +1,4 @@
-import api from "./axios"; // adjust this import to match your existing axios instance
+import api from "../utils/api"; // adjust this import to match your existing axios instance
 
 const toQueryString = (filters = {}) => {
   const params = new URLSearchParams();
@@ -43,11 +43,5 @@ export const getRecentEvents = async (filters) => {
 
 export const getLossTimeFilters = async () => {
   const response = await api.get(`/loss-time/filters`);
-  return response.data;
-};
-
-// Machine search - powers the searchable machine filter (85 machines)
-export const getAllMachines = async (search = "", hall = "") => {
-  const response = await api.get(`/machines${toQueryString({ search, hall })}`);
   return response.data;
 };

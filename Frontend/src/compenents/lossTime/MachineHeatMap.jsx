@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { FaFire, FaExpand, FaTimes } from "react-icons/fa";
 
 const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -103,6 +103,8 @@ const MAX_TABLE_HEIGHT = 260; // vertical scroll kicks in beyond this in the car
 
 const MachineHeatMap = ({ data }) => {
   const [isZoomed, setIsZoomed] = useState(false);
+  const machineCount = useMemo(() => new Set(data.map((d) => d.machine)).size, [data]);
+  const hasData = useMemo(() => data.some((d) => d.lossMinutes > 0), [data]);
 
   return (
     <>
@@ -118,7 +120,7 @@ const MachineHeatMap = ({ data }) => {
                 Machine Heat Map
               </h2>
               <p className="text-[9px] text-gray-500">
-                Hourly machine downtime distribution
+                {machineCount} machines · Hourly downtime distribution
               </p>
             </div>
           </div>
@@ -134,6 +136,12 @@ const MachineHeatMap = ({ data }) => {
             </button>
           </div>
         </div>
+
+        {!hasData && (
+          <div className="border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-[9px] font-medium text-amber-700">
+            No downtime recorded for this date — showing 0 for every machine and hour.
+          </div>
+        )}
 
         <HeatMapTable data={data} maxHeight={MAX_TABLE_HEIGHT} />
 

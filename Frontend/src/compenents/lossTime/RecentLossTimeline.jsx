@@ -34,6 +34,12 @@ const RecentLossTimeline = ({ data }) => {
 
       {/* Timeline */}
       <div className="max-h-[420px] space-y-2.5 overflow-y-auto p-2.5">
+        {data.length === 0 && (
+          <p className="py-6 text-center text-[10px] text-gray-400">
+            No loss events recorded for this date.
+          </p>
+        )}
+
         {data.map((item, index) => (
           <div key={item.id} className="flex gap-2.5">
             {/* Timeline dot */}

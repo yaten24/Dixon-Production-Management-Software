@@ -1,4 +1,5 @@
 import React from "react";
+import { FaExclamationTriangle } from "react-icons/fa";
 
 import Sidebar from "../compenents/dashboard/Sidebar";
 import Header from "../compenents/dashboard/Header";
@@ -26,6 +27,7 @@ const LossTimeDashboard = () => {
     heatMapData,
     hourlyData,
     recentEvents,
+    hasData,
     loading,
     error,
   } = useLossTimeData();
@@ -35,17 +37,17 @@ const LossTimeDashboard = () => {
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
+        <Header />
 
-        <main className="flex-1 overflow-y-auto p-1">
+        <main className="mt-12 flex-1 overflow-y-auto p-1">
           <div className="mx-auto max-w-[1600px] space-y-1">
-            {/* Filters Box - date range removed, only machine + reason filters remain */}
+            {/* Filters Box - date + reason only */}
             <LossFilters
+              selectedDate={filters.date}
               selectedReason={filters.reasonId}
-              selectedMachine={filters.machineId}
-              selectedHall={filters.hall}
               reasons={filterOptions.reasons}
+              onDateChange={(date) => setFilters((f) => ({ ...f, date }))}
               onReasonChange={(reasonId) => setFilters((f) => ({ ...f, reasonId }))}
-              onMachineChange={(machineId) => setFilters((f) => ({ ...f, machineId }))}
               onApply={applyFilters}
               onReset={resetFilters}
             />
@@ -56,7 +58,15 @@ const LossTimeDashboard = () => {
               </div>
             )}
 
-            {/* Summary Cards Box */}
+            {!loading && !error && !hasData && (
+              <div className="flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-800">
+                <FaExclamationTriangle className="shrink-0 text-amber-500" />
+                No production data uploaded by the supervisor for this date — showing 0 for all
+                halls.
+              </div>
+            )}
+
+            {/* Summary Cards Box - always renders, zero-filled when no data */}
             <LossSummaryCards
               totalLossMinutes={summary?.totalLossMinutes || 0}
               productionLoss={summary?.productionLoss || 0}
@@ -73,10 +83,10 @@ const LossTimeDashboard = () => {
               <ReasonWisePieChart data={reasonWiseData} />
             </div>
 
-            {/* Hourly Loss Bar Chart (custom SVG, replaces machine-wise chart slot) */}
+            {/* Hourly Loss Bar Chart - shift-wise (custom SVG) */}
             <HourlyLossBarChart data={hourlyData} />
 
-            {/* Machine Heat Map (with zoom) */}
+            {/* Machine Heat Map (with zoom) - always all machines */}
             <MachineHeatMap data={heatMapData} />
 
             {/* Recent Events Timeline */}

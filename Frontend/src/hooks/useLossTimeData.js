@@ -9,15 +9,17 @@ import {
   getLossTimeFilters,
 } from "../api/lossTimeApi";
 
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
 const INITIAL_FILTERS = {
-  machineId: "",
+  date: todayStr(),
   reasonId: "",
 };
 
 /**
  * Owns filter state + all data fetching for the Loss Time Dashboard.
- * Filters only take effect when applyFilters() is called (Apply button),
- * matching the original dashboard's Apply/Reset UX.
+ * The dashboard always shows exactly one date's data (default: today).
+ * Filters only take effect when applyFilters() is called (Apply button).
  */
 const useLossTimeData = () => {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
@@ -29,7 +31,7 @@ const useLossTimeData = () => {
   const [heatMapData, setHeatMapData] = useState([]);
   const [hourlyData, setHourlyData] = useState([]);
   const [recentEvents, setRecentEvents] = useState([]);
-  const [filterOptions, setFilterOptions] = useState({ halls: [], shifts: [], reasons: [] });
+  const [filterOptions, setFilterOptions] = useState({ reasons: [] });
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -84,6 +86,10 @@ const useLossTimeData = () => {
 
   const refetch = useCallback(() => fetchAll(appliedFilters), [appliedFilters, fetchAll]);
 
+  // Single source of truth for "no data uploaded for this date" state,
+  // used to drive the warning banner + zero-state notes across widgets.
+  const hasData = summary?.hasData ?? false;
+
   return {
     filters,
     setFilters,
@@ -96,6 +102,7 @@ const useLossTimeData = () => {
     heatMapData,
     hourlyData,
     recentEvents,
+    hasData,
     loading,
     error,
     refetch,

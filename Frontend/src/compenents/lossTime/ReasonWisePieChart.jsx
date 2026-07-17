@@ -5,57 +5,11 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { FaTools } from "react-icons/fa";
 import { FaArrowTrendUp, FaCircleExclamation } from "react-icons/fa6";
 
-const lossTimeReasonOptions = [
-  "Breakdown - Machine Breakdown",
-  "Breakdown - Mould Breakdown",
-  "Breakdown - Process Trouble",
-  "Setup Adjustment - Mould Change",
-  "Tool Change - Mould Polishing Cleaning",
-  "Tool Change - Nozzle Change",
-  "Tool Change - Insert Ejector Pin Slider Pin Spring Coupler Copper Electrode Change",
-  "Start-up Loss - Shift Start Delay",
-  "Minor Stoppages - Under 10 Min",
-  "Speed Loss - Unskilled Manpower Actual Speed Low",
-  "Defect Rework Loss",
-  "Schedule Down Time - Planned Stoppage",
-  "Management Loss - No Manpower",
-  "Management Loss - No Power",
-  "Management Loss - Raw Material Shortage",
-  "Management Loss - Conveyor Stop",
-  "Management Loss - Bin Trolly Short",
-  "Operating Motion Loss",
-  "Other",
-];
-
 const COLORS = [
-  "#2563EB",
-  "#16A34A",
-  "#F59E0B",
-  "#DC2626",
-  "#8B5CF6",
-  "#EC4899",
-  "#06B6D4",
-  "#14B8A6",
-  "#F97316",
-  "#84CC16",
-  "#6366F1",
-  "#E11D48",
-  "#0EA5E9",
-  "#A855F7",
-  "#22C55E",
-  "#EAB308",
-  "#F43F5E",
-  "#0891B2",
-  "#64748B",
+  "#2563EB", "#16A34A", "#F59E0B", "#DC2626", "#8B5CF6", "#EC4899",
+  "#06B6D4", "#14B8A6", "#F97316", "#84CC16", "#6366F1", "#E11D48",
+  "#0EA5E9", "#A855F7", "#22C55E", "#EAB308", "#F43F5E", "#0891B2", "#64748B",
 ];
-
-// har reason ko fixed color mile, sorting se color na badle
-const REASON_COLOR_MAP = lossTimeReasonOptions.reduce((acc, reason, i) => {
-  acc[reason] = COLORS[i % COLORS.length];
-  return acc;
-}, {});
-
-const getColor = (reason, index) => REASON_COLOR_MAP[reason] || COLORS[index % COLORS.length];
 
 const CustomTooltip = ({ active, payload, totalLoss }) => {
   if (!active || !payload || !payload.length) return null;
@@ -83,7 +37,6 @@ const CustomTooltip = ({ active, payload, totalLoss }) => {
   );
 };
 
-// value label directly on slice
 const renderValueLabel = ({ cx, cy, midAngle, outerRadius, value }) => {
   const RADIAN = Math.PI / 180;
   const radius = outerRadius + 12;
@@ -108,20 +61,20 @@ const renderValueLabel = ({ cx, cy, midAngle, outerRadius, value }) => {
 const CHART_HEIGHT = 190;
 
 const ReasonWisePieChart = ({ data }) => {
+  // `data` comes from the backend already zero-filled with EVERY active
+  // reason - we never drop reasons here, we just sort them for display.
   const merged = useMemo(() => {
-    if (!data || !data.length) return [];
+    if (!data) return [];
+    return [...data].sort((a, b) => b.lossMinutes - a.lossMinutes);
+  }, [data]);
 
-    // pehle reasonOptions ke against map karo taki fixed color mile
-    const dataMap = new Map(data.map((d) => [d.reason, d.lossMinutes]));
-    const mappedFromOptions = lossTimeReasonOptions
-      .map((reason) => ({ reason, lossMinutes: dataMap.get(reason) || 0 }))
-      .filter((item) => item.lossMinutes > 0);
-
-    // fallback: agar koi bhi reason list se match nahi hua (naam mismatch),
-    // to raw data hi use kar lo taki chart khaali na rahe
-    const source = mappedFromOptions.length > 0 ? mappedFromOptions : data;
-
-    return [...source].sort((a, b) => b.lossMinutes - a.lossMinutes);
+  const colorMap = useMemo(() => {
+    if (!data) return {};
+    const alphabetical = [...data].sort((a, b) => a.reason.localeCompare(b.reason));
+    return alphabetical.reduce((acc, item, i) => {
+      acc[item.reason] = COLORS[i % COLORS.length];
+      return acc;
+    }, {});
   }, [data]);
 
   const totalLoss = useMemo(
@@ -129,7 +82,9 @@ const ReasonWisePieChart = ({ data }) => {
     [merged]
   );
 
+  const pieSlices = useMemo(() => merged.filter((item) => item.lossMinutes > 0), [merged]);
   const highestReason = merged[0];
+  const hasData = totalLoss > 0;
 
   return (
     <div className="overflow-hidden rounded border border-gray-200 bg-white shadow-sm">
@@ -165,7 +120,7 @@ const ReasonWisePieChart = ({ data }) => {
           <div className="min-w-0">
             <p className="text-[8px] uppercase tracking-wide text-gray-500">Top Reason</p>
             <h3 className="truncate text-[10px] font-bold text-gray-800">
-              {highestReason?.reason || "-"}
+              {hasData ? highestReason?.reason || "-" : "-"}
             </h3>
           </div>
         </div>
@@ -175,26 +130,27 @@ const ReasonWisePieChart = ({ data }) => {
           <div>
             <p className="text-[8px] uppercase tracking-wide text-gray-500">Peak Value</p>
             <h3 className="text-[10px] font-bold text-red-600">
-              {highestReason?.lossMinutes || 0} min
+              {hasData ? highestReason?.lossMinutes || 0 : 0} min
             </h3>
           </div>
         </div>
       </div>
 
-      {/* Chart + Custom Scrollable Legend */}
-      {merged.length === 0 ? (
-        <div className="flex h-32 items-center justify-center text-[11px] text-gray-400">
-          No loss data available
+      {!hasData && (
+        <div className="border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-[9px] font-medium text-amber-700">
+          No loss data recorded for this date — showing 0 for all reasons.
         </div>
-      ) : (
-        <div className="flex flex-col gap-1.5 p-2 sm:flex-row">
-          {/* Donut - fixed width wrapper zaroori hai warna ResponsiveContainer 0px measure karta hai */}
-          <div className="mx-auto w-full sm:mx-0 sm:w-[220px] sm:shrink-0">
-            <div style={{ width: "100%", height: CHART_HEIGHT }}>
+      )}
+
+      {/* Chart + Scrollable Legend - always lists every active reason */}
+      <div className="flex flex-col gap-1.5 p-2 sm:flex-row">
+        <div className="mx-auto w-full sm:mx-0 sm:w-[220px] sm:shrink-0">
+          <div style={{ width: "100%", height: CHART_HEIGHT }}>
+            {pieSlices.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={merged}
+                    data={pieSlices}
                     dataKey="lossMinutes"
                     nameKey="reason"
                     innerRadius={40}
@@ -204,53 +160,58 @@ const ReasonWisePieChart = ({ data }) => {
                     label={renderValueLabel}
                     labelLine={false}
                   >
-                    {merged.map((entry, index) => (
-                      <Cell key={entry.reason} fill={getColor(entry.reason, index)} />
+                    {pieSlices.map((entry) => (
+                      <Cell key={entry.reason} fill={colorMap[entry.reason]} />
                     ))}
                   </Pie>
                   <Tooltip content={<CustomTooltip totalLoss={totalLoss} />} />
                 </PieChart>
               </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Scrollable legend list */}
-          <div className="flex-1 overflow-y-auto pr-1" style={{ maxHeight: CHART_HEIGHT }}>
-            <ul className="space-y-0.5">
-              {merged.map((item, index) => {
-                const share = totalLoss ? ((item.lossMinutes / totalLoss) * 100).toFixed(1) : 0;
-                return (
-                  <li
-                    key={item.reason}
-                    className="flex items-center justify-between gap-1.5 rounded px-1 py-0.5 text-[9px] hover:bg-gray-50"
-                  >
-                    <div className="flex min-w-0 items-center gap-1">
-                      <span
-                        className="h-1.5 w-1.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: getColor(item.reason, index) }}
-                      />
-                      <span className="truncate text-gray-700" title={item.reason}>
-                        {item.reason}
-                      </span>
-                    </div>
-
-                    <div className="flex shrink-0 items-center gap-1">
-                      <span className="font-semibold text-gray-800">{item.lossMinutes}m</span>
-                      <span className="w-7 text-right text-gray-400">{share}%</span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            ) : (
+              <div className="flex h-full items-center justify-center rounded border border-dashed border-gray-200 text-center text-[10px] text-gray-400">
+                No loss recorded
+                <br />
+                for this date
+              </div>
+            )}
           </div>
         </div>
-      )}
+
+        <div className="flex-1 overflow-y-auto pr-1" style={{ maxHeight: CHART_HEIGHT }}>
+          <ul className="space-y-0.5">
+            {merged.map((item) => {
+              const share = totalLoss ? ((item.lossMinutes / totalLoss) * 100).toFixed(1) : 0;
+              return (
+                <li
+                  key={item.reason}
+                  className="flex items-center justify-between gap-1.5 rounded px-1 py-0.5 text-[9px] hover:bg-gray-50"
+                >
+                  <div className="flex min-w-0 items-center gap-1">
+                    <span
+                      className="h-1.5 w-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: colorMap[item.reason] }}
+                    />
+                    <span className="truncate text-gray-700" title={item.reason}>
+                      {item.reason}
+                    </span>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className={`font-semibold ${item.lossMinutes ? "text-gray-800" : "text-gray-400"}`}>
+                      {item.lossMinutes}m
+                    </span>
+                    <span className="w-7 text-right text-gray-400">{share}%</span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/70 px-3 py-1.5">
-        <span className="text-[9px] text-gray-500">
-          {merged.length} of {lossTimeReasonOptions.length} reasons active
-        </span>
+        <span className="text-[9px] text-gray-500">{merged.length} reasons tracked</span>
 
         <div className="flex items-center gap-1">
           <div className="h-1.5 w-1.5 rounded-full bg-blue-600" />
