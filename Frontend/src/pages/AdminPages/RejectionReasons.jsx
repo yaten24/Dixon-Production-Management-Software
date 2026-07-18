@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 
-import Sidebar from "../compenents/dashboard/Sidebar";
+import Sidebar from "../../compenents/dashboard/Sidebar";
 
-import RejectionFilters from "../compenents/rejection/RejectionFilters";
-import RejectionTrendChart from "../compenents/rejection/RejectionTrendChart";
-import RejectionPieChart from "../compenents/rejection/RejectionPieChart";
-import HallWiseChart from "../compenents/rejection/HallWiseChart";
-import RecentRejectionsModal from "../compenents/rejection/RecentRejectionsModal";
-import RejectionHeatmapModal from "../compenents/rejection/RejectionHeatmapModal";
+import RejectionFilters from "../../compenents/rejection/RejectionFilters";
+import RejectionTrendChart from "../../compenents/rejection/RejectionTrendChart";
+import RejectionPieChart from "../../compenents/rejection/RejectionPieChart";
+import HallWiseChart from "../../compenents/rejection/HallWiseChart";
+import RecentRejectionsModal from "../../compenents/rejection/RecentRejectionsModal";
+import RejectionHeatmapModal from "../../compenents/rejection/RejectionHeatmapModal";
 
-import { useRejectionDashboard } from "../hooks/useRejectionDashboard";
-import { exportRejectionDataToCSV } from "../utils/exportExcel";
+import { useRejectionDashboard } from "../../hooks/useRejectionDashboard";
+import { exportRejectionDataToCSV } from "../../utils/exportExcel";
 
 const getTodayDate = () => {
   const d = new Date();

@@ -11,8 +11,8 @@ import {
   FaDownload,
   FaCalendarAlt,
 } from "react-icons/fa";
-import Sidebar from "../compenents/dashboard/Sidebar";
-import Header from "../compenents/dashboard/Header";
+import Sidebar from "../../compenents/dashboard/Sidebar";
+import Header from "../../compenents/dashboard/Header";
 
 
 const Reports = () => {

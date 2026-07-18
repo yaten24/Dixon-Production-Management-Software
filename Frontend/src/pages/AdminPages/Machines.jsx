@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-import Sidebar from "../compenents/dashboard/Sidebar";
-import Header from "../compenents/dashboard/Header";
+import Sidebar from "../../compenents/dashboard/Sidebar";
+import Header from "../../compenents/dashboard/Header";
 
-import MachineToolbar from "../compenents/machines/MachineToolbar";
-import MachineTable from "../compenents/machines/MachineTable";
+import MachineToolbar from "../../compenents/machines/MachineToolbar";
+import MachineTable from "../../compenents/machines/MachineTable";
 
 import {
   getAllMachines,
   updateMachineStatus,
-} from "../api/machineApi";
+} from "../../api/machineApi";
 
 const Machines = () => {
   const [machines, setMachines] = useState([]);

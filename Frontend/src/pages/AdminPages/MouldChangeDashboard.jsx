@@ -1,19 +1,15 @@
 import React, { useMemo, useState } from "react";
 
-import Sidebar from "../compenents/dashboard/Sidebar";
-import Header from "../compenents/dashboard/Header";
+import Sidebar from "../../compenents/dashboard/Sidebar";
+import Header from "../../compenents/dashboard/Header";
 
-import {
-  mouldChangeData,
-  COLORS,
-} from "../data/mouldChangeData";
-
-import DashboardHeader from "../compenents/mouldChange/DashboardHeader";
-import Filters from "../compenents/mouldChange/Filters";
-import HallWiseChart from "../compenents/mouldChange/HallWiseChart";
-import MachineTable from "../compenents/mouldChange/MachineTable";
-import RecentMouldChanges from "../compenents/mouldChange/RecentMouldChanges";
-import HallAverageTime from "../compenents/mouldChange/HallAvearegeTime";
+import { mouldChangeData, COLORS } from "../../data/mouldChangeData";
+import DashboardHeader from "../../compenents/mouldChange/DashboardHeader";
+import Filters from "../../compenents/mouldChange/Filters";
+import HallWiseChart from "../../compenents/mouldChange/HallWiseChart";
+import MachineTable from "../../compenents/mouldChange/MachineTable";
+import RecentMouldChanges from "../../compenents/mouldChange/RecentMouldChanges";
+import HallAverageTime from "../../compenents/mouldChange/HallAvearegeTime";
 
 // List every hall that should appear on the chart, in display order.
 // Add/remove hall names here if the plant layout changes.
@@ -36,13 +32,22 @@ const MouldChangeDashboard = () => {
 
   const [sortBy, setSortBy] = useState("");
 
-  const activeFilterCount = [selectedHall !== "All", selectedMachine !== "All", searchMachine, selectedChangeRange !== "All", selectedTimeRange !== "All", sortBy].filter(Boolean).length;
+  const activeFilterCount = [
+    selectedHall !== "All",
+    selectedMachine !== "All",
+    searchMachine,
+    selectedChangeRange !== "All",
+    selectedTimeRange !== "All",
+    sortBy,
+  ].filter(Boolean).length;
 
   const applyFilters = () => {
     console.log("Filters Applied");
   };
 
-  const machineOptions = [...new Set(mouldChangeData.map((item) => item.machine))];
+  const machineOptions = [
+    ...new Set(mouldChangeData.map((item) => item.machine)),
+  ];
 
   const resetFilters = () => {
     setSelectedHall("All");
@@ -59,9 +64,16 @@ const MouldChangeDashboard = () => {
 
   const filteredMachines = useMemo(() => {
     const filtered = mouldChangeData.filter((item) => {
-      const hallMatch = selectedHall === "All" ? true : item.hall === selectedHall;
+      const hallMatch =
+        selectedHall === "All" ? true : item.hall === selectedHall;
 
-      const machineMatch = searchMachine === "" ? true : item.machine.toLowerCase().includes(searchMachine.toLowerCase()) || item.machineName.toLowerCase().includes(searchMachine.toLowerCase());
+      const machineMatch =
+        searchMachine === ""
+          ? true
+          : item.machine.toLowerCase().includes(searchMachine.toLowerCase()) ||
+            item.machineName
+              .toLowerCase()
+              .includes(searchMachine.toLowerCase());
 
       return hallMatch && machineMatch;
     });
@@ -92,7 +104,7 @@ const MouldChangeDashboard = () => {
         }
 
         return acc;
-      }, {})
+      }, {}),
     );
 
     return groupedMachines.map((machine) => ({
@@ -102,9 +114,20 @@ const MouldChangeDashboard = () => {
   }, [selectedHall, searchMachine]);
   const totalMachines = filteredMachines.length;
 
-  const totalMouldChanges = filteredMachines.reduce((sum, machine) => sum + machine.mouldChanges, 0);
+  const totalMouldChanges = filteredMachines.reduce(
+    (sum, machine) => sum + machine.mouldChanges,
+    0,
+  );
 
-  const avgTime = filteredMachines.length > 0 ? (filteredMachines.reduce((sum, machine) => sum + machine.avgChangeTime, 0) / filteredMachines.length).toFixed(1) : 0;
+  const avgTime =
+    filteredMachines.length > 0
+      ? (
+          filteredMachines.reduce(
+            (sum, machine) => sum + machine.avgChangeTime,
+            0,
+          ) / filteredMachines.length
+        ).toFixed(1)
+      : 0;
 
   // Hall-wise data for HallWiseChart: now includes total change-time
   // (timeMinutes) per hall, in addition to the changes count, and covers
@@ -117,13 +140,18 @@ const MouldChangeDashboard = () => {
         return {
           hall,
           changes: hallItems.length,
-          timeMinutes: hallItems.reduce((sum, item) => sum + (item.changeDuration || 0), 0),
+          timeMinutes: hallItems.reduce(
+            (sum, item) => sum + (item.changeDuration || 0),
+            0,
+          ),
         };
       }),
-    []
+    [],
   );
 
-  const machineChartData = [...filteredMachines].sort((a, b) => b.mouldChanges - a.mouldChanges).slice(0, 15);
+  const machineChartData = [...filteredMachines]
+    .sort((a, b) => b.mouldChanges - a.mouldChanges)
+    .slice(0, 15);
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-100">
@@ -139,7 +167,12 @@ const MouldChangeDashboard = () => {
         {/* Content */}
 
         <main className="flex-1 overflow-y-auto p-1">
-          <DashboardHeader fromDate={fromDate} setFromDate={setFromDate} toDate={toDate} setToDate={setToDate} />
+          <DashboardHeader
+            fromDate={fromDate}
+            setFromDate={setFromDate}
+            toDate={toDate}
+            setToDate={setToDate}
+          />
 
           {/* <KPISection
             totalMachines={totalMachines}

@@ -1,21 +1,21 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 
-import Sidebar from "../compenents/dashboard/Sidebar";
-import Header from "../compenents/dashboard/Header";
+import Sidebar from "../../compenents/dashboard/Sidebar";
+import Header from "../../compenents/dashboard/Header";
 
-import PartsFilters from "../compenents/parts/PartsFilters";
-import PartsTable from "../compenents/parts/PartsTable";
-import PartsLoadingState from "../compenents/parts/PartsLoadingState";
-import PartModal from "../compenents/parts/PartModal";
-import PartViewModal from "../compenents/parts/PartViewModal";
-import DeleteConfirmModal from "../compenents/parts/DeleteConfirmModal";
-import PaginationControls from "../compenents/parts/PaginationControls";
+import PartsFilters from "../../compenents/parts/PartsFilters";
+import PartsTable from "../../compenents/parts/PartsTable";
+import PartsLoadingState from "../../compenents/parts/PartsLoadingState";
+import PartModal from "../../compenents/parts/PartModal";
+import PartViewModal from "../../compenents/parts/PartViewModal";
+import DeleteConfirmModal from "../../compenents/parts/DeleteConfirmModal";
+import PaginationControls from "../../compenents/parts/PaginationControls";
 
 import {
   getAllParts,
   getFilterOptions,
   deletePart as deletePartApi,
-} from "../api/partApi";
+} from "../../api/partApi";
 
 const PAGE_SIZE = 100;
 const DEBOUNCE_MS = 350;
@@ -169,7 +169,7 @@ const PartsPage = () => {
     <div className="flex h-screen bg-slate-100">
       <Sidebar />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden/..">
 
         <main className="flex-1 overflow-y-auto p-1">
           {loading ? (

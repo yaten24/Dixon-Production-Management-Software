@@ -1,15 +1,14 @@
 import React from "react";
 import { FaExclamationTriangle } from "react-icons/fa";
 
-import Sidebar from "../compenents/dashboard/Sidebar";
+import Sidebar from "../../compenents/dashboard/Sidebar";
 
-import useLossTimeData from "../hooks/useLossTimeData";
+import useLossTimeData from "../../hooks/useLossTimeData";
 
-import LossFilters from "../compenents/lossTime/LossFilters";
-import LossSummaryCards from "../compenents/lossTime/LossSummaryCards";
-import HallWiseLossChart from "../compenents/lossTime/HallWiseLossChart";
-import ReasonWisePieChart from "../compenents/lossTime/ReasonWisePieChart";
-import HourlyLossBarChart from "../compenents/lossTime/HourlyLossBarChart";
+import LossFilters from "../../compenents/lossTime/LossFilters";
+import HallWiseLossChart from "../../compenents/lossTime/HallWiseLossChart";
+import ReasonWisePieChart from "../../compenents/lossTime/ReasonWisePieChart";
+import HourlyLossBarChart from "../../compenents/lossTime/HourlyLossBarChart";
 
 const LossTimeDashboard = () => {
   const {
@@ -60,26 +59,16 @@ const LossTimeDashboard = () => {
           )}
         </div>
 
+        {/* Error state */}
         {error && (
           <div className="flex-shrink-0 rounded border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] text-red-600">
             {error}
           </div>
         )}
 
-
-        {/* <LossSummaryCards
-          totalLossMinutes={summary?.totalLossMinutes || 0}
-          productionLoss={summary?.productionLoss || 0}
-          averageDowntime={summary?.averageDowntime || 0}
-          totalEvents={summary?.totalEvents || 0}
-          highestHall={summary?.highestHall}
-          highestMachine={summary?.highestMachine}
-          highestReason={summary?.highestReason}
-        /> */}
-
-        {/* Remaining height split evenly: top row = hall-wise + reason-wise
-            side by side, bottom row = hourly trend. */}
-        <div className="grid min-h-0 flex-1 grid-rows-2 gap-1.5">
+        {/* Remaining height split: top row (Hall + Pie) gets more space,
+            bottom row (trend) less — matches RejectionDashboard exactly. */}
+        <div className="grid min-h-0 flex-1 grid-rows-[1fr_1.5fr] gap-1.5">
           <div className="grid min-h-0 grid-cols-1 gap-1.5 xl:grid-cols-2">
             <div className="min-h-0">
               <HallWiseLossChart data={hallWiseData} />

@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useState } from "react";
 
-import Sidebar from "../compenents/dashboard/Sidebar";
-import Header from "../compenents/dashboard/Header";
+import Sidebar from "../../compenents/dashboard/Sidebar";
+import Header from "../../compenents/dashboard/Header";
 
-import EmployeeFilters from "../compenents/employees/EmployeeFilters";
-import EmployeeTable from "../compenents/employees/EmployeeTable";
-import OperatorModal from "../compenents/employees/OperatorModal";
-import ConfirmDialog from "../compenents/employees/ConfirmDialog";
-import TopPerformerBanner from "../compenents/employees/TopPerformerBanner";
+import EmployeeFilters from "../../compenents/employees/EmployeeFilters";
+import EmployeeTable from "../../compenents/employees/EmployeeTable";
+import OperatorModal from "../../compenents/employees/OperatorModal";
+import ConfirmDialog from "../../compenents/employees/ConfirmDialog";
+import TopPerformerBanner from "../../compenents/employees/TopPerformerBanner";
 
 import {
   getOperators,
@@ -16,7 +16,7 @@ import {
   addOperator,
   deleteOperator,
   exportOperators,
-} from "../services/operatorService";
+} from "../../services/operatorService";
 
 const LIMIT = 100;
 

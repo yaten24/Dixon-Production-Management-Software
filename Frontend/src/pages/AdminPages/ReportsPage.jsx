@@ -7,10 +7,10 @@ import {
   FaBuilding,
   FaDownload,
 } from "react-icons/fa";
-import Header from "../compenents/dashboard/Header";
-import ThemedDropdown from "../compenents/common/ThemedDropdown";
-import useProductionReports, { useReportFilters } from "../hooks/useProductionReports";
-import { exportReportToExcel } from "../utils/exportReportToExcel";
+import Header from "../../compenents/dashboard/Header";
+import ThemedDropdown from "../../compenents/common/ThemedDropdown";
+import useProductionReports, { useReportFilters } from "../../hooks/useProductionReports";
+import { exportReportToExcel } from "../../utils/exportReportToExcel";
 
 const TABS = [
   { id: "daily", label: "Daily Report", icon: FaFileAlt },

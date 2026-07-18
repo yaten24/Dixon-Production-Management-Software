@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import Sidebar from "../compenents/dashboard/Sidebar";
-import DashboardFilters from "../compenents/productionDashboard/DashboardFilters";
-import OverallProductionChart from "../compenents/productionDashboard/OverallProductionChart";
-import SummaryCards from "../compenents/productionDashboard/SummaryCards";
+import Sidebar from "../../compenents/dashboard/Sidebar";
+import DashboardFilters from "../../compenents/productionDashboard/DashboardFilters";
+import OverallProductionChart from "../../compenents/productionDashboard/OverallProductionChart";
+import SummaryCards from "../../compenents/productionDashboard/SummaryCards";
 
-import { halls, HALL_ACCENT } from "../data/productionData";
-import useProductionDashboard from "../hooks/useProductionDashboard";
+import { halls, HALL_ACCENT } from "../../data/productionData";
+import useProductionDashboard from "../../hooks/useProductionDashboard";
 
 const getToday = () => new Date().toISOString().split("T")[0];
 

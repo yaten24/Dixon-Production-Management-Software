@@ -1,14 +1,14 @@
 import React from "react";
 
-import Sidebar from "../compenents/dashboard/Sidebar";
-import Header from "../compenents/dashboard/Header";
+import Sidebar from "../../compenents/dashboard/Sidebar";
+import Header from "../../compenents/dashboard/Header";
 
-import ProductionChart from "../compenents/dashboard/ProductionChart";
-import RejectionAnalysis from "../compenents/dashboard/RejectionAnalysis";
-import LossTimeAnalysis from "../compenents/dashboard/LossTimeAnalysis";
-import AttendanceWidget from "../compenents/dashboard/RejectionLossTrend";
-import ProductionStats from "../compenents/dashboard/ProductionStats";
-import TargetSummary from "../compenents/dashboard/TargetSummary";
+import ProductionChart from "../../compenents/dashboard/ProductionChart";
+import RejectionAnalysis from "../../compenents/dashboard/RejectionAnalysis";
+import LossTimeAnalysis from "../../compenents/dashboard/LossTimeAnalysis";
+import AttendanceWidget from "../../compenents/dashboard/RejectionLossTrend";
+import ProductionStats from "../../compenents/dashboard/ProductionStats";
+import TargetSummary from "../../compenents/dashboard/TargetSummary";
 
 const Dashboard = () => {
   return (
@@ -18,12 +18,11 @@ const Dashboard = () => {
 
       {/* Right Section */}
       <div className="flex flex-1 flex-col overflow-hidden">
-
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto bg-slate-100 p-1">
           <div
             className="
-      w-full
+      w-full/..
       rounded-sm
       border
       border-slate-200
