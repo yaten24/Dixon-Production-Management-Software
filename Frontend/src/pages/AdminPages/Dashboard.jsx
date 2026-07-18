@@ -6,6 +6,7 @@ import QuantityCard from "../../compenents/dashboard/QuantityCard";
 import StatTile from "../../compenents/dashboard/StatTile";
 import LossTimeCard from "../../compenents/dashboard/LossTimeCard";
 import SummaryCard from "../../compenents/dashboard/SummaryCard";
+import MouldChangeSummaryCard from "../../compenents/dashboard/MouldChangeSummaryCard";
 import WeeklyOeeChart from "../../compenents/dashboard/WeeklyOeeChart";
 import {
   dayTarget,
@@ -16,9 +17,10 @@ import {
   lastDay,
   currentMonth,
   weeklyOee,
+  mouldChangeSummary,
 } from "../../data/dashboardDemoData";
 import { pct } from "../../utils/dashboardMath";
-import { Users, Cog, TrendingUp, TrendingDown, CalendarDays, CalendarRange } from "lucide-react";
+import { Users, Cog, TrendingUp, TrendingDown, CalendarDays, Wrench } from "lucide-react";
 
 const Dashboard = () => {
   return (
@@ -48,8 +50,6 @@ const Dashboard = () => {
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden p-1.5">
-          {/* KPI grid — importance-ranked: hero target card is largest,
-              shift/good/reject next, machines/users/loss/summaries fill in. */}
           <div className="mc-kpi-grid grid min-h-0 flex-[1.35] grid-cols-2 auto-rows-fr gap-1.5 sm:grid-cols-4">
             <HeroTargetCard
               className="mc-hero col-span-2 sm:col-span-4"
@@ -108,20 +108,18 @@ const Dashboard = () => {
               ]}
             />
 
-            <SummaryCard
+            <MouldChangeSummaryCard
               className="mc-month col-span-2 sm:col-span-2"
-              icon={CalendarRange}
-              title={currentMonth.label}
-              rows={[
-                { label: "Target", value: currentMonth.target.toLocaleString("en-IN") },
-                { label: "Actual (MTD)", value: currentMonth.actual.toLocaleString("en-IN") },
-                { label: "Achieved", value: `${pct(currentMonth.actual, currentMonth.target)}%` },
-              ]}
-              footer={`Best day: ${currentMonth.bestDay}`}
+              icon={Wrench}
+              title="Mould Change Summary"
+              planned={mouldChangeSummary.planned}
+              unplanned={mouldChangeSummary.unplanned}
+              completed={mouldChangeSummary.completed}
+              pending={mouldChangeSummary.pending}
+              avgChangeTime={mouldChangeSummary.avgChangeTime}
             />
           </div>
 
-          {/* Bottom: 7-day OEE / Availability / Performance / Quality chart */}
           <WeeklyOeeChart className="min-h-0 flex-1" data={weeklyOee} />
         </main>
       </div>
