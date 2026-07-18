@@ -278,15 +278,6 @@ const DashboardHeader = ({
       {/* Date + Hall */}
       <CustomDatePicker value={date} onChange={setDate} />
 
-      <CustomSelect
-        value={hall}
-        onChange={setHall}
-        list={HALL_LIST}
-        allLabel="All Halls"
-        icon={Filter}
-        maxWidth={130}
-      />
-
       {/* Core filter actions */}
       <div className="flex flex-shrink-0 items-center gap-1.5">
         <button
