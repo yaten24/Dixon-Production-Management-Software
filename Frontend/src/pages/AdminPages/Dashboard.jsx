@@ -20,7 +20,14 @@ import {
   mouldChangeSummary,
 } from "../../data/dashboardDemoData";
 import { pct } from "../../utils/dashboardMath";
-import { Users, Cog, TrendingUp, TrendingDown, CalendarDays, Wrench } from "lucide-react";
+import {
+  Users,
+  Cog,
+  TrendingUp,
+  TrendingDown,
+  CalendarDays,
+  Wrench,
+} from "lucide-react";
 
 const Dashboard = () => {
   return (
@@ -59,7 +66,10 @@ const Dashboard = () => {
               reject={dayTarget.reject}
             />
 
-            <ShiftWiseCard className="mc-shift col-span-2 sm:col-span-2" shifts={shiftData} />
+            <ShiftWiseCard
+              className="mc-shift col-span-2 sm:col-span-2"
+              shifts={shiftData}
+            />
 
             <QuantityCard
               className="mc-good col-span-1"
@@ -68,7 +78,7 @@ const Dashboard = () => {
               value={dayTarget.good}
               sub={`${pct(dayTarget.good, dayTarget.actual)}% of actual output`}
               TrendIcon={TrendingUp}
-              trendLabel="+2.1% vs yday"
+              trendLabel="0% vs yday"
             />
 
             <QuantityCard
@@ -78,7 +88,7 @@ const Dashboard = () => {
               value={dayTarget.reject}
               sub={`${pct(dayTarget.reject, dayTarget.actual)}% of actual output`}
               TrendIcon={TrendingDown}
-              trendLabel="-0.8% vs yday"
+              trendLabel="0% vs yday"
             />
 
             <StatTile
@@ -95,15 +105,24 @@ const Dashboard = () => {
               label={userStatus.label}
             />
 
-            <LossTimeCard className="mc-loss col-span-2 sm:col-span-2" reasons={lossTimeReasons} />
+            <LossTimeCard
+              className="mc-loss col-span-2 sm:col-span-2"
+              reasons={lossTimeReasons}
+            />
 
             <SummaryCard
               className="mc-lastday col-span-2 sm:col-span-2"
               icon={CalendarDays}
               title={lastDay.dateLabel}
               rows={[
-                { label: "Target", value: lastDay.target.toLocaleString("en-IN") },
-                { label: "Actual", value: lastDay.actual.toLocaleString("en-IN") },
+                {
+                  label: "Target",
+                  value: lastDay.target.toLocaleString("en-IN"),
+                },
+                {
+                  label: "Actual",
+                  value: lastDay.actual.toLocaleString("en-IN"),
+                },
                 { label: "OEE", value: `${lastDay.oee}%` },
               ]}
             />
