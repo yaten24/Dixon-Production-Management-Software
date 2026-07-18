@@ -1,0 +1,1 @@
+export const pct = (part, whole) => (whole ? Math.round((part / whole) * 100) : 0);

@@ -1,54 +1,128 @@
 import React from "react";
-
 import Sidebar from "../../compenents/dashboard/Sidebar";
-import Header from "../../compenents/dashboard/Header";
-
-import ProductionChart from "../../compenents/dashboard/ProductionChart";
-import RejectionAnalysis from "../../compenents/dashboard/RejectionAnalysis";
-import LossTimeAnalysis from "../../compenents/dashboard/LossTimeAnalysis";
-import AttendanceWidget from "../../compenents/dashboard/RejectionLossTrend";
-import ProductionStats from "../../compenents/dashboard/ProductionStats";
-import TargetSummary from "../../compenents/dashboard/TargetSummary";
+import HeroTargetCard from "../../compenents/dashboard/HeroTargetCard";
+import ShiftWiseCard from "../../compenents/dashboard/ShiftWiseCard";
+import QuantityCard from "../../compenents/dashboard/QuantityCard";
+import StatTile from "../../compenents/dashboard/StatTile";
+import LossTimeCard from "../../compenents/dashboard/LossTimeCard";
+import SummaryCard from "../../compenents/dashboard/SummaryCard";
+import WeeklyOeeChart from "../../compenents/dashboard/WeeklyOeeChart";
+import {
+  dayTarget,
+  shiftData,
+  lossTimeReasons,
+  machineStatus,
+  userStatus,
+  lastDay,
+  currentMonth,
+  weeklyOee,
+} from "../../data/dashboardDemoData";
+import { pct } from "../../utils/dashboardMath";
+import { Users, Cog, TrendingUp, TrendingDown, CalendarDays, CalendarRange } from "lucide-react";
 
 const Dashboard = () => {
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-100">
-      {/* Sidebar */}
+    <div className="flex h-screen min-h-0 overflow-hidden bg-[#F5F5F5]">
       <Sidebar />
 
-      {/* Right Section */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-100 p-1">
-          <div
-            className="
-      w-full/..
-      rounded-sm
-      border
-      border-slate-200
-      bg-white
-      shadow-sm
-      p-1
-      lg:p-1
-    "
-          >
-            <div className="space-y-1">
-              {/* Shift A / Shift B / Overall target — plan tables se */}
-              <TargetSummary />
+      <style>{`
+        @media (min-width: 1024px) {
+          .mc-kpi-grid {
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            grid-template-rows: repeat(2, minmax(0, 1fr));
+            grid-template-areas:
+              "hero hero hero shift shift shift good good reject reject machines users"
+              "hero hero hero loss loss loss lastday lastday lastday month month month";
+          }
+          .mc-hero { grid-area: hero; }
+          .mc-shift { grid-area: shift; }
+          .mc-good { grid-area: good; }
+          .mc-reject { grid-area: reject; }
+          .mc-machines { grid-area: machines; }
+          .mc-users { grid-area: users; }
+          .mc-loss { grid-area: loss; }
+          .mc-lastday { grid-area: lastday; }
+          .mc-month { grid-area: month; }
+        }
+      `}</style>
 
-              <ProductionStats />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden p-1.5">
+          {/* KPI grid — importance-ranked: hero target card is largest,
+              shift/good/reject next, machines/users/loss/summaries fill in. */}
+          <div className="mc-kpi-grid grid min-h-0 flex-[1.35] grid-cols-2 auto-rows-fr gap-1.5 sm:grid-cols-4">
+            <HeroTargetCard
+              className="mc-hero col-span-2 sm:col-span-4"
+              target={dayTarget.target}
+              actual={dayTarget.actual}
+              good={dayTarget.good}
+              reject={dayTarget.reject}
+            />
 
-              <div className="grid grid-cols-1 gap-1 xl:grid-cols-2">
-                <ProductionChart />
-                <RejectionAnalysis />
-              </div>
+            <ShiftWiseCard className="mc-shift col-span-2 sm:col-span-2" shifts={shiftData} />
 
-              <div className="grid grid-cols-1 gap-1 xl:grid-cols-2">
-                <LossTimeAnalysis />
-                <AttendanceWidget />
-              </div>
-            </div>
+            <QuantityCard
+              className="mc-good col-span-1"
+              tone="good"
+              label="Good Quantity"
+              value={dayTarget.good}
+              sub={`${pct(dayTarget.good, dayTarget.actual)}% of actual output`}
+              TrendIcon={TrendingUp}
+              trendLabel="+2.1% vs yday"
+            />
+
+            <QuantityCard
+              className="mc-reject col-span-1"
+              tone="reject"
+              label="Reject Quantity"
+              value={dayTarget.reject}
+              sub={`${pct(dayTarget.reject, dayTarget.actual)}% of actual output`}
+              TrendIcon={TrendingDown}
+              trendLabel="-0.8% vs yday"
+            />
+
+            <StatTile
+              className="mc-machines col-span-1"
+              icon={Cog}
+              value={`${machineStatus.active}/${machineStatus.total}`}
+              label="Active Machines"
+            />
+
+            <StatTile
+              className="mc-users col-span-1"
+              icon={Users}
+              value={userStatus.active}
+              label={userStatus.label}
+            />
+
+            <LossTimeCard className="mc-loss col-span-2 sm:col-span-2" reasons={lossTimeReasons} />
+
+            <SummaryCard
+              className="mc-lastday col-span-2 sm:col-span-2"
+              icon={CalendarDays}
+              title={lastDay.dateLabel}
+              rows={[
+                { label: "Target", value: lastDay.target.toLocaleString("en-IN") },
+                { label: "Actual", value: lastDay.actual.toLocaleString("en-IN") },
+                { label: "OEE", value: `${lastDay.oee}%` },
+              ]}
+            />
+
+            <SummaryCard
+              className="mc-month col-span-2 sm:col-span-2"
+              icon={CalendarRange}
+              title={currentMonth.label}
+              rows={[
+                { label: "Target", value: currentMonth.target.toLocaleString("en-IN") },
+                { label: "Actual (MTD)", value: currentMonth.actual.toLocaleString("en-IN") },
+                { label: "Achieved", value: `${pct(currentMonth.actual, currentMonth.target)}%` },
+              ]}
+              footer={`Best day: ${currentMonth.bestDay}`}
+            />
           </div>
+
+          {/* Bottom: 7-day OEE / Availability / Performance / Quality chart */}
+          <WeeklyOeeChart className="min-h-0 flex-1" data={weeklyOee} />
         </main>
       </div>
     </div>
