@@ -1,86 +1,210 @@
-import React from "react";
-import { Layers } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  LabelList,
+  Legend,
+} from "recharts";
+import { FaLayerGroup, FaCircleExclamation } from "react-icons/fa6";
 
-const HallWiseMouldChange = ({ hallWiseMouldChanges = [] }) => {
-  const maxValue = Math.max(1, ...hallWiseMouldChanges.flatMap((h) => [h.planned, h.actual]));
-  const steps = 4;
-  const yTicks = Array.from({ length: steps + 1 }, (_, i) => Math.round((maxValue / steps) * i)).reverse();
+const PLANNED_COLOR = "#0F1D24";
+const ACTUAL_COLOR = "#FDC94D";
 
-  const totalPlanned = hallWiseMouldChanges.reduce((s, h) => s + h.planned, 0);
-  const totalActual = hallWiseMouldChanges.reduce((s, h) => s + h.actual, 0);
+// The plant always has these 5 halls — show all of them regardless of
+// whether the backend returned data for every one, so the chart never
+// silently drops a hall just because it had zero mould-change records.
+const ALL_HALLS = ["Hall-1", "Hall-2", "Hall-3", "Hall-4", "C-8"];
+
+const CustomTooltip = ({ active, payload }) => {
+  if (!active || !payload || !payload.length) return null;
+  const data = payload[0].payload;
+  const completion = data.planned > 0 ? ((data.actual / data.planned) * 100).toFixed(1) : "0.0";
 
   return (
-    <div className="rounded-sm border border-[#C6C6C6] bg-white">
-      <div className="flex items-center justify-between border-b border-[#C6C6C6] px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-[#0F1D24] text-white">
-            <Layers size={14} />
-          </span>
+    <div className="min-w-[130px] rounded border border-[#C6C6C6]/60 bg-white p-2 shadow-xl">
+      <h3 className="mb-1 border-b border-[#C6C6C6]/40 pb-1 text-[10px] font-bold text-[#0F1D24]">
+        {data.hall}
+      </h3>
+      <div className="space-y-0.5 text-[9px]">
+        <div className="flex items-center justify-between">
+          <span className="text-[#9B9B9B]">Planned</span>
+          <span className="font-bold text-[#0F1D24]">{data.planned}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[#9B9B9B]">Actual</span>
+          <span className="font-bold" style={{ color: "#B98A00" }}>{data.actual}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[#9B9B9B]">Completion</span>
+          <span className="font-semibold text-[#0F1D24]">{completion}%</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// `full` (default true): stretches to fill the parent's height, meant to
+// live inside a fixed-height grid cell so the page never needs to scroll.
+const HallWiseMouldChange = ({ hallWiseMouldChanges = [], full = true }) => {
+  const [activeIndex, setActiveIndex] = useState(null);
+
+  // Always render all 5 halls — fill in 0 for any hall missing from the
+  // API response instead of just showing whatever halls happened to come back.
+  const { chartData, missingHalls } = useMemo(() => {
+    const byHall = new Map((hallWiseMouldChanges || []).map((d) => [d.hall, d]));
+    const missing = [];
+    const filled = ALL_HALLS.map((hall) => {
+      const existing = byHall.get(hall);
+      if (!existing) missing.push(hall);
+      return existing || { hall, planned: 0, actual: 0 };
+    });
+    return { chartData: filled, missingHalls: missing };
+  }, [hallWiseMouldChanges]);
+
+  const hasAnyData = chartData.some((d) => d.planned > 0 || d.actual > 0);
+
+  const totalPlanned = useMemo(() => chartData.reduce((s, h) => s + h.planned, 0), [chartData]);
+  const totalActual = useMemo(() => chartData.reduce((s, h) => s + h.actual, 0), [chartData]);
+  const completionRate = totalPlanned > 0 ? ((totalActual / totalPlanned) * 100).toFixed(0) : 0;
+
+  const highestHall = useMemo(() => {
+    if (!chartData.length) return null;
+    return [...chartData].sort((a, b) => b.actual - a.actual)[0];
+  }, [chartData]);
+
+  return (
+    <div
+      className={`flex ${
+        full ? "h-full" : ""
+      } min-h-0 flex-col overflow-hidden rounded border border-[#C6C6C6]/50 bg-white shadow-sm`}
+    >
+      <div className="flex flex-shrink-0 items-center justify-between bg-gradient-to-r from-[#0F1D24]/5 via-white to-[#F5F5F5] px-2.5 py-1.5">
+        <div className="flex items-center gap-1.5">
+          <div className="flex h-6 w-6 items-center justify-center rounded bg-[#0F1D24] shadow-sm">
+            <FaLayerGroup className="text-[10px] text-[#FDC94D]" />
+          </div>
           <div>
-            <p className="text-sm font-semibold text-[#0F1D24]">Hall Wise Mould Change</p>
-            <p className="text-xs text-[#9B9B9B]">Planned vs Actual mould changes per hall</p>
+            <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#0F1D24]">
+              Hall Wise Mould Change
+            </h2>
+            <p className="text-[9px] text-[#9B9B9B]">Planned vs Actual per hall</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 text-right text-xs">
+
+        <div className="flex items-center gap-3 text-right">
           <div>
-            <p className="text-[10px] font-medium text-[#9B9B9B]">PLANNED</p>
-            <p className="font-bold text-[#0F1D24]">{totalPlanned}</p>
+            <p className="text-[8px] font-medium uppercase tracking-wide text-[#9B9B9B]">Planned</p>
+            <h2 className="text-sm font-extrabold text-[#0F1D24]">{totalPlanned}</h2>
           </div>
           <div>
-            <p className="text-[10px] font-medium text-[#9B9B9B]">ACTUAL</p>
-            <p className="font-bold text-[#FDC94D]">{totalActual}</p>
+            <p className="text-[8px] font-medium uppercase tracking-wide text-[#9B9B9B]">Actual</p>
+            <h2 className="text-sm font-extrabold" style={{ color: "#B98A00" }}>{totalActual}</h2>
           </div>
         </div>
       </div>
 
-      <div className="flex h-64 px-3 pt-4">
-        <div className="flex w-8 flex-col justify-between pb-6 text-right text-[10px] text-[#9B9B9B]">
-          {yTicks.map((t, idx) => (
-            <span key={`ytick-${idx}`}>{t}</span>
-          ))}
+      <div className="grid flex-shrink-0 grid-cols-3 divide-x divide-[#C6C6C6]/40 border-y border-[#C6C6C6]/40 bg-[#F5F5F5]/70">
+        <div className="px-2 py-1">
+          <p className="text-[8px] uppercase tracking-wide text-[#9B9B9B]">Highest Hall</p>
+          <h3 className="mt-0.5 truncate text-[10px] font-bold text-[#0F1D24]">
+            {highestHall?.hall || "-"}
+          </h3>
         </div>
-
-        <div className="relative flex flex-1 gap-4">
-          <div className="pointer-events-none absolute inset-x-0 top-0 bottom-6 flex flex-col justify-between">
-            {yTicks.map((t, idx) => (
-              <div key={`grid-${idx}`} className="border-t border-dashed border-[#E2E4E9]" />
-            ))}
-          </div>
-
-          {hallWiseMouldChanges.map((h) => (
-            <div key={h.hall} className="relative flex flex-1 flex-col items-center justify-end pb-6">
-              <div className="flex h-52 w-full items-end justify-center gap-1.5">
-                <div className="group relative flex w-6 items-end justify-center">
-                  <span className="pointer-events-none absolute -top-4 text-[10px] font-medium text-[#0F1D24] opacity-0 transition-opacity group-hover:opacity-100">
-                    {h.planned}
-                  </span>
-                  <div
-                    className="w-full rounded-t-sm bg-[#0F1D24] transition-all"
-                    style={{ height: `${(h.planned / maxValue) * 100}%`, minHeight: h.planned > 0 ? "2px" : 0 }}
-                  />
-                </div>
-                <div className="group relative flex w-6 items-end justify-center">
-                  <span className="pointer-events-none absolute -top-4 text-[10px] font-medium text-[#0F1D24] opacity-0 transition-opacity group-hover:opacity-100">
-                    {h.actual}
-                  </span>
-                  <div
-                    className="w-full rounded-t-sm bg-[#FDC94D] transition-all"
-                    style={{ height: `${(h.actual / maxValue) * 100}%`, minHeight: h.actual > 0 ? "2px" : 0 }}
-                  />
-                </div>
-              </div>
-              <span className="absolute bottom-0 text-xs font-medium text-[#0F1D24]">{h.hall}</span>
-            </div>
-          ))}
+        <div className="px-2 py-1">
+          <p className="text-[8px] uppercase tracking-wide text-[#9B9B9B]">Completion</p>
+          <h3 className="mt-0.5 text-[10px] font-bold text-[#0F1D24]">{completionRate}%</h3>
+        </div>
+        <div className="px-2 py-1">
+          <p className="text-[8px] uppercase tracking-wide text-[#9B9B9B]">Peak Actual</p>
+          <h3 className="mt-0.5 text-[10px] font-bold" style={{ color: "#B98A00" }}>
+            {highestHall?.actual || 0}
+          </h3>
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-[#C6C6C6] px-3 py-1.5 text-[11px] text-[#9B9B9B]">
-        <span>Production Hall Comparison</span>
-        <span className="flex items-center gap-3">
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-[#0F1D24]" /> Planned</span>
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-[#FDC94D]" /> Actual</span>
-        </span>
+      {missingHalls.length > 0 && (
+        <div className="flex flex-shrink-0 items-center gap-1.5 border-b border-amber-100 bg-amber-50 px-2.5 py-1 text-[9px] font-medium text-amber-700">
+          <FaCircleExclamation className="shrink-0 text-[10px] text-amber-500" />
+          {hasAnyData ? (
+            <span>
+              No data for {missingHalls.join(", ")} — showing all {ALL_HALLS.length} halls (0 where missing).
+            </span>
+          ) : (
+            <span>
+              No mould changes recorded for this date — showing all {ALL_HALLS.length} halls with 0.
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Chart fills whatever space is left instead of a fixed pixel height */}
+      <div className="min-h-0 flex-1 p-1.5">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart
+            data={chartData}
+            margin={{ top: 16, right: 10, left: 0, bottom: 0 }}
+            barGap={4}
+            onMouseLeave={() => setActiveIndex(null)}
+          >
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F5F5F5" />
+            <XAxis dataKey="hall" tick={{ fontSize: 9, fontWeight: 600, fill: "#0F1D24" }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 9, fill: "#9B9B9B" }} tickLine={false} axisLine={false} width={24} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(15,29,36,0.05)" }} />
+            <Legend
+              verticalAlign="top"
+              align="right"
+              height={0}
+              wrapperStyle={{ fontSize: 9, fontWeight: 600, color: "#9B9B9B" }}
+              iconType="square"
+              iconSize={7}
+            />
+            <Bar
+              dataKey="planned"
+              name="Planned"
+              fill={PLANNED_COLOR}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={22}
+              animationDuration={800}
+              animationEasing="ease-out"
+              onMouseEnter={(_, i) => setActiveIndex(i)}
+              opacity={1}
+            >
+              <LabelList dataKey="planned" position="top" offset={4} fontSize={9} fontWeight="700" fill="#0F1D24" />
+            </Bar>
+            <Bar
+              dataKey="actual"
+              name="Actual"
+              fill={ACTUAL_COLOR}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={22}
+              animationDuration={800}
+              animationEasing="ease-out"
+              animationBegin={80}
+              onMouseEnter={(_, i) => setActiveIndex(i)}
+            >
+              <LabelList dataKey="actual" position="top" offset={4} fontSize={9} fontWeight="700" fill="#0F1D24" />
+            </Bar>
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="flex flex-shrink-0 items-center justify-between border-t border-[#C6C6C6]/40 bg-[#F5F5F5]/70 px-2.5 py-1">
+        <p className="text-[9px] text-[#9B9B9B]">Production Hall Comparison</p>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#0F1D24]" />
+            <span className="text-[9px] text-[#9B9B9B]">Planned</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#FDC94D]" />
+            <span className="text-[9px] text-[#9B9B9B]">Actual</span>
+          </div>
+        </div>
       </div>
     </div>
   );
