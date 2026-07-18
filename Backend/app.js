@@ -19,6 +19,7 @@ const adminDashboardRoutes = require("./routes/adminDashboardRoutes");
 const productionDashboardRoutes = require("./routes/productionDashboardRoutes");
 const lossTimeDashboardRoutes = require("./routes/lossTimeRoutes")
 const productionRejectDetailRoutes = require("./routes/productionRejectDetailRoutes");
+const mouldChangeDashboardRoutes = require("./routes/mouldChangeDashboardRoutes");
 const cookieParser = require("cookie-parser");
 
 const app = express();
@@ -50,7 +51,7 @@ app.use("/api/mould-change", require("./routes/mouldChangeRoutes"));
 app.use("/api/production-dashboard", productionDashboardRoutes);
 app.use("/api/loss-time", lossTimeDashboardRoutes);
 app.use("/api/production-reject-details", productionRejectDetailRoutes);
-
+app.use("/api/mould-change-dashboard", mouldChangeDashboardRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 
 module.exports = app;
