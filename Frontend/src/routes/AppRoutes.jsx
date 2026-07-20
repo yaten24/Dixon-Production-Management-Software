@@ -40,6 +40,7 @@ import UpdateMachineOperator from "../pages/UpdateMachineOperator";
 import MonthlyProductionPlans from "../pages/PlanningPage/MonthlyPlanPage";
 import DailyPlanPage from "../pages/PlanningPage/DailyPlanPage";
 import DailyProductionPlan from "../pages/PlanningPage/CreateDailyPlan";
+import MonthlyPlanView from "../pages/PlanningPage/MonthlyPlanView";
 
 const AppRoutes = () => {
   return (
@@ -135,9 +136,10 @@ const AppRoutes = () => {
       />
 
       <Route
-        path="/employee/production/plans/monthly/detail"
-        element={<DailyPlanPage />}
+        path="/employee/production/plans/monthly/detail/:id"
+        element={<MonthlyPlanView />}
       />
+
 
       {/* ---------- MACHINE MANAGEMENT ---------- */}
 

@@ -11,11 +11,14 @@ const {
     generatePlanNumber,
     deleteHeader,
 } = require('../controllers/monthlyPlan.controller');
+const authMiddleware = require("../middlewares/authMiddleware");
+
 
 const router = express.Router();
 
+router.use(authMiddleware);
 
-// static paths BEFORE dynamic /:id — order matters in Express
+
 router.post('/full', createFullPlan);
 router.get('/next-number', generatePlanNumber);
 router.post('/', createHeader);

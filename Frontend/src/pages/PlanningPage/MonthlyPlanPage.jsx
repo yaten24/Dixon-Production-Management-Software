@@ -138,7 +138,7 @@ const MonthlyPlanPage = () => {
   };
 
   const handleOpen = (plan) => {
-    navigate(`/monthly-plans/${plan.monthly_plan_id}`);
+    navigate(`/employee/production/plans/monthly/detail/${plan.monthly_plan_id}`);
   };
 
   const handleCreate = () => {

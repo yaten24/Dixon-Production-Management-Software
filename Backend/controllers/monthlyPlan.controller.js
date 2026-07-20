@@ -13,7 +13,6 @@ const recalcHeaderTotals = async (conn, monthlyPlanId) => {
   const [[totals]] = await conn.query(
     `SELECT
        COALESCE(SUM(monthly_target_qty), 0) AS totalTarget,
-       COALESCE(SUM(balance_qty), 0) AS totalBalance,
        COUNT(*) AS partCount
      FROM monthly_plan_details
      WHERE monthly_plan_id = ?`,
@@ -22,12 +21,11 @@ const recalcHeaderTotals = async (conn, monthlyPlanId) => {
 
   await conn.query(
     `UPDATE monthly_plan_header
-     SET total_target_qty = ?, total_balance_qty = ?, part_count = ?
+     SET total_target_qty = ?, total_parts = ?
      WHERE monthly_plan_id = ?`,
-    [totals.totalTarget, totals.totalBalance, totals.partCount, monthlyPlanId],
+    [totals.totalTarget, totals.partCount, monthlyPlanId],
   );
 };
-
 // ==========================================================
 // Plan number generator
 // ==========================================================
