@@ -4,7 +4,7 @@ import { FaUserShield, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { HiOutlineArrowLeft } from "react-icons/hi2";
 
-import { loginUser } from "../api/Authapi";
+import { loginUser } from "../api/authApi";
 import { useAuth } from "../context/AuthContext";
 
 // FIX: this used to be an "Admin Login" page that always sent everyone to
