@@ -39,6 +39,7 @@ import AllocateMachineOperator from "../pages/AllocateMachineOperator";
 import UpdateMachineOperator from "../pages/UpdateMachineOperator";
 import MonthlyProductionPlans from "../pages/EmployeePage/MonthlyPlanPage";
 import DailyPlanPage from "../pages/EmployeePage/DailyPlanPage";
+import DailyProductionPlan from "../pages/EmployeePage/CreateDailyPlan";
 
 const AppRoutes = () => {
   return (

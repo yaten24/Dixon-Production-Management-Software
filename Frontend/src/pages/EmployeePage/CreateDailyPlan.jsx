@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiOutlineArrowUturnLeft, HiOutlinePaperAirplane } from "react-icons/hi2";
-import PlanningSetup from "../compenents/productionPlan/PlanningSetup";
-import PlanningStats from "../compenents/productionPlan/PlanningStats";
-import MachinePlanningTable from "../compenents/productionPlan/MachinePlanningTable";
+import PlanningSetup from "../../compenents/productionPlan/PlanningSetup";
+import PlanningStats from "../../compenents/productionPlan/PlanningStats";
+import MachinePlanningTable from "../../compenents/productionPlan/MachinePlanningTable";
 import {
   checkPlan,
   createPlan,
   getPlan,
   publishPlan,
-} from "../api/productionPlanApi";
-import { getAllMachines } from "../api/machineApi";
+} from "../../api/productionPlanApi";
+import { getAllMachines } from "../../api/machineApi";
 
 const naturalSort = (a, b) => {
   const numA = parseInt(a.machine_code.replace(/\D/g, ""), 10);
