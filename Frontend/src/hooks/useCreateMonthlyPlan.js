@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFullMonthlyPlan, generatePlanNumber } from "../api/monthlyPlan";
+import { createFullMonthlyPlan, generatePlanNumber } from "../api/monthlyPlanApi";
 
 export default function useCreateMonthlyPlan() {
   const [submitting, setSubmitting] = useState(false);
