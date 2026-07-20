@@ -29,6 +29,7 @@ import ActivityLogs from "../pages/AdminPages/Activitylogs"
 import NotFound from "../pages/NotFound"
 import Home from "../pages/Home"
 import Dashboard from "../pages/AdminPages/Dashboard";
+import PlanSelectionPage from "../pages/EmployeePage/PlanSelectionPage";
 
 
 const AppRoutes = () => {
@@ -57,7 +58,7 @@ const AppRoutes = () => {
       <Route path="/user/reports" element={<ReportsPage />} />
       <Route
         path="/user/production/daily-plan"
-        element={<DailyProductionPlan />}
+        element={<PlanSelectionPage />}
       />
       <Route
         path="/user/machines/overview"
