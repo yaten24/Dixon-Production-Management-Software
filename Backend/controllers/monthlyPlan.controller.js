@@ -28,6 +28,9 @@ const recalcHeaderTotals = async (conn, monthlyPlanId) => {
   );
 };
 
+// ==========================================================
+// Plan number generator
+// ==========================================================
 exports.generatePlanNumber = async (req, res) => {
   const { month, year } = req.query;
 
@@ -58,9 +61,255 @@ exports.generatePlanNumber = async (req, res) => {
   }
 };
 
+// ==========================================================
+// Simple header create (no parts) — used only if you need a bare
+// header without the combined create-full-plan flow.
+// ==========================================================
+exports.createHeader = async (req, res) => {
+  if (!req.user?.id) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
+  }
+
+  const { planNumber, planMonth, planYear, hall, workingDays, remarks } = req.body;
+
+  const monthNum = Number(planMonth);
+  const yearNum = Number(planYear);
+
+  if (!planNumber || !planMonth || !planYear) {
+    return res.status(400).json({ success: false, message: 'planNumber, planMonth, planYear required' });
+  }
+  if (!Number.isInteger(monthNum) || monthNum < 1 || monthNum > 12) {
+    return res.status(400).json({ success: false, message: 'planMonth must be an integer between 1 and 12' });
+  }
+  if (!Number.isInteger(yearNum) || yearNum < 2000 || yearNum > 2100) {
+    return res.status(400).json({ success: false, message: 'planYear must be a valid 4-digit year' });
+  }
+
+  const resolvedWorkingDays = workingDays === undefined || workingDays === null
+    ? DEFAULT_WORKING_DAYS
+    : Number(workingDays);
+
+  if (!Number.isFinite(resolvedWorkingDays) || resolvedWorkingDays <= 0) {
+    return res.status(400).json({ success: false, message: 'workingDays must be a positive number' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO monthly_plan_header (plan_number, plan_month, plan_year, hall, working_days, created_by, remarks)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [planNumber, monthNum, yearNum, hall || DEFAULT_HALL, resolvedWorkingDays, req.user.id, remarks || null],
+    );
+    res.status(201).json({ success: true, monthlyPlanId: result.insertId });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ success: false, message: 'Plan already exists for this month/year/hall or plan number' });
+    }
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to create monthly plan' });
+  }
+};
+
+// ==========================================================
+// List headers (optionally filtered)
+// ==========================================================
+exports.listHeaders = async (req, res) => {
+  const { month, year, hall, status } = req.query;
+  let sql = `SELECT * FROM monthly_plan_header WHERE 1=1`;
+  const params = [];
+  if (month) { sql += ` AND plan_month = ?`; params.push(Number(month)); }
+  if (year) { sql += ` AND plan_year = ?`; params.push(Number(year)); }
+  if (hall) { sql += ` AND hall = ?`; params.push(hall); }
+  if (status) { sql += ` AND status = ?`; params.push(status); }
+  sql += ` ORDER BY plan_year DESC, plan_month DESC`;
+
+  try {
+    const [rows] = await pool.query(sql, params);
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to fetch monthly plans' });
+  }
+};
+
+// ==========================================================
+// Get single header
+// ==========================================================
+exports.getHeader = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await pool.query(`SELECT * FROM monthly_plan_header WHERE monthly_plan_id = ?`, [id]);
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Monthly plan not found' });
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to fetch monthly plan' });
+  }
+};
+
+// ==========================================================
+// List details for a plan (joined with parts)
+// ==========================================================
+exports.listDetails = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await pool.query(
+      `SELECT d.*, p.part_name, p.part_number, p.product_category, p.standard_cycle_time, p.actual_cycle_time
+       FROM monthly_plan_details d
+       JOIN parts p ON p.id = d.part_id
+       WHERE d.monthly_plan_id = ?
+       ORDER BY d.created_at ASC`,
+      [id],
+    );
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to fetch plan details' });
+  }
+};
+
+// ==========================================================
+// Add a single part to an existing plan
+// ==========================================================
+exports.addDetail = async (req, res) => {
+  const { id } = req.params;
+  const { partId, monthlyTargetQty, plannedCycleTime, remarks } = req.body;
+
+  const targetQty = Number(monthlyTargetQty);
+  if (!partId || !Number.isFinite(targetQty) || targetQty <= 0) {
+    return res.status(400).json({ success: false, message: 'Valid partId and a positive monthlyTargetQty are required' });
+  }
+
+  const cycleTime = plannedCycleTime === undefined || plannedCycleTime === null
+    ? null
+    : Number(plannedCycleTime);
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [header] = await conn.query(`SELECT monthly_plan_id FROM monthly_plan_header WHERE monthly_plan_id = ? FOR UPDATE`, [id]);
+    if (!header.length) {
+      await conn.rollback();
+      return res.status(404).json({ success: false, message: 'Monthly plan not found' });
+    }
+
+    const [result] = await conn.query(
+      `INSERT INTO monthly_plan_details
+        (monthly_plan_id, part_id, monthly_target_qty, planned_cycle_time, balance_qty, remarks)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, partId, targetQty, cycleTime, targetQty, remarks || null],
+    );
+
+    await recalcHeaderTotals(conn, id);
+    await conn.commit();
+    res.status(201).json({ success: true, monthlyDetailId: result.insertId });
+  } catch (err) {
+    await conn.rollback();
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ success: false, message: 'This part is already added to the plan' });
+    }
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to add part to plan' });
+  } finally {
+    conn.release();
+  }
+};
+
+// ==========================================================
+// Update one detail row (target qty / cycle time / remarks)
+// ==========================================================
+exports.updateDetail = async (req, res) => {
+  const { id, detailId } = req.params;
+  const { monthlyTargetQty, plannedCycleTime, remarks } = req.body;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [rows] = await conn.query(
+      `SELECT completed_qty FROM monthly_plan_details WHERE monthly_detail_id = ? AND monthly_plan_id = ? FOR UPDATE`,
+      [detailId, id],
+    );
+    if (!rows.length) {
+      await conn.rollback();
+      return res.status(404).json({ success: false, message: 'Plan detail not found' });
+    }
+
+    let newBalance;
+    if (monthlyTargetQty !== undefined && monthlyTargetQty !== null) {
+      const targetQty = Number(monthlyTargetQty);
+      if (!Number.isFinite(targetQty) || targetQty <= 0) {
+        await conn.rollback();
+        return res.status(400).json({ success: false, message: 'monthlyTargetQty must be a positive number' });
+      }
+      newBalance = targetQty - rows[0].completed_qty;
+    }
+
+    const cycleTime = plannedCycleTime === undefined ? undefined
+      : plannedCycleTime === null ? null
+      : Number(plannedCycleTime);
+
+    await conn.query(
+      `UPDATE monthly_plan_details SET
+        monthly_target_qty = COALESCE(?, monthly_target_qty),
+        planned_cycle_time = ?,
+        balance_qty = COALESCE(?, balance_qty),
+        remarks = COALESCE(?, remarks)
+       WHERE monthly_detail_id = ? AND monthly_plan_id = ?`,
+      [
+        monthlyTargetQty ?? null,
+        cycleTime === undefined ? undefined : cycleTime,
+        newBalance ?? null,
+        remarks ?? null,
+        detailId,
+        id,
+      ].map((v) => (v === undefined ? null : v)),
+    );
+
+    await recalcHeaderTotals(conn, id);
+    await conn.commit();
+    res.json({ success: true });
+  } catch (err) {
+    await conn.rollback();
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to update plan detail' });
+  } finally {
+    conn.release();
+  }
+};
+
+// ==========================================================
+// Delete one detail row
+// ==========================================================
+exports.deleteDetail = async (req, res) => {
+  const { id, detailId } = req.params;
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [result] = await conn.query(
+      `DELETE FROM monthly_plan_details WHERE monthly_detail_id = ? AND monthly_plan_id = ?`,
+      [detailId, id],
+    );
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return res.status(404).json({ success: false, message: 'Plan detail not found' });
+    }
+    await recalcHeaderTotals(conn, id);
+    await conn.commit();
+    res.json({ success: true });
+  } catch (err) {
+    await conn.rollback();
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to delete plan detail' });
+  } finally {
+    conn.release();
+  }
+};
+
+// ==========================================================
+// Create full plan (header + parts together)
+// ==========================================================
 exports.createFullPlan = async (req, res) => {
-  // FIX: fail fast with a clear message instead of an uncaught crash if
-  // auth middleware didn't attach req.user for some reason.
   if (!req.user?.id) {
     return res.status(401).json({ success: false, message: 'Authentication required' });
   }
@@ -83,10 +332,6 @@ exports.createFullPlan = async (req, res) => {
     return res.status(400).json({ success: false, message: 'At least one part is required' });
   }
 
-  // FIX: validate qty is actually numeric (not just truthy) and catch
-  // duplicate partIds client-side before ever touching the DB, so the
-  // error is immediate and specific instead of a generic ER_DUP_ENTRY
-  // after the transaction has already started.
   const seenPartIds = new Set();
   for (const p of parts) {
     const targetQty = Number(p.monthlyTargetQty);
@@ -99,9 +344,6 @@ exports.createFullPlan = async (req, res) => {
     seenPartIds.add(p.partId);
   }
 
-  // FIX: workingDays could legitimately be 0 in theory — use a proper
-  // undefined/null check instead of `||`, which would silently replace
-  // 0 with the default.
   const resolvedWorkingDays = workingDays === undefined || workingDays === null
     ? DEFAULT_WORKING_DAYS
     : Number(workingDays);
@@ -123,8 +365,6 @@ exports.createFullPlan = async (req, res) => {
 
     for (const p of parts) {
       const targetQty = Number(p.monthlyTargetQty);
-      // FIX: same undefined/null-safe handling for plannedCycleTime — a
-      // cycle time of 0 (however unlikely) shouldn't be silently nulled.
       const cycleTime = p.plannedCycleTime === undefined || p.plannedCycleTime === null
         ? null
         : Number(p.plannedCycleTime);
@@ -149,5 +389,22 @@ exports.createFullPlan = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to create plan' });
   } finally {
     conn.release();
+  }
+};
+
+// ==========================================================
+// Delete a header (cascades to details via FK)
+// ==========================================================
+exports.deleteHeader = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await pool.query(`DELETE FROM monthly_plan_header WHERE monthly_plan_id = ?`, [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Monthly plan not found' });
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to delete monthly plan' });
   }
 };
