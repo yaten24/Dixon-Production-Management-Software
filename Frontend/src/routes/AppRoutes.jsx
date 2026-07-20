@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 // Public
 import Home from "../pages/Home";
-import Login from "../auth/Login";
+import Login from "../pages/Login";
 import NotFound from "../pages/NotFound";
 
 // Admin
@@ -29,17 +29,17 @@ import AdvProductionEntry from "../pages/advProductionEnrty";
 import ProductionHistoryPage from "../pages/ProductionHistoryPage";
 import ReportsPage from "../pages/AdminPages/ReportsPage";
 
-import PlanSelectionPage from "../pages/EmployeePage/PlanSelectionPage";
-import MonthlyPlanPage from "../pages/EmployeePage/MonthlyPlanPage";
-import CreateMonthlyPlan from "../pages/EmployeePage/CreateMonthlyPlan";
+import PlanSelectionPage from "../pages/PlanningPage/PlanSelectionPage";
+import MonthlyPlanPage from "../pages/PlanningPage/MonthlyPlanPage";
+import CreateMonthlyPlan from "../pages/PlanningPage/CreateMonthlyPlan";
 
 import MachineOverviewDashboard from "../pages/MachineOverview";
-import MachineOperatorManagement from "../pages/MachineOperatorManagement";
-import AllocateMachineOperator from "../pages/AllocateMachineOperator";
+// import MachineOperatorManagement from "../pages/MachineOperatorManagement";
+// import AllocateMachineOperator from "../pages/AllocateMachineOperator";
 import UpdateMachineOperator from "../pages/UpdateMachineOperator";
-import MonthlyProductionPlans from "../pages/EmployeePage/MonthlyPlanPage";
-import DailyPlanPage from "../pages/EmployeePage/DailyPlanPage";
-import DailyProductionPlan from "../pages/EmployeePage/CreateDailyPlan";
+import MonthlyProductionPlans from "../pages/PlanningPage/MonthlyPlanPage";
+import DailyPlanPage from "../pages/PlanningPage/DailyPlanPage";
+import DailyProductionPlan from "../pages/PlanningPage/CreateDailyPlan";
 
 const AppRoutes = () => {
   return (
@@ -146,7 +146,7 @@ const AppRoutes = () => {
         element={<MachineOverviewDashboard />}
       />
 
-      <Route
+      {/* <Route
         path="/employee/machines/allocation"
         element={<MachineOperatorManagement />}
       />
@@ -154,7 +154,7 @@ const AppRoutes = () => {
       <Route
         path="/employee/machines/allocation/create"
         element={<AllocateMachineOperator />}
-      />
+      /> */}
 
       <Route
         path="/employee/machines/allocation/update"

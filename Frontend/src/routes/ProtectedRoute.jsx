@@ -2,13 +2,8 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-// Wrap any route that needs a logged-in user:
-//   <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
-
-  // While AuthContext is checking the cookie session on first load, avoid
-  // flashing a redirect to /login for a user who's actually logged in.
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-100">
