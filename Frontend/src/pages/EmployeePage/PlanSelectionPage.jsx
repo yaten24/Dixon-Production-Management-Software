@@ -1,93 +1,66 @@
-import { useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Breadcrumb from "../../compenents/PlanSelection/BreadCrumb";
-import SearchBar from "../../compenents/PlanSelection/SearchBar";
-import FilterDropdown from "../../compenents/PlanSelection/FilterDropdown";
-import PlanGrid from "../../compenents/PlanSelection/PlanGrid";
-import SelectionSummary from "../../compenents/PlanSelection/SelectionSummary";
-import FooterActions from "../../compenents/PlanSelection/FooterActions";
-import { planTypes } from "../../compenents/PlanSelection/planTypes";
+import { useNavigate } from 'react-router-dom';
+import { HiOutlineCalendarDays, HiOutlineClock } from 'react-icons/hi2';
+
+const PLAN_OPTIONS = [
+  {
+    key: 'monthly',
+    title: 'Monthly Plan',
+    description: 'Set up machine, operator, and target allocation for a full production month.',
+    icon: HiOutlineCalendarDays,
+  },
+  {
+    key: 'daily',
+    title: 'Daily Plan',
+    description: "Quickly plan a single day's shift-wise machine and target allocation.",
+    icon: HiOutlineClock,
+  },
+];
+
 export default function PlanSelectionPage() {
   const navigate = useNavigate();
 
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filter, setFilter] = useState("All Plans");
-  const [loading] = useState(false);
-
-  const cardRefs = useRef({});
-
-  const filteredPlans = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-
-    return planTypes.filter((plan) => {
-      const matchesFilter = filter === "All Plans" || plan.category === filter;
-      const matchesSearch =
-        !q ||
-        plan.name.toLowerCase().includes(q) ||
-        plan.description.toLowerCase().includes(q) ||
-        plan.useCases.some((u) => u.toLowerCase().includes(q));
-      return matchesFilter && matchesSearch;
-    });
-  }, [searchQuery, filter]);
-
-  const activePlan = planTypes.find((p) => p.id === selectedPlan) ?? null;
-
-  const handleSelect = (planId) => setSelectedPlan(planId);
-
-  const handleConfirm = (planId) => {
-    navigate("/create-plan/details", { state: { planType: planId } });
+  const handleSelect = (planType) => {
+    navigate('/create-plan/details', { state: { planType } });
   };
-
-  const handleContinue = () => {
-    if (selectedPlan) handleConfirm(selectedPlan);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F8FAFC]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
-      </div>
-    );
-  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F8FAFC]">
-      <div className="mx-auto w-full max-w-6xl flex-1 px-6 py-8 sm:px-8">
-        <Breadcrumb />
-
-        <div className="mt-4">
-          <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
-            Create New Production Plan
+    <div className="flex min-h-screen items-center justify-center bg-[#F5F5F5] px-4 sm:px-6">
+      <div className="flex w-full max-w-md flex-col items-center gap-6 sm:max-w-none sm:gap-8">
+        <div className="text-center">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#FDC94D]">
+            Production Planning
+          </span>
+          <h1 className="mt-1 text-xl font-bold tracking-tight text-[#0F1D24] sm:text-2xl">
+            Select Plan Type
           </h1>
-          <p className="mt-1.5 text-sm text-slate-500 sm:text-base">
-            Choose the planning type that best fits your production
-            requirements.
+          <p className="mt-1 text-xs font-medium text-[#9B9B9B]">
+            Choose how you'd like to set up your production plan
           </p>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <SearchBar value={searchQuery} onChange={setSearchQuery} />
-          <FilterDropdown value={filter} onChange={setFilter} />
-        </div>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row md:gap-4">
+          {PLAN_OPTIONS.map(({ key, title, description, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => handleSelect(key)}
+              className="flex w-full items-center gap-4 rounded-md border border-[#C6C6C6] bg-white px-4 py-4 text-left shadow-[0_1px_0_rgba(15,23,42,0.05)] transition-colors duration-150 hover:border-[#0F1D24] hover:bg-[#0F1D24]/[0.02] active:bg-[#0F1D24]/[0.05] sm:w-64 sm:px-5 md:w-72"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#C6C6C6] bg-[#F5F5F5] text-[#0F1D24]">
+                <Icon className="h-5 w-5" />
+              </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-          <PlanGrid
-            plans={filteredPlans}
-            selectedPlan={selectedPlan}
-            onSelect={handleSelect}
-            onConfirm={handleConfirm}
-            cardRefs={cardRefs}
-          />
-          <SelectionSummary plan={activePlan} />
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold tracking-tight text-[#0F1D24]">
+                  {title}
+                </h2>
+                <p className="mt-0.5 text-xs font-medium text-[#9B9B9B] sm:truncate">
+                  {description}
+                </p>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
-
-      <FooterActions
-        onCancel={() => navigate(-1)}
-        onContinue={handleContinue}
-        disabled={!selectedPlan}
-      />
     </div>
   );
 }
