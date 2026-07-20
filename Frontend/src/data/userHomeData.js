@@ -27,7 +27,7 @@ export const menuCards = [
     icon: HiOutlineClipboardDocumentList,
     color: "bg-blue-600",
     hover: "hover:border-blue-500",
-    path: "/user/production/entry",
+    path: "/employee/production/entry",
   },
 
   {
@@ -37,7 +37,7 @@ export const menuCards = [
     icon: HiOutlineFlag,
     color: "bg-red-600",
     hover: "hover:border-red-500",
-    path: "/user/production/daily-plan",
+    path: "/employee/production/plans",
   },
 
   {
@@ -57,7 +57,7 @@ export const menuCards = [
     icon: HiOutlineClipboard,
     color: "bg-teal-600",
     hover: "hover:border-teal-500",
-    path: "/user/history",
+    path: "/employee/production/history",
   },
 
   {
@@ -67,7 +67,7 @@ export const menuCards = [
     icon: HiOutlineBuildingOffice2,
     color: "bg-sky-600",
     hover: "hover:border-sky-500",
-    path: "/user/dashboard",
+    path: "/employee/dashboard",
   },
 
   {
@@ -77,7 +77,7 @@ export const menuCards = [
     icon: HiOutlineCpuChip,
     color: "bg-cyan-600",
     hover: "hover:border-cyan-500",
-    path: "/user/machines/overview",
+    path: "/employee/machines/overview",
   },
 
   // {
@@ -97,7 +97,7 @@ export const menuCards = [
     icon: HiOutlineExclamationTriangle,
     color: "bg-rose-600",
     hover: "hover:border-rose-500",
-    path: "/user/rejections",
+    path: "/employee/rejections",
   },
 
   {
@@ -117,7 +117,7 @@ export const menuCards = [
     icon: HiOutlineArrowPath,
     color: "bg-indigo-600",
     hover: "hover:border-indigo-500",
-    path: "/user/mould-change",
+    path: "/employee/mould-change",
   },
 
   // {
@@ -167,7 +167,7 @@ export const menuCards = [
     icon: HiOutlineDocumentChartBar,
     color: "bg-orange-500",
     hover: "hover:border-orange-500",
-    path: "/user/reports",
+    path: "/employee/reports",
   },
 
   // {
@@ -197,6 +197,6 @@ export const menuCards = [
     icon: HiOutlineCog6Tooth,
     color: "bg-slate-600",
     hover: "hover:border-slate-500",
-    path: "/user/settings",
+    path: "/employee/settings",
   },
 ];

@@ -26,7 +26,7 @@ const ROLE_REDIRECTS = {
   [normalizeRole("Admin")]: "/dashboard",
   [normalizeRole("Supervisor")]: "/dashboard",
   [normalizeRole("Operator")]: "/production-entry",
-  [normalizeRole("Assistant Manager")]: "/user/home",
+  [normalizeRole("Assistant Manager")]: "/employee/home",
 };
 
 const DEFAULT_REDIRECT = "/dashboard";

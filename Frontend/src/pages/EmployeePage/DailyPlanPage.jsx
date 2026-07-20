@@ -17,15 +17,23 @@ import {
 // accent    #FDC94D (warm gold)  — sparing highlight: eyebrow, bar, arrow-hover
 // darken    #C6C6C6              — borders, dividers, neutral surfaces
 
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+const formatDate = (isoDate) => {
+  const d = new Date(isoDate + "T00:00:00");
+  const weekday = d.toLocaleDateString("en-US", { weekday: "short" });
+  const day = d.getDate();
+  const month = d.toLocaleDateString("en-US", { month: "short" });
+  return { weekday, day, month };
+};
+
+const todayISO = () => new Date().toISOString().split("T")[0];
 
 /* ---------------------------------------------------------
-   MonthPlanCard — compact version
+   DayPlanCard — compact version
 --------------------------------------------------------- */
-const MonthPlanCard = ({ plan, index, onOpen, onDelete }) => {
+const DayPlanCard = ({ plan, index, onOpen, onDelete }) => {
+  const { weekday, day, month } = formatDate(plan.date);
+  const isToday = plan.date === todayISO();
+
   const handleCardClick = () => onOpen(plan);
   const handleOpenClick = (e) => {
     e.stopPropagation();
@@ -59,8 +67,8 @@ const MonthPlanCard = ({ plan, index, onOpen, onDelete }) => {
 
       {/* Header */}
       <div className="relative flex items-center justify-between">
-        <div className="flex h-8 w-8 items-center justify-center rounded bg-[#0F1D24] text-[#FDC94D] ring-[3px] ring-[#0F1D24]/5 transition-transform duration-300 group-hover:scale-105">
-          <HiOutlineCalendarDays className="h-4 w-4" />
+        <div className="flex h-8 w-8 flex-col items-center justify-center rounded bg-[#0F1D24] text-[#FDC94D] ring-[3px] ring-[#0F1D24]/5 transition-transform duration-300 group-hover:scale-105">
+          <span className="text-[10px] font-bold leading-none">{day}</span>
         </div>
 
         <motion.div
@@ -73,11 +81,16 @@ const MonthPlanCard = ({ plan, index, onOpen, onDelete }) => {
 
       {/* Body */}
       <div className="relative mt-2">
-        <h3 className="text-[13px] font-bold tracking-tight text-[#0F1D24]">
-          {plan.month}
+        <h3 className="flex items-center gap-1.5 text-[13px] font-bold tracking-tight text-[#0F1D24]">
+          {weekday}, {month} {day}
+          {isToday && (
+            <span className="rounded-full bg-[#FDC94D]/25 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-[#0F1D24]">
+              Today
+            </span>
+          )}
         </h3>
         <p className="mt-0.5 line-clamp-1 text-[10.5px] font-medium leading-4 text-[#9B9B9B]">
-          Production plan
+          Daily plan
         </p>
       </div>
 
@@ -99,19 +112,19 @@ const MonthPlanCard = ({ plan, index, onOpen, onDelete }) => {
 /* ---------------------------------------------------------
    CreatePlanModal
 --------------------------------------------------------- */
-const CreatePlanModal = ({ open, onClose, onCreate, usedMonths }) => {
-  const [selectedMonth, setSelectedMonth] = useState("");
-  const availableMonths = MONTHS.filter((m) => !usedMonths.includes(m));
+const CreatePlanModal = ({ open, onClose, onCreate, usedDates }) => {
+  const [selectedDate, setSelectedDate] = useState("");
+  const isDuplicate = selectedDate && usedDates.includes(selectedDate);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!selectedMonth) return;
-    onCreate(selectedMonth);
-    setSelectedMonth("");
+    if (!selectedDate || isDuplicate) return;
+    onCreate(selectedDate);
+    setSelectedDate("");
   };
 
   const handleClose = () => {
-    setSelectedMonth("");
+    setSelectedDate("");
     onClose();
   };
 
@@ -145,19 +158,21 @@ const CreatePlanModal = ({ open, onClose, onCreate, usedMonths }) => {
 
             <form onSubmit={handleSubmit}>
               <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-[#9B9B9B]">
-                Month
+                Date
               </label>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
                 required
-                className="mb-4 w-full rounded-md border border-[#C6C6C6] bg-[#F7F7F5] px-2.5 py-2 text-[13px] text-[#0F1D24] outline-none focus:border-[#0F1D24]"
-              >
-                <option value="">Select month</option>
-                {availableMonths.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
+                className="mb-1.5 w-full rounded-md border border-[#C6C6C6] bg-[#F7F7F5] px-2.5 py-2 text-[13px] text-[#0F1D24] outline-none focus:border-[#0F1D24]"
+              />
+              {isDuplicate && (
+                <p className="mb-3 text-[11px] font-medium text-red-500">
+                  A plan already exists for this date.
+                </p>
+              )}
+              {!isDuplicate && <div className="mb-4" />}
 
               <div className="flex gap-2">
                 <button
@@ -169,7 +184,7 @@ const CreatePlanModal = ({ open, onClose, onCreate, usedMonths }) => {
                 </button>
                 <button
                   type="submit"
-                  disabled={!selectedMonth}
+                  disabled={!selectedDate || isDuplicate}
                   className="flex-[1.4] rounded-md bg-[#0F1D24] py-2 text-[13px] font-bold text-[#FDC94D] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Create plan
@@ -184,21 +199,28 @@ const CreatePlanModal = ({ open, onClose, onCreate, usedMonths }) => {
 };
 
 /* ---------------------------------------------------------
-   MonthlyPlanPage — main page (compact + navigation)
+   DailyPlanPage — main page (compact + navigation)
 --------------------------------------------------------- */
-const MonthlyPlanPage = () => {
+const DailyPlanPage = () => {
   const navigate = useNavigate();
 
-  const [plans, setPlans] = useState([
-    { id: 1, month: "January" },
-    { id: 2, month: "February" },
-    { id: 3, month: "March" },
-    { id: 4, month: "April" },
-  ]);
+  const seedDates = [0, 1, 2, 3].map((offset) => {
+    const d = new Date();
+    d.setDate(d.getDate() - offset);
+    return d.toISOString().split("T")[0];
+  });
+
+  const [plans, setPlans] = useState(
+    seedDates.map((date, i) => ({ id: i + 1, date }))
+  );
   const [modalOpen, setModalOpen] = useState(false);
 
-  const handleCreate = (month) => {
-    setPlans((prev) => [{ id: Date.now(), month }, ...prev]);
+  const handleCreate = (date) => {
+    setPlans((prev) =>
+      [{ id: Date.now(), date }, ...prev].sort((a, b) =>
+        b.date.localeCompare(a.date)
+      )
+    );
     setModalOpen(false);
   };
 
@@ -207,8 +229,8 @@ const MonthlyPlanPage = () => {
   };
 
   const handleOpen = (plan) => {
-    // e.g. navigate(`/employee/production/plans/monthly/${plan.id}`)
-    console.log("Opening plan:", plan.month);
+    // e.g. navigate(`/employee/production/plans/daily/${plan.id}`)
+    console.log("Opening plan:", plan.date);
   };
 
   return (
@@ -227,7 +249,7 @@ const MonthlyPlanPage = () => {
 
             <div>
               <h1 className="text-lg font-bold leading-tight tracking-tight text-[#0F1D24] sm:text-xl">
-                Monthly Production Plans
+                Daily Production Plans
               </h1>
             </div>
           </div>
@@ -259,7 +281,7 @@ const MonthlyPlanPage = () => {
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {plans.map((plan, i) => (
-              <MonthPlanCard
+              <DayPlanCard
                 key={plan.id}
                 plan={plan}
                 index={i}
@@ -275,10 +297,10 @@ const MonthlyPlanPage = () => {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onCreate={handleCreate}
-        usedMonths={plans.map((p) => p.month)}
+        usedDates={plans.map((p) => p.date)}
       />
     </div>
   );
 };
 
-export default MonthlyPlanPage;
+export default DailyPlanPage;

@@ -1,16 +1,38 @@
-const router = require('express').Router();
-const ctrl = require('../controllers/monthlyPlan.controller');
-const { authMiddleware, requireRole } = require('../middleware/auth');
+const express = require('express');
+const {
+    createHeader,
+    listHeaders,
+    getHeader,
+    listDetails,
+    addDetail,
+    updateDetail,
+    deleteDetail,
+    createFullPlan,
+    generatePlanNumber
+} = require('../controllers/monthlyPlan.controller');
 
-router.use(authMiddleware);
+const router = express.Router();
 
-router.post('/', requireRole('planner', 'admin'), ctrl.createHeader);
-router.get('/', ctrl.listHeaders);
-router.get('/:id', ctrl.getHeader);
+console.log({
+    createHeader,
+    listHeaders,
+    getHeader,
+    listDetails,
+    addDetail,
+    updateDetail,
+    deleteDetail,
+    createFullPlan,
+    generatePlanNumber,
+});
 
-router.get('/:id/details', ctrl.listDetails);
-router.post('/:id/details', requireRole('planner', 'admin'), ctrl.addDetail);
-router.put('/:id/details/:detailId', requireRole('planner', 'admin'), ctrl.updateDetail);
-router.delete('/:id/details/:detailId', requireRole('planner', 'admin'), ctrl.deleteDetail);
+// router.post('/', createHeader);
+router.post('/full', createFullPlan);
+router.get('/next-number', generatePlanNumber);
+// router.get('/', listHeaders);
+// router.get('/:id', getHeader);
+// router.get('/:id/details', listDetails);
+// router.post('/:id/details', addDetail);
+// router.put('/:id/details/:detailId', updateDetail);
+// router.delete('/:id/details/:detailId', deleteDetail);
 
 module.exports = router;
