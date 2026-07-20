@@ -1,16 +1,27 @@
-import api from "./axios";
+import api from "./partApi";
+
+export const listMouldChanges = (filters = {}) =>
+  api.get("/mould-changes", { params: filters }).then((res) => res.data);
+
+export const getMouldChange = (id) =>
+  api.get(`/mould-changes/${id}`).then((res) => res.data);
 
 export const createMouldChange = (payload) =>
-  api.post("/mould-change", payload).then((r) => r.data);
+  api.post("/mould-changes", payload).then((res) => res.data);
 
 export const updateMouldChange = (id, payload) =>
-  api.put(`/mould-change/${id}`, payload).then((r) => r.data);
+  api.put(`/mould-changes/${id}`, payload).then((res) => res.data);
 
 export const deleteMouldChange = (id) =>
-  api.delete(`/mould-change/${id}`).then((r) => r.data);
+  api.delete(`/mould-changes/${id}`).then((res) => res.data);
 
-export const getMouldChangesByPlan = (planId) =>
-  api.get(`/mould-change/plan/${planId}`).then((r) => r.data);
+export const startMouldChange = (id) =>
+  api.patch(`/mould-changes/${id}/start`).then((res) => res.data);
 
-export const getMouldChangeDetail = (id) =>
-  api.get(`/mould-change/${id}/detail`).then((r) => r.data);
+export const completeMouldChange = (id, remarks) =>
+  api
+    .patch(`/mould-changes/${id}/complete`, { remarks })
+    .then((res) => res.data);
+
+export const cancelMouldChange = (id, remarks) =>
+  api.patch(`/mould-changes/${id}/cancel`, { remarks }).then((res) => res.data);

@@ -47,7 +47,7 @@ app.use("/api/activity-logs", activityLogRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/production/history", productionHistoryRoutes);
 app.use("/api/production-plan", productionPlanRoutes);
-app.use("/api/mould-change", require("./routes/mouldChangeRoutes"));
+app.use('/api/mould-changes', require('./routes/mouldChange.routes'));
 app.use("/api/production-dashboard", productionDashboardRoutes);
 app.use("/api/loss-time", lossTimeDashboardRoutes);
 app.use("/api/production-reject-details", productionRejectDetailRoutes);
