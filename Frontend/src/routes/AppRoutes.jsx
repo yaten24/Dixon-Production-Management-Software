@@ -110,15 +110,31 @@ const AppRoutes = () => {
 
       <Route
         path="/employee/production/plans/daily"
-        element={<CreateMonthlyPlan />}
+        element={<DailyPlanPage />}
       />
+
       <Route
-        path="/employee/production/plans/daily"
+        path="/employee/production/plans/daily/create"
+        element={<DailyProductionPlan />}
+      />
+
+      <Route
+        path="/employee/production/plans/daily/detail"
         element={<CreateMonthlyPlan />}
       />
 
       <Route
         path="/employee/production/plans/monthly"
+        element={<MonthlyPlanPage />}
+      />
+
+      <Route
+        path="/employee/production/plans/monthly/create"
+        element={<CreateMonthlyPlan />}
+      />
+
+      <Route
+        path="/employee/production/plans/monthly/detail"
         element={<DailyPlanPage />}
       />
 

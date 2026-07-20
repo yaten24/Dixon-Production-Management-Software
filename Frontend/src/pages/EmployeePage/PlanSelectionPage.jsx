@@ -7,20 +7,22 @@ const PLAN_OPTIONS = [
     title: 'Monthly Plan',
     description: 'Set up machine, operator, and target allocation for a full production month.',
     icon: HiOutlineCalendarDays,
+    path: '/employee/production/plans/monthly',
   },
   {
     key: 'daily',
     title: 'Daily Plan',
     description: "Quickly plan a single day's shift-wise machine and target allocation.",
     icon: HiOutlineClock,
+    path: '/employee/production/plans/daily',
   },
 ];
 
 export default function PlanSelectionPage() {
   const navigate = useNavigate();
 
-  const handleSelect = (planType) => {
-    navigate('/employee/production/plans/monthly', { state: { planType } });
+  const handleSelect = (plan) => {
+    navigate(plan.path, { state: { planType: plan.key } });
   };
 
   return (
@@ -39,26 +41,29 @@ export default function PlanSelectionPage() {
         </div>
 
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row md:gap-4">
-          {PLAN_OPTIONS.map(({ key, title, description, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => handleSelect(key)}
-              className="flex w-full items-center gap-4 rounded-md border border-[#C6C6C6] bg-white px-4 py-4 text-left shadow-[0_1px_0_rgba(15,23,42,0.05)] transition-colors duration-150 hover:border-[#0F1D24] hover:bg-[#0F1D24]/[0.02] active:bg-[#0F1D24]/[0.05] sm:w-64 sm:px-5 md:w-72"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#C6C6C6] bg-[#F5F5F5] text-[#0F1D24]">
-                <Icon className="h-5 w-5" />
-              </div>
+          {PLAN_OPTIONS.map((plan) => {
+            const Icon = plan.icon;
+            return (
+              <button
+                key={plan.key}
+                onClick={() => handleSelect(plan)}
+                className="flex w-full items-center gap-4 rounded-md border border-[#C6C6C6] bg-white px-4 py-4 text-left shadow-[0_1px_0_rgba(15,23,42,0.05)] transition-colors duration-150 hover:border-[#0F1D24] hover:bg-[#0F1D24]/[0.02] active:bg-[#0F1D24]/[0.05] sm:w-64 sm:px-5 md:w-72"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#C6C6C6] bg-[#F5F5F5] text-[#0F1D24]">
+                  <Icon className="h-5 w-5" />
+                </div>
 
-              <div className="min-w-0">
-                <h2 className="text-sm font-bold tracking-tight text-[#0F1D24]">
-                  {title}
-                </h2>
-                <p className="mt-0.5 text-xs font-medium text-[#9B9B9B] sm:truncate">
-                  {description}
-                </p>
-              </div>
-            </button>
-          ))}
+                <div className="min-w-0">
+                  <h2 className="text-sm font-bold tracking-tight text-[#0F1D24]">
+                    {plan.title}
+                  </h2>
+                  <p className="mt-0.5 text-xs font-medium text-[#9B9B9B] sm:truncate">
+                    {plan.description}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
