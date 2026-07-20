@@ -50,44 +50,32 @@ const AppRoutes = () => {
 
       {/* ---------------- ADMIN ---------------- */}
 
-      <Route path="/admin/dashboard" element={<Dashboard />} />
+      <Route path="/dashboard" element={<Dashboard />} />
 
-      <Route path="/admin/employees" element={<Employees />} />
+      <Route path="/employees" element={<Employees />} />
 
-      <Route path="/admin/users" element={<Users />} />
+      <Route path="/users" element={<Users />} />
 
-      <Route path="/admin/machines" element={<Machines />} />
+      <Route path="/machines" element={<Machines />} />
 
-      <Route path="/admin/parts" element={<PartsPage />} />
+      <Route path="/parts" element={<PartsPage />} />
 
-      <Route path="/admin/reports" element={<Reports />} />
+      <Route path="/reports" element={<Reports />} />
 
-      <Route path="/admin/activity-logs" element={<ActivityLogs />} />
+      <Route path="/activity-logs" element={<ActivityLogs />} />
 
       {/* ---------- ADMIN PRODUCTION ---------- */}
 
-      <Route
-        path="/admin/production/dashboard"
-        element={<ProductionDashboard />}
-      />
+      <Route path="/production/dashboard" element={<ProductionDashboard />} />
+
+      <Route path="/production/halls/:hallId" element={<HallDashboard />} />
+
+      <Route path="/production/rejection" element={<AllRejectionReasons />} />
+
+      <Route path="/production/loss-time" element={<LossAnalysisDashboard />} />
 
       <Route
-        path="/admin/production/halls/:hallId"
-        element={<HallDashboard />}
-      />
-
-      <Route
-        path="/admin/production/rejection"
-        element={<AllRejectionReasons />}
-      />
-
-      <Route
-        path="/admin/production/loss-time"
-        element={<LossAnalysisDashboard />}
-      />
-
-      <Route
-        path="/admin/production/mould-change"
+        path="/production/mould-change"
         element={<MouldChangeDashboard />}
       />
 
@@ -120,6 +108,10 @@ const AppRoutes = () => {
         element={<PlanSelectionPage />}
       />
 
+      <Route
+        path="/employee/production/plans/daily"
+        element={<CreateMonthlyPlan />}
+      />
       <Route
         path="/employee/production/plans/daily"
         element={<CreateMonthlyPlan />}

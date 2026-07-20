@@ -60,10 +60,10 @@ const menuSections = [
   {
     label: "Operations",
     items: [
-      { id: 2, title: "Production", path: "/production", icon: <MdOutlineProductionQuantityLimits size={15} /> },
-      { id: 3, title: "Rejection", path: "/rejection", icon: <MdOutlineReportProblem size={15} /> },
-      { id: 4, title: "Loss Time", path: "/loss-time", icon: <FaClock size={15} /> },
-      { id: 5, title: "Mould Change", path: "/mould-change", icon: <FaExchangeAlt size={15} /> },
+      { id: 2, title: "Production", path: "/production/dashboard", icon: <MdOutlineProductionQuantityLimits size={15} /> },
+      { id: 3, title: "Rejection", path: "/production/rejection", icon: <MdOutlineReportProblem size={15} /> },
+      { id: 4, title: "Loss Time", path: "/production/loss-time", icon: <FaClock size={15} /> },
+      { id: 5, title: "Mould Change", path: "/production/mould-change", icon: <FaExchangeAlt size={15} /> },
     ],
   },
   {
