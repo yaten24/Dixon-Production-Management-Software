@@ -20,7 +20,7 @@ export default function PlanSelectionPage() {
   const navigate = useNavigate();
 
   const handleSelect = (planType) => {
-    navigate('/create-plan/details', { state: { planType } });
+    navigate('/employee/ppc/daily', { state: { planType } });
   };
 
   return (

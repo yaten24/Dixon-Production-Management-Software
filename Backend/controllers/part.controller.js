@@ -359,3 +359,14 @@ exports.searchParts = async (req, res) => {
     });
   }
 };
+
+exports.searchParts = async (req, res) => {
+  const { q } = req.query;
+  const [rows] = await pool.query(
+    `SELECT id, part_name, part_number, actual_cycle_time FROM parts
+     WHERE part_name LIKE ? OR part_number LIKE ? LIMIT 20`,
+    [`%${q}%`, `%${q}%`]
+  );
+  res.json({ success: true, data: rows });
+};
+// route: router.get('/search', ctrl.searchParts);

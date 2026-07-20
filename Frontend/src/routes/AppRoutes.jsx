@@ -30,6 +30,7 @@ import NotFound from "../pages/NotFound"
 import Home from "../pages/Home"
 import Dashboard from "../pages/AdminPages/Dashboard";
 import PlanSelectionPage from "../pages/EmployeePage/PlanSelectionPage";
+import MonthlyPlanPage from "../pages/EmployeePage/MonthlyPlanPage";
 
 
 const AppRoutes = () => {
@@ -56,6 +57,14 @@ const AppRoutes = () => {
       <Route path="/user/dashboard" element={<UserDashboard />} />
       <Route path="/user/history" element={<ProductionHistoryPage />} />
       <Route path="/user/reports" element={<ReportsPage />} />
+      <Route
+        path="/user/production/daily-plan"
+        element={<PlanSelectionPage />}
+      />
+      <Route
+        path="/employee/ppc/daily"
+        element={<MonthlyPlanPage />}
+      />
       <Route
         path="/user/production/daily-plan"
         element={<PlanSelectionPage />}
