@@ -144,7 +144,7 @@ const OverviewCard = ({ item, index = 0 }) => {
             </p>
 
             <h2
-              style={{ animation: `ovValuePop 0.35s ease-out ${index * 0.04 + 0.05}s both` }}
+              style={{ animation: `ovValuePop 0.2s ease-out ${index * 0.04 + 0.05}s both` }}
               className={`mt-1 font-mono font-extrabold leading-none tracking-tight ${s.value} ${tone.value}`}
             >
               {displayValue}
