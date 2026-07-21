@@ -187,10 +187,6 @@ const CustomDatePicker = ({ value, onChange }) => {
   );
 };
 
-// Fully custom, theme-matched dropdown — replaces the native browser
-// <select> (which can't be restyled consistently across browsers/OS),
-// matching the same visual language as CustomDatePicker. Works off a plain
-// string list (e.g. HALL_LIST / REASON_LIST) where "All" is the reset value.
 const CustomSelect = ({ value, onChange, list = [], allLabel = "All", icon: Icon, maxWidth = 170 }) => {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
