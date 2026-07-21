@@ -55,15 +55,15 @@ export const menuCards = [
   },
 
   // ================= Mould =================
-  {
-    id: 5,
-    title: "Mould Change",
-    description: "Manage Mould Change Activities",
-    icon: HiOutlineArrowPath,
-    color: "bg-indigo-600",
-    hover: "hover:border-indigo-500",
-    path: "/employee/mould-change",
-  },
+  // {
+  //   id: 5,
+  //   title: "Mould Change",
+  //   description: "Manage Mould Change Activities",
+  //   icon: HiOutlineArrowPath,
+  //   color: "bg-indigo-600",
+  //   hover: "hover:border-indigo-500",
+  //   path: "/employee/mould-change",
+  // },
 
   // ================= History =================
   {
