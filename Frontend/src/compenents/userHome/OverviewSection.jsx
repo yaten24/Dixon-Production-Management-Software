@@ -1,3 +1,4 @@
+// OverviewSection.jsx
 import React from "react";
 import { motion } from "framer-motion";
 import { HiOutlineArrowPath } from "react-icons/hi2";
@@ -15,19 +16,15 @@ import useDashboardOverview from "../../hooks/useDashboardOverview";
 // ==========================================================
 // tone: "blue"/"amber" = neutral brand tones (navy/gold).
 // tone: "red"/"green" = semantic (bad/good) — kept universal.
+// size: "lg" = hero card (2x2), "md" = compact card (2x1).
+// Production leads the array so the grid packs cleanly:
+// [ lg ][md][md]
+// [ lg ][md][md]
 // ==========================================================
 const buildOverviewData = (data) => {
   if (!data) return [];
 
   return [
-    {
-      id: "target",
-      title: "Total Target",
-      value: data.totalTarget.toLocaleString(),
-      subtitle: `Shift A: ${data.shiftBreakdown.A.target.toLocaleString()} · Shift B: ${data.shiftBreakdown.B.target.toLocaleString()}`,
-      icon: HiOutlineFlag,
-      tone: "blue",
-    },
     {
       id: "production",
       title: "Total Production",
@@ -35,32 +32,52 @@ const buildOverviewData = (data) => {
       subtitle: `Efficiency: ${data.efficiency}%`,
       icon: HiOutlineTrendingUp,
       tone: "green",
+      size: "lg",
+    },
+    {
+      id: "target",
+      title: "Total Target",
+      value: data.totalTarget.toLocaleString(),
+      subtitle: `A: ${data.shiftBreakdown.A.target.toLocaleString()} · B: ${data.shiftBreakdown.B.target.toLocaleString()}`,
+      icon: HiOutlineFlag,
+      tone: "blue",
+      size: "md",
     },
     {
       id: "rejection",
       title: "Total Rejection",
       value: data.totalReject.toLocaleString(),
-      subtitle: `Rejection Rate: ${data.rejectionRate}%`,
+      subtitle: `Rate: ${data.rejectionRate}%`,
       icon: HiOutlineExclamationCircle,
       tone: "red",
+      size: "md",
     },
     {
       id: "machines",
       title: "Running Machines",
       value: `${data.machinesRunning}/${data.machinesTotal}`,
-      subtitle: `${data.machinesIdle} idle · Current Shift: ${data.currentShift}`,
+      subtitle: `${data.machinesIdle} idle · Shift ${data.currentShift}`,
       icon: HiOutlineCog,
       tone: "amber",
+      size: "md",
     },
     {
       id: "loss",
       title: "Loss Time",
       value: `${data.totalLossMinutes} min`,
-      subtitle: `Across ${data.totalEntries} entries today`,
+      subtitle: `${data.totalEntries} entries today`,
       icon: HiOutlineClock,
       tone: "red",
+      size: "md",
     },
   ];
+};
+
+// col/row span applied only from lg breakpoint up — below that,
+// cards just stack in a plain 2-col grid.
+const SIZE_SPAN = {
+  lg: "lg:col-span-2 lg:row-span-2",
+  md: "lg:col-span-2 lg:row-span-1",
 };
 
 const OverviewSection = ({ hall }) => {
@@ -119,19 +136,19 @@ const OverviewSection = ({ hall }) => {
         </div>
       )}
 
-      {/* LOADING STATE (first load, no data yet) */}
+      {/* LOADING STATE (first load, no data yet) — skeleton mirrors the final bento shape */}
       {loading && !data ? (
-        <div className="relative grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-5">
-          {[...Array(5)].map((_, i) => (
+        <div className="relative grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 lg:auto-rows-[76px]">
+          {[SIZE_SPAN.lg, SIZE_SPAN.md, SIZE_SPAN.md, SIZE_SPAN.md, SIZE_SPAN.md].map((span, i) => (
             <div
               key={i}
-              className="h-28 animate-pulse rounded border border-[#C6C6C6]/50 bg-[#C6C6C6]/20"
+              className={`h-24 animate-pulse rounded border border-[#C6C6C6]/50 bg-[#C6C6C6]/20 ${span}`}
             />
           ))}
         </div>
       ) : (
-        /* KPI Cards */
-        <div className="relative grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-5">
+        /* KPI Cards — bento grid, sized by priority */
+        <div className="relative grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6 lg:auto-rows-[76px]">
           {overviewData.map((item, index) => (
             <motion.div
               key={item.id}
@@ -142,6 +159,7 @@ const OverviewSection = ({ hall }) => {
                 duration: 0.25,
                 ease: "easeOut",
               }}
+              className={SIZE_SPAN[item.size] || SIZE_SPAN.md}
             >
               <OverviewCard item={item} />
             </motion.div>
