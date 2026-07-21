@@ -11,19 +11,32 @@ import {
 } from "react-icons/hi2";
 import { listDailyPlans, deleteDailyPlan } from "../../api/dailyPlanApi";
 
-const formatDate = (isoDate) => {
-  const d = new Date(isoDate + "T00:00:00");
+// Backend sends a full ISO datetime (e.g. "2026-07-19T18:30:00.000Z"), so we
+// parse it directly instead of re-appending a time part (which produced an
+// Invalid Date and left the card blank).
+const formatDate = (isoDateTime) => {
+  const d = new Date(isoDateTime);
   const weekday = d.toLocaleDateString("en-US", { weekday: "short" });
   const day = d.getDate();
   const month = d.toLocaleDateString("en-US", { month: "short" });
   return { weekday, day, month };
 };
 
-const todayISO = () => new Date().toISOString().split("T")[0];
+// "YYYY-MM-DD" key in the browser's local timezone, so an ISO datetime that
+// represents local midnight compares correctly against today's date.
+const toDateKey = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+const todayISO = () => toDateKey(new Date());
 
 const DayPlanCard = ({ plan, index, onOpen, onDelete }) => {
+  const parsedDate = new Date(plan.planning_date);
   const { weekday, day, month } = formatDate(plan.planning_date);
-  const isToday = plan.planning_date === todayISO();
+  const isToday = toDateKey(parsedDate) === todayISO();
 
   const handleDeleteClick = (e) => {
     e.stopPropagation();
@@ -129,10 +142,10 @@ const DailyPlanPage = () => {
     }
   };
 
-  const handleOpen = (plan) => navigate(`/daily-plans/${plan.daily_plan_id}`);
+  const handleOpen = (plan) => navigate(`/employee/production/plans/daily/detail/${plan.daily_plan_id}`);
   const handleCreate = () => navigate("/employee/production/plans/daily/create");
 
-  const hasTodayPlan = plans.some((p) => p.planning_date === todayISO());
+  const hasTodayPlan = plans.some((p) => toDateKey(new Date(p.planning_date)) === todayISO());
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] p-2">
