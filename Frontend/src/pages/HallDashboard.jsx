@@ -255,8 +255,14 @@ const FilterBar = ({ draft, setDraft, onApply, onRefresh, onReset, onExport, onH
       <div className="mx-0.5 hidden h-5 w-px flex-shrink-0 bg-[#C6C6C6] lg:block" />
 
       <div className="flex flex-shrink-0 items-center gap-1.5 lg:ml-auto">
-        <button onClick={onHeatmap} title="View machine heatmap"
-          className="flex h-7 items-center gap-1.5 rounded-sm border border-[#C6C6C6] bg-white px-2 text-[11px] font-semibold text-[#0F1D24] transition-colors hover:bg-[#F5F5F5]">
+        {/* Heatmap button disabled: /admin/production/halls/:id/heatmap isn't
+            registered in AppRoutes.jsx yet, so this would 404. Wire up
+            onHeatmap again once that route + page exist. */}
+        <button
+          title="Heatmap view is not available yet"
+          disabled
+          className="flex h-7 cursor-not-allowed items-center gap-1.5 rounded-sm border border-[#C6C6C6] bg-white px-2 text-[11px] font-semibold text-[#9B9B9B] opacity-60"
+        >
           <LayoutGrid size={13} /><span className="hidden sm:inline">Heatmap</span>
         </button>
         <button onClick={onExport} title="Export data to Excel"
@@ -312,14 +318,42 @@ const useCountUp = (value, duration = 700) => {
 };
 
 // ==========================================================
-// KPI card — redesigned: everything on a single row, no
-// bottom progress bar, tighter padding, uniform card size.
+// KPI card — instrument-panel style: gradient icon badge,
+// faded watermark icon, tabular value, animated reveal rail.
 // ==========================================================
 const KPI_TONE = {
-  green: { value: "text-emerald-600", iconBg: "bg-emerald-50", iconText: "text-emerald-600" },
-  blue: { value: "text-[#0F1D24]", iconBg: "bg-[#0F1D24]", iconText: "text-[#FDC94D]" },
-  red: { value: "text-red-600", iconBg: "bg-red-50", iconText: "text-red-600" },
-  amber: { value: "text-[#0F1D24]", iconBg: "bg-[#FDC94D]/20", iconText: "text-[#0F1D24]" },
+  green: {
+    value: "text-emerald-600",
+    badge: "linear-gradient(135deg, #10b981, #059669)",
+    iconText: "text-white",
+    glow: "rgba(16,185,129,0.14)",
+    rail: "#10b981",
+    watermark: "text-emerald-600",
+  },
+  blue: {
+    value: "text-[#0F1D24]",
+    badge: "linear-gradient(135deg, #1c3644, #0F1D24)",
+    iconText: "text-[#FDC94D]",
+    glow: "rgba(15,29,36,0.10)",
+    rail: "#0F1D24",
+    watermark: "text-[#0F1D24]",
+  },
+  red: {
+    value: "text-red-600",
+    badge: "linear-gradient(135deg, #ef4444, #dc2626)",
+    iconText: "text-white",
+    glow: "rgba(239,68,68,0.14)",
+    rail: "#ef4444",
+    watermark: "text-red-600",
+  },
+  amber: {
+    value: "text-[#0F1D24]",
+    badge: "linear-gradient(135deg, #FDC94D, #f0b62e)",
+    iconText: "text-[#0F1D24]",
+    glow: "rgba(253,201,77,0.22)",
+    rail: "#FDC94D",
+    watermark: "text-[#FDC94D]",
+  },
 };
 
 const KpiCard = ({ item, index }) => {
@@ -331,30 +365,55 @@ const KpiCard = ({ item, index }) => {
   return (
     <div
       style={{ animation: `hdCardIn 0.3s ease-out ${index * 0.04}s both` }}
-      className="group flex h-full items-center gap-2.5 overflow-hidden rounded-sm border border-[#C6C6C6]/50 bg-white px-2.5 py-2 shadow-[0_1px_2px_rgba(15,29,36,0.05)] transition-all duration-300 hover:-translate-y-[2px] hover:border-transparent hover:shadow-[0_10px_22px_-8px_rgba(15,29,36,0.18)]"
+      className="group relative flex h-full flex-col justify-between overflow-hidden rounded border border-[#C6C6C6]/50 bg-white p-2.5 shadow-[0_1px_2px_rgba(15,29,36,0.05)] transition-all duration-300 hover:-translate-y-[3px] hover:border-transparent hover:shadow-[0_16px_30px_-12px_rgba(15,29,36,0.25)]"
     >
       <div
-        style={isAlert ? { animation: "hdAlertPulse 1.8s ease-in-out infinite" } : undefined}
-        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-sm ${tone.iconBg} ${tone.iconText} shadow-sm`}
-      >
-        <Icon className="h-4 w-4" />
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-6 -top-8 h-28 w-28 rounded-full opacity-60 blur-2xl transition-opacity duration-300 group-hover:opacity-100"
+        style={{ background: tone.glow }}
+      />
+
+      <Icon
+        aria-hidden="true"
+        className={`pointer-events-none absolute -bottom-3 -right-3 h-16 w-16 opacity-[0.06] transition-transform duration-500 group-hover:scale-110 group-hover:opacity-[0.09] ${tone.watermark}`}
+      />
+
+      <div className="relative flex items-center justify-between">
+        <div
+          style={{
+            background: tone.badge,
+            ...(isAlert ? { animation: "hdAlertPulse 0.8s ease-in-out infinite" } : {}),
+          }}
+          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded shadow-[0_4px_10px_-2px_rgba(15,29,36,0.35)] transition-transform duration-300 group-hover:scale-105 ${tone.iconText}`}
+        >
+          <Icon className="h-4 w-4" />
+        </div>
+        {isAlert && (
+          <span className="flex h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500" style={{ animation: "hdAlertPulse 1.8s ease-in-out infinite" }} />
+        )}
       </div>
 
-      <div className="flex min-w-0 flex-1 items-baseline justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-[9px] font-bold uppercase leading-none tracking-wide text-[#9B9B9B]">
-            {item.title}
-          </p>
-          <p className="mt-0.5 truncate text-[9.5px] font-semibold leading-none text-[#9B9B9B]">
-            {item.subtitle}
-          </p>
-        </div>
+      <div className="relative mt-2">
+        <p className="flex items-center gap-1 truncate text-[9px] font-bold uppercase leading-none tracking-wider text-[#9B9B9B]">
+          <span className="h-1 w-1 flex-shrink-0 rounded-full" style={{ background: tone.rail }} />
+          {item.title}
+        </p>
         <h2
           style={{ animation: `hdValuePop 0.35s ease-out ${index * 0.04 + 0.05}s both` }}
-          className={`flex-shrink-0 font-mono text-[22px] font-extrabold leading-none tracking-tight ${tone.value}`}
+          className={`mt-1 font-mono text-[26px] font-extrabold leading-none tracking-tight tabular-nums ${tone.value}`}
         >
           {display}
         </h2>
+        <p className="mt-1 truncate text-[9.5px] font-semibold leading-none text-[#9B9B9B]">
+          {item.subtitle}
+        </p>
+      </div>
+
+      <div
+        className="relative mt-2.5 h-[3px] w-full origin-left scale-x-0 overflow-hidden rounded-full bg-[#F5F5F5]"
+        style={{ animation: `hdRailReveal 0.6s cubic-bezier(0.16,1,0.3,1) ${index * 0.05 + 0.15}s both` }}
+      >
+        <div className="h-full w-full rounded-full" style={{ background: tone.rail }} />
       </div>
     </div>
   );
@@ -676,7 +735,6 @@ const HallDashboard = () => {
   const handleReset = () => { const fresh = defaultFilters(); setDraftFilters(fresh); setFilters(fresh); };
   const handleExport = () => exportHallDashboardToExcel({ hallCode, filters, stats, machineWise });
   const handleBack = () => navigate(-1);
-  const handleHeatmap = () => navigate(`/admin/production/halls/${hallId}/heatmap`, { state: { filters } });
 
   const chartData = useMemo(() => buildHourlyChartData(hourlyTrend), [hourlyTrend]);
 
@@ -694,7 +752,10 @@ const HallDashboard = () => {
   const hasStatsData = !!stats && ((Number(stats.actual) || 0) + (Number(stats.target) || 0) + (Number(stats.reject) || 0) > 0);
   const showNoDataWarning = !loading && stats && !hasStatsData;
 
-  if (!hallCode) return <Navigate to="/" replace />;
+  // Was `<Navigate to="/" replace />` — landed on the public Home page for
+  // an invalid/unknown hallId. Sending to the production dashboard instead
+  // keeps the person inside the app they were already using.
+  if (!hallCode) return <Navigate to="/production/dashboard" replace />;
 
   return (
     <div className="relative h-screen overflow-hidden bg-[#F5F5F5]">
@@ -703,6 +764,7 @@ const HallDashboard = () => {
         @keyframes hdValuePop { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
         @keyframes hdAlertPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         @keyframes hdSectionIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes hdRailReveal { from { transform: scaleX(0); } to { transform: scaleX(1); } }
       `}</style>
 
       <StarsBackground />
@@ -718,7 +780,6 @@ const HallDashboard = () => {
             onRefresh={fetchAll}
             onReset={handleReset}
             onExport={handleExport}
-            onHeatmap={handleHeatmap}
             onBack={handleBack}
             loading={loading}
             machineList={machines}
@@ -732,7 +793,7 @@ const HallDashboard = () => {
         {loading && !stats ? (
           <div className="flex-shrink-0 grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-sm border border-[#C6C6C6]/50 bg-[#C6C6C6]/20" />
+              <div key={i} className="h-[104px] animate-pulse rounded-lg border border-[#C6C6C6]/50 bg-[#C6C6C6]/20" />
             ))}
           </div>
         ) : (

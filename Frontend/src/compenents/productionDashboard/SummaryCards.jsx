@@ -1,7 +1,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { FaExclamationTriangle } from "react-icons/fa";
-import SummaryCard from "./SummaryCard";
+
+import SummaryCard from "./SummaryCard"; // uses the polished standalone version — no more duplicate inline card
 
 const SummaryCards = ({ overall, hallSummary = [], halls = [], hallAccent, onSelectHall }) => {
   const summaryMap = new Map(hallSummary.map((h) => [h.hall, h]));
@@ -26,10 +27,7 @@ const SummaryCards = ({ overall, hallSummary = [], halls = [], hallAccent, onSel
       color: "#0F1D24",
       isOverall: true,
     },
-    ...normalizedHallCards.map((h) => ({
-      ...h,
-      color: hallAccent[h.hall] || "#0F1D24",
-    })),
+    ...normalizedHallCards.map((h) => ({ ...h, color: hallAccent[h.hall] || "#0F1D24" })),
   ];
 
   const noDataAtAll = normalizedHallCards.every((h) => !h.hasData);
@@ -51,11 +49,9 @@ const SummaryCards = ({ overall, hallSummary = [], halls = [], hallAccent, onSel
 
       <div
         className="grid gap-2"
-        style={{
-          gridTemplateColumns: `repeat(${allCards.length}, minmax(140px, 1fr))`,
-        }}
+        style={{ gridTemplateColumns: `repeat(${allCards.length}, minmax(140px, 1fr))` }}
       >
-        {allCards.map((card, index) => (
+        {allCards.map((card) => (
           <SummaryCard
             key={card.hall}
             hall={card.hall}

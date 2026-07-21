@@ -7,6 +7,7 @@ import OverallProductionChart from "../../compenents/productionDashboard/Overall
 import SummaryCards from "../../compenents/productionDashboard/SummaryCards";
 
 import { halls, HALL_ACCENT } from "../../data/productionData";
+import { HALL_CODE_TO_ID } from "../../data/dashboardData";
 import useProductionDashboard from "../../hooks/useProductionDashboard";
 
 const getToday = () => new Date().toISOString().split("T")[0];
@@ -18,7 +19,16 @@ const ProductionDashboard = () => {
   const { summary, hourlyData, loading, error } = useProductionDashboard(date);
 
   const handleViewHallData = (hall) => {
-    navigate(`/hall-data/${hall}`);
+    if (hall === "All") {
+      navigate("/admin/production/dashboard"); // "Overall" card -> stay on the overall dashboard
+      return;
+    }
+    const hallId = HALL_CODE_TO_ID[hall];
+    if (!hallId) {
+      console.warn(`No route id found for hall "${hall}" — check HALL_CODE_TO_ID / halls list match`);
+      return;
+    }
+    navigate(`/admin/production/halls/${hallId}`);
   };
 
   const handleExportExcel = () => {
