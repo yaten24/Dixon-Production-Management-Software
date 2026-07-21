@@ -20,6 +20,8 @@ const UserDashboard = () => {
   // a { [hallName]: [{hour, target, actual}, ...] } shape for this to render.
   const { summary, hourlyData, hallHourlyData = {}, loading, error } = useProductionDashboard(date);
 
+  const hasHallCharts = Object.keys(hallHourlyData).length > 0;
+
   const handleViewHallData = (hall) => {
     if (hall === "All") {
       navigate("/production/dashboard"); // "Overall" card -> overall dashboard, not a per-hall page
@@ -40,7 +42,7 @@ const UserDashboard = () => {
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-[#F5F5F5]">
       <div className="flex flex-1 flex-col overflow-hidden">
-        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-1">
+        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden p-1">
           <DashboardFilters date={date} setDate={setDate} onExport={handleExportExcel} />
 
           {error && (
@@ -57,17 +59,23 @@ const UserDashboard = () => {
             onSelectHall={handleViewHallData}
           />
 
-          <div className="min-h-[320px] flex-shrink-0">
-            <OverallProductionChart data={hourlyData} onViewHall={handleViewHallData} loading={loading} />
-          </div>
+          {/* Remaining vertical space is split between the two chart sections
+              so everything fits on one screen — no page-level scrollbar. */}
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+            <div className={`min-h-0 ${hasHallCharts ? "flex-[3]" : "flex-1"}`}>
+              <OverallProductionChart data={hourlyData} onViewHall={handleViewHallData} loading={loading} />
+            </div>
 
-          {Object.keys(hallHourlyData).length > 0 && (
-            <HallChartsGrid
-              hallHourlyData={hallHourlyData}
-              hallAccent={HALL_ACCENT}
-              onViewHall={handleViewHallData}
-            />
-          )}
+            {hasHallCharts && (
+              <div className="min-h-0 flex-[2] overflow-hidden">
+                <HallChartsGrid
+                  hallHourlyData={hallHourlyData}
+                  hallAccent={HALL_ACCENT}
+                  onViewHall={handleViewHallData}
+                />
+              </div>
+            )}
+          </div>
         </main>
       </div>
     </div>
