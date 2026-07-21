@@ -42,6 +42,7 @@ import DailyPlanPage from "../pages/PlanningPage/DailyPlanPage";
 import DailyProductionPlan from "../pages/PlanningPage/CreateDailyPlan";
 import MonthlyPlanView from "../pages/PlanningPage/MonthlyPlanView";
 import ViewDailyPlanPage from "../pages/PlanningPage/DailyPlanDetail";
+import DailyPlanOperatorAssignment from "../pages/PlanningPage/DailyPlanOperatorAssignment";
 
 const AppRoutes = () => {
   return (
@@ -72,6 +73,10 @@ const AppRoutes = () => {
       <Route path="/production/dashboard" element={<ProductionDashboard />} />
 
       <Route path="/production/halls/:hallId" element={<HallDashboard />} />
+      <Route
+        path="admin/production/halls/:hallId"
+        element={<HallDashboard />}
+      />
 
       <Route path="/production/rejection" element={<AllRejectionReasons />} />
 
@@ -117,6 +122,16 @@ const AppRoutes = () => {
       />
 
       <Route
+        path="/employee/production/plans/daily/operator/allocation"
+        element={<DailyPlanPage />}
+      />
+
+      <Route
+        path="/employee/production/plans/:id/operator/allocation"
+        element={<DailyPlanOperatorAssignment />}
+      />
+
+      <Route
         path="/employee/production/plans/daily/create"
         element={<DailyProductionPlan />}
       />
@@ -140,7 +155,6 @@ const AppRoutes = () => {
         path="/employee/production/plans/monthly/detail/:id"
         element={<MonthlyPlanView />}
       />
-
 
       {/* ---------- MACHINE MANAGEMENT ---------- */}
 

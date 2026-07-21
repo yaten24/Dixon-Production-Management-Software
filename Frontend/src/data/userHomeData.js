@@ -40,7 +40,7 @@ export const menuCards = [
     icon: HiOutlineUserGroup,
     color: "bg-pink-600",
     hover: "hover:border-pink-500",
-    path: "/employee/machines/allocation",
+    path: "/employee/production/plans/daily/operator/allocation",
   },
 
   // ================= Production =================
