@@ -43,6 +43,7 @@ import DailyProductionPlan from "../pages/PlanningPage/CreateDailyPlan";
 import MonthlyPlanView from "../pages/PlanningPage/MonthlyPlanView";
 import ViewDailyPlanPage from "../pages/PlanningPage/DailyPlanDetail";
 import DailyPlanOperatorAssignment from "../pages/PlanningPage/DailyPlanOperatorAssignment";
+import DailyPlanPageForOperatorAllocation from "../pages/PlanningPage/DailyPlanPageForOperatorAllocation";
 
 const AppRoutes = () => {
   return (
@@ -123,7 +124,7 @@ const AppRoutes = () => {
 
       <Route
         path="/employee/production/plans/daily/operator/allocation"
-        element={<DailyPlanPage />}
+        element={<DailyPlanPageForOperatorAllocation />}
       />
 
       <Route
