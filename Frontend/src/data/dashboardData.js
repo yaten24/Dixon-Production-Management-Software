@@ -28,9 +28,9 @@ export const getHallCodeFromId = (hallId) => HALL_ID_TO_CODE[hallId] || null;
 // numeric URL scheme (/production/hall/:hallId) used by HallDashboard.
 // ==========================================================
 export const hallRouteConfig = [
-  { hall: "Hall 1", route: `/production/hall/${HALL_CODE_TO_ID["Hall 1"]}` },
-  { hall: "Hall 2", route: `/production/hall/${HALL_CODE_TO_ID["Hall 2"]}` },
-  { hall: "Hall 3", route: `/production/hall/${HALL_CODE_TO_ID["Hall 3"]}` },
-  { hall: "Hall 4", route: `/production/hall/${HALL_CODE_TO_ID["Hall 4"]}` },
-  { hall: "C-8", route: `/production/hall/${HALL_CODE_TO_ID["C-8"]}` },
+  { hall: "Hall 1", route: `/production/halls/${HALL_CODE_TO_ID["Hall 1"]}` },
+  { hall: "Hall 2", route: `/production/halls/${HALL_CODE_TO_ID["Hall 2"]}` },
+  { hall: "Hall 3", route: `/production/halls/${HALL_CODE_TO_ID["Hall 3"]}` },
+  { hall: "Hall 4", route: `/production/halls/${HALL_CODE_TO_ID["Hall 4"]}` },
+  { hall: "C-8", route: `/production/halls/${HALL_CODE_TO_ID["C-8"]}` },
 ];
