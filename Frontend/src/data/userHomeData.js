@@ -87,14 +87,14 @@ export const menuCards = [
     path: "/employee/production/reports",
   },
 
-  // ================= Analytics =================
-  {
-    id: 8,
-    title: "Performance Analytics",
-    description: "Analyze Operator & Machine Performance",
-    icon: HiOutlineChartBarSquare,
-    color: "bg-lime-600",
-    hover: "hover:border-lime-500",
-    path: "/employee/analytics/performance",
-  },
+  // // ================= Analytics =================
+  // {
+  //   id: 8,
+  //   title: "Performance Analytics",
+  //   description: "Analyze Operator & Machine Performance",
+  //   icon: HiOutlineChartBarSquare,
+  //   color: "bg-lime-600",
+  //   hover: "hover:border-lime-500",
+  //   path: "/employee/analytics/performance",
+  // },
 ];
