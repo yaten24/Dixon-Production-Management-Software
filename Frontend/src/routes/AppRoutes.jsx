@@ -64,6 +64,7 @@ const AppRoutes = () => {
       <Route path="/production/dashboard" element={<ProductionDashboard />} />
       <Route path="/production/hourly" element={<HourlyMachineTracking />} />
       <Route path="/production/halls/:hallId" element={<HallDashboard />} />
+      <Route path="/production/halls/:hallId/heatmap" element={<HourlyMachineTracking />} />
       <Route
         path="admin/production/halls/:hallId"
         element={<HallDashboard />}
