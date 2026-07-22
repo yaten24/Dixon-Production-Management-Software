@@ -39,15 +39,15 @@ const SummaryCard = ({ hall, target, actual, rejection, color, hasData = true, o
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -3 }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 1 }}
       transition={{ type: "spring", stiffness: 260, damping: 22 }}
-      className={`group relative w-full cursor-pointer overflow-hidden rounded-lg border bg-white p-2.5 text-left shadow-[0_1px_2px_rgba(15,29,36,0.05)] transition-shadow duration-300 hover:shadow-[0_16px_30px_-12px_rgba(15,29,36,0.25)] ${
+      className={`group relative w-full cursor-pointer overflow-hidden rounded border bg-white p-2.5 text-left shadow-[0_1px_2px_rgba(15,29,36,0.05)] transition-shadow duration-300 hover:shadow-[0_16px_30px_-12px_rgba(15,29,36,0.25)] ${
         hasData ? "border-[#C6C6C6]/50 hover:border-transparent" : "border-amber-200 hover:border-amber-300"
       }`}
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-6 -top-8 h-28 w-28 rounded-full opacity-60 blur-2xl transition-opacity duration-300 group-hover:opacity-100"
+        className="pointer-events-none absolute -right-6 -top-8 h-28 w-28 rounded opacity-60 blur-2xl transition-opacity duration-300 group-hover:opacity-100"
         style={{ background: tone.glow }}
       />
 
@@ -58,14 +58,14 @@ const SummaryCard = ({ hall, target, actual, rejection, color, hasData = true, o
       />
 
       {!hasData && (
-        <span className="absolute right-2 top-2 z-10 rounded-full bg-amber-100 px-1.5 py-0.5 text-[8px] font-semibold text-amber-700">
+        <span className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-[8px] font-semibold text-amber-700">
           No Data
         </span>
       )}
 
       <div className="relative mb-1.5 flex items-center gap-2">
         <div
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-[12px] shadow-[0_4px_10px_-2px_rgba(15,29,36,0.35)] transition-transform duration-300 group-hover:scale-105"
+          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded text-[12px] shadow-[0_4px_10px_-2px_rgba(15,29,36,0.35)] transition-transform duration-300 group-hover:scale-105"
           style={{
             background: hasData ? `linear-gradient(135deg, ${color}, #0F1D24)` : "#C6C6C6",
             color: hasData ? "#FDC94D" : "#fff",
@@ -76,13 +76,13 @@ const SummaryCard = ({ hall, target, actual, rejection, color, hasData = true, o
         <div className="min-w-0">
           <h2 className="truncate text-[11.5px] font-bold text-[#0F1D24]">{hall}</h2>
           <p className="flex items-center gap-1 text-[8px] uppercase tracking-wide text-[#9B9B9B]">
-            <span className="h-1 w-1 flex-shrink-0 rounded-full" style={{ background: hasData ? color : "#C6C6C6" }} />
+            <span className="h-1 w-1 flex-shrink-0 rounded" style={{ background: hasData ? color : "#C6C6C6" }} />
             Production Summary
           </p>
         </div>
       </div>
 
-      <div className="relative mb-1.5 rounded-md bg-[#0F1D24]/[0.03] px-2 py-1.5">
+      <div className="relative mb-1.5 rounded bg-[#0F1D24]/[0.03] px-2 py-1.5">
         <p className="text-[8px] font-semibold uppercase tracking-wide text-[#9B9B9B]">
           Actual Production
         </p>
@@ -113,12 +113,12 @@ const SummaryCard = ({ hall, target, actual, rejection, color, hasData = true, o
           <span className="text-[10px] text-[#9B9B9B]">Efficiency</span>
           <span className={`text-xs font-bold tabular-nums ${tone.text}`}>{efficiency}%</span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#C6C6C6]/40">
+        <div className="h-1.5 w-full overflow-hidden rounded bg-[#C6C6C6]/40">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${Math.min(efficiency, 100)}%` }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="h-full rounded-full"
+            className="h-full rounded"
             style={{ background: tone.bar }}
           />
         </div>

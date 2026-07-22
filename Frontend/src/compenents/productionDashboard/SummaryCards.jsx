@@ -33,7 +33,7 @@ const SummaryCards = ({ overall, hallSummary = [], halls = [], hallAccent, onSel
   const noDataAtAll = normalizedHallCards.every((h) => !h.hasData);
 
   return (
-    <div className="w-full flex-shrink-0 space-y-1.5">
+    <div className="w-full flex-shrink-0 space-y-1">
       {noDataAtAll && (
         <motion.div
           initial={{ opacity: 0, y: -6 }}

@@ -95,13 +95,13 @@ export default function HourlyMachineTrackingDemo() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(-1)}
-            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-sm border border-[#C6C6C6]/70 bg-white text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
+            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border border-[#C6C6C6]/70 bg-white text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
           >
             <HiOutlineArrowLeft className="h-3 w-3" />
           </button>
           <div>
             <h1 className="text-[12px] font-bold leading-tight text-[#0F1D24]">
-              Hourly Target vs Achievement — All Machines (Demo)
+              Hourly Target vs Achievement — All Machines
             </h1>
             <p className="text-[9px] text-[#9B9B9B]">
               85 machines · 24 hours · Shift A (08:00–20:00) · Shift B (20:00–08:00)
@@ -110,17 +110,17 @@ export default function HourlyMachineTrackingDemo() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-full border border-[#FDC94D]/60 bg-[#FDC94D]/10 px-1.5 py-0.5">
+          <div className="flex items-center gap-1.5 rounded border border-[#FDC94D]/60 bg-[#FDC94D]/10 px-1.5 py-0.5">
             <span className="h-1.5 w-1.5 rounded-sm bg-[#FDC94D]" />
             <span className="text-[9px] font-semibold text-[#0F1D24]">Shift A</span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-full border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-1.5 py-0.5">
+          <div className="flex items-center gap-1.5 rounded border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-1.5 py-0.5">
             <span className="h-1.5 w-1.5 rounded-sm bg-[#0F1D24]" />
             <span className="text-[9px] font-semibold text-[#0F1D24]">Shift B</span>
           </div>
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-1 rounded-sm border border-[#C6C6C6]/70 bg-white px-2 py-1 text-[10px] font-semibold text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
+            className="flex items-center gap-1 rounded border border-[#C6C6C6]/70 bg-white px-2 py-1 text-[10px] font-semibold text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
           >
             <HiOutlineArrowPath className="h-3 w-3" />
             Refresh
