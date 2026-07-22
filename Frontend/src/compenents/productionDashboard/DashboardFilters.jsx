@@ -6,6 +6,7 @@ import {
   FaCalendarAlt,
   FaChevronLeft,
   FaChevronRight,
+  FaArrowLeft,
   FaFilter,
   FaSyncAlt,
   FaUndo,
@@ -186,11 +187,34 @@ const CustomDatePicker = ({ value, onChange }) => {
   );
 };
 
-const DashboardFilters = ({ date, setDate, onExport }) => {
+const DashboardFilters = ({
+  date,
+  setDate,
+  onExport,
+  onBack,
+  onApply,
+  onRefresh,
+  onReset,
+  loading = false,
+}) => {
   return (
     <div className="flex min-h-10 flex-shrink-0 flex-wrap items-center justify-between gap-2 rounded border border-[#C6C6C6]/50 bg-white px-2 py-1.5 shadow-sm">
-      {/* Icon + Label */}
+      {/* Back + Icon + Label */}
       <div className="flex flex-shrink-0 items-center gap-2">
+        {onBack && (
+          <>
+            <button
+              type="button"
+              onClick={onBack}
+              title="Back"
+              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors hover:border-[#0F1D24] hover:bg-[#F5F5F5]"
+            >
+              <FaArrowLeft size={12} />
+            </button>
+            <div className="h-5 w-px flex-shrink-0 bg-[#C6C6C6]" />
+          </>
+        )}
+
         <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded bg-[#0F1D24]">
           <FaChartLine className="text-xs text-[#FDC94D]" />
         </div>
@@ -203,6 +227,43 @@ const DashboardFilters = ({ date, setDate, onExport }) => {
 
       <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
         <CustomDatePicker value={date} onChange={setDate} />
+
+        {onApply && (
+          <button
+            type="button"
+            onClick={onApply}
+            title="Apply selected filters"
+            className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded bg-[#0F1D24] px-2 text-[11px] font-semibold text-[#FDC94D] transition-colors hover:bg-[#0F1D24]/90"
+          >
+            <FaFilter size={10} />
+            <span className="hidden md:inline">Apply</span>
+          </button>
+        )}
+
+        {onRefresh && (
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={loading}
+            title="Refresh data"
+            className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded border border-[#C6C6C6] bg-white px-2 text-[11px] font-semibold text-[#0F1D24] transition-colors hover:bg-[#F5F5F5] disabled:opacity-60"
+          >
+            <FaSyncAlt size={10} className={loading ? "animate-spin" : ""} />
+            <span className="hidden md:inline">Refresh</span>
+          </button>
+        )}
+
+        {onReset && (
+          <button
+            type="button"
+            onClick={onReset}
+            title="Reset filters"
+            className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded border border-red-200 bg-red-50 px-2 text-[11px] font-semibold text-red-600 transition-colors hover:bg-red-100"
+          >
+            <FaUndo size={10} />
+            <span className="hidden md:inline">Reset</span>
+          </button>
+        )}
 
         <button
           onClick={onExport}

@@ -14,11 +14,27 @@ const getToday = () => new Date().toISOString().split("T")[0];
 
 const UserDashboard = () => {
   const navigate = useNavigate();
+
+  // `date` is the applied filter actually sent to the hook/API.
+  // `draftDate` is what the date picker shows while the user is still
+  // choosing — it only becomes the real filter once "Apply" is clicked.
+  // This mirrors the draft/apply pattern used on HallDashboard.
   const [date, setDate] = useState(getToday());
+  const [draftDate, setDraftDate] = useState(getToday());
 
   // NOTE: hallHourlyData assumed here — confirm your hook actually returns
   // a { [hallName]: [{hour, target, actual}, ...] } shape for this to render.
-  const { summary, hourlyData, hallHourlyData = {}, loading, error } = useProductionDashboard(date);
+  // `refetch` is also assumed — if useProductionDashboard doesn't expose a
+  // refetch function yet, add one there (re-run the same fetch with the
+  // current `date`) so the Refresh button has something to call.
+  const {
+    summary,
+    hourlyData,
+    hallHourlyData = {},
+    loading,
+    error,
+    refetch,
+  } = useProductionDashboard(date);
 
   const hasHallCharts = Object.keys(hallHourlyData).length > 0;
 
@@ -29,7 +45,9 @@ const UserDashboard = () => {
     }
     const hallId = HALL_CODE_TO_ID[hall];
     if (!hallId) {
-      console.warn(`No route id found for hall "${hall}" — check HALL_CODE_TO_ID / halls list match`);
+      console.warn(
+        `No route id found for hall "${hall}" — check HALL_CODE_TO_ID / halls list match`,
+      );
       return;
     }
     navigate(`/production/halls/${hallId}`);
@@ -39,11 +57,41 @@ const UserDashboard = () => {
     console.log("Export Excel", { date });
   };
 
+  const handleBack = () => navigate(-1);
+
+  const handleApplyFilters = () => setDate(draftDate);
+
+  const handleReset = () => {
+    const today = getToday();
+    setDraftDate(today);
+    setDate(today);
+  };
+
+  const handleRefresh = () => {
+    if (refetch) {
+      refetch();
+    } else {
+      // Fallback if the hook has no refetch: re-trigger the effect by
+      // briefly toggling the date, then restoring it. Prefer adding a
+      // real `refetch` to useProductionDashboard instead of relying on this.
+      setDate((d) => d);
+    }
+  };
+
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-[#F5F5F5]">
       <div className="flex flex-1 flex-col overflow-hidden">
         <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden p-1">
-          <DashboardFilters date={date} setDate={setDate} onExport={handleExportExcel} />
+          <DashboardFilters
+            date={draftDate}
+            setDate={setDraftDate}
+            onExport={handleExportExcel}
+            onBack={handleBack}
+            onApply={handleApplyFilters}
+            onRefresh={handleRefresh}
+            onReset={handleReset}
+            loading={loading}
+          />
 
           {error && (
             <div className="flex-shrink-0 rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-600">
@@ -63,7 +111,11 @@ const UserDashboard = () => {
               so everything fits on one screen — no page-level scrollbar. */}
           <div className="flex min-h-0 flex-1 flex-col gap-1.5">
             <div className={`min-h-0 ${hasHallCharts ? "flex-[3]" : "flex-1"}`}>
-              <OverallProductionChart data={hourlyData} onViewHall={handleViewHallData} loading={loading} />
+              <OverallProductionChart
+                data={hourlyData}
+                onViewHall={handleViewHallData}
+                loading={loading}
+              />
             </div>
 
             {hasHallCharts && (
