@@ -55,5 +55,6 @@ app.use("/api/mould-change-dashboard", mouldChangeDashboardRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use('/api/monthly-plans', require('./routes/monthlyPlan.routes'));
 app.use('/api/daily-plans', require('./routes/dailyPlan.routes'));
+app.use('/api/hourly-tracking', require('./routes/hourlyTracking.routes'));
 
 module.exports = app;

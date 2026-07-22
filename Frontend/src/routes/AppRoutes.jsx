@@ -44,126 +44,92 @@ import MonthlyPlanView from "../pages/PlanningPage/MonthlyPlanView";
 import ViewDailyPlanPage from "../pages/PlanningPage/DailyPlanDetail";
 import DailyPlanOperatorAssignment from "../pages/PlanningPage/DailyPlanOperatorAssignment";
 import DailyPlanPageForOperatorAllocation from "../pages/PlanningPage/DailyPlanPageForOperatorAllocation";
+import HourlyMachineTracking from "../pages/HourlyMachineTracking";
 
 const AppRoutes = () => {
   return (
     <Routes>
       {/* ---------------- PUBLIC ---------------- */}
-
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
-
       {/* ---------------- ADMIN ---------------- */}
-
       <Route path="/dashboard" element={<Dashboard />} />
-
       <Route path="/employees" element={<Employees />} />
-
       <Route path="/users" element={<Users />} />
-
       <Route path="/machines" element={<Machines />} />
-
       <Route path="/parts" element={<PartsPage />} />
-
       <Route path="/reports" element={<Reports />} />
-
       <Route path="/activity-logs" element={<ActivityLogs />} />
-
       {/* ---------- ADMIN PRODUCTION ---------- */}
-
       <Route path="/production/dashboard" element={<ProductionDashboard />} />
-
+      <Route path="/production/hourly" element={<HourlyMachineTracking />} />
       <Route path="/production/halls/:hallId" element={<HallDashboard />} />
       <Route
         path="admin/production/halls/:hallId"
         element={<HallDashboard />}
       />
-
       <Route path="/production/rejection" element={<AllRejectionReasons />} />
-
       <Route path="/production/loss-time" element={<LossAnalysisDashboard />} />
-
       <Route
         path="/production/mould-change"
         element={<MouldChangeDashboard />}
       />
-
       {/* ---------------- EMPLOYEE ---------------- */}
-
       <Route path="/employee/home" element={<UserHome />} />
-
       <Route path="/employee/dashboard" element={<UserDashboard />} />
-
       <Route path="/employee/profile" element={<UserProfile />} />
-
       {/* ---------- EMPLOYEE PRODUCTION ---------- */}
-
       <Route
         path="/employee/production/entry"
         element={<AdvProductionEntry />}
       />
-
       <Route
         path="/employee/production/history"
         element={<ProductionHistoryPage />}
       />
-
       <Route path="/employee/production/reports" element={<ReportsPage />} />
-
       {/* ---------- PRODUCTION PLANNING ---------- */}
-
       <Route
         path="/employee/production/plans"
         element={<PlanSelectionPage />}
       />
-
       <Route
         path="/employee/production/plans/daily"
         element={<DailyPlanPage />}
       />
-
       <Route
         path="/employee/production/plans/daily/operator/allocation"
         element={<DailyPlanPageForOperatorAllocation />}
       />
-
       <Route
         path="/employee/production/plans/:id/operator/allocation"
         element={<DailyPlanOperatorAssignment />}
       />
-
       <Route
         path="/employee/production/plans/daily/create"
         element={<DailyProductionPlan />}
       />
-
       <Route
         path="/employee/production/plans/daily/detail/:id"
         element={<ViewDailyPlanPage />}
       />
-
       <Route
         path="/employee/production/plans/monthly"
         element={<MonthlyPlanPage />}
       />
-
       <Route
         path="/employee/production/plans/monthly/create"
         element={<CreateMonthlyPlan />}
       />
-
       <Route
         path="/employee/production/plans/monthly/detail/:id"
         element={<MonthlyPlanView />}
       />
-
-      {/* ---------- MACHINE MANAGEMENT ---------- */}
-
+      ` `{/* ---------- MACHINE MANAGEMENT ---------- */}
       <Route
         path="/employee/machines/overview"
         element={<MachineOverviewDashboard />}
       />
-
       {/* <Route
         path="/employee/machines/allocation"
         element={<MachineOperatorManagement />}
@@ -173,14 +139,11 @@ const AppRoutes = () => {
         path="/employee/machines/allocation/create"
         element={<AllocateMachineOperator />}
       /> */}
-
       <Route
         path="/employee/machines/allocation/update"
         element={<UpdateMachineOperator />}
       />
-
       {/* ---------------- 404 ---------------- */}
-
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
