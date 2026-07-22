@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   HiOutlineArrowRight,
   HiOutlineArrowLeft,
@@ -33,7 +32,10 @@ const toDateKey = (date) => {
 
 const todayISO = () => toDateKey(new Date());
 
-const DayPlanCard = ({ plan, index, onOpen, onDelete }) => {
+/* ---------------------------------------------------------
+   DayPlanCard — flat list-row, no rounded corners / floaty hover
+--------------------------------------------------------- */
+const DayPlanCard = ({ plan, onOpen, onDelete }) => {
   const parsedDate = new Date(plan.planning_date);
   const { weekday, day, month } = formatDate(plan.planning_date);
   const isToday = toDateKey(parsedDate) === todayISO();
@@ -44,73 +46,65 @@ const DayPlanCard = ({ plan, index, onOpen, onDelete }) => {
   };
 
   return (
-    <motion.div
+    <div
       onClick={() => onOpen(plan)}
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -1 }}
-      transition={{ duration: 0.2, ease: "easeOut", delay: index * 0.02 }}
-      className="group flex cursor-pointer items-center gap-2.5 rounded-sm border border-[#C6C6C6]/50 bg-white px-2.5 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-all duration-200 hover:border-[#0F1D24]/30 hover:shadow-[0_6px_16px_-6px_rgba(15,29,36,0.2)]"
+      className="group flex cursor-pointer items-center gap-2.5 border border-[#C6C6C6] bg-white px-2.5 py-2 transition-colors duration-100 hover:bg-[#0F1D24]"
     >
-      <div className="flex h-7 w-7 flex-shrink-0 flex-col items-center justify-center rounded-sm bg-[#0F1D24] text-[#FDC94D]">
+      <div className="flex h-7 w-7 flex-shrink-0 flex-col items-center justify-center border border-[#C6C6C6] bg-[#FAFAFA] text-[#0F1D24] transition-colors duration-100 group-hover:border-[#FDC94D]/40 group-hover:bg-transparent group-hover:text-[#FDC94D]">
         <span className="text-[10px] font-bold leading-none">{day}</span>
       </div>
 
       <div className="flex flex-1 flex-col truncate">
-        <span className="flex items-center gap-1.5 truncate text-[12.5px] font-bold tracking-tight text-[#0F1D24]">
+        <span className="flex items-center gap-1.5 truncate text-[12.5px] font-bold tracking-tight text-[#0F1D24] group-hover:text-white">
           {weekday}, {month} {day}
           {isToday && (
-            <span className="flex-shrink-0 rounded-full bg-[#FDC94D]/25 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-[#0F1D24]">
+            <span className="flex-shrink-0 border border-[#FDC94D]/60 bg-[#FDC94D]/20 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-[#0F1D24] group-hover:bg-[#FDC94D] group-hover:text-[#0F1D24]">
               Today
             </span>
           )}
         </span>
-        <span className="truncate text-[10px] text-[#9B9B9B]">{plan.hall} · Shift {plan.shift}</span>
+        <span className="truncate text-[10px] text-[#9B9B9B] group-hover:text-[#C6C6C6]">
+          {plan.hall} · Shift {plan.shift}
+        </span>
       </div>
 
-      <HiOutlineArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-[#C6C6C6] opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-[#0F1D24] group-hover:opacity-100" />
+      <HiOutlineArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-[#C6C6C6] opacity-0 transition-opacity duration-100 group-hover:text-[#FDC94D] group-hover:opacity-100" />
 
       <button
         onClick={handleDeleteClick}
         title="Delete plan"
-        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-sm text-[#C6C6C6] opacity-0 transition-all duration-200 hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
+        className="flex h-5 w-5 flex-shrink-0 items-center justify-center text-[#C6C6C6] opacity-0 transition-colors duration-100 hover:text-red-500 group-hover:opacity-100"
       >
         <HiOutlineTrash className="h-3 w-3" />
       </button>
-    </motion.div>
+    </div>
   );
 };
 
+/* ---------------------------------------------------------
+   EmptyStateWarning — flat dashed panel, no motion
+--------------------------------------------------------- */
 const EmptyStateWarning = ({ onCreate }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.97 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.3, ease: "easeOut" }}
-    className="flex flex-col items-center justify-center rounded-sm border border-dashed border-[#C6C6C6] bg-white py-12 text-center"
-  >
-    <motion.div
-      animate={{ y: [0, -6, 0] }}
-      transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-      className="mb-3 flex h-12 w-12 items-center justify-center rounded-sm bg-red-50 text-red-500"
-    >
-      <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
-        <HiOutlineExclamationTriangle className="h-6 w-6" />
-      </motion.div>
-    </motion.div>
+  <div className="flex flex-col items-center justify-center border border-dashed border-[#C6C6C6] bg-white py-12 text-center">
+    <div className="mb-3 flex h-12 w-12 items-center justify-center border border-red-200 bg-red-50 text-red-500">
+      <HiOutlineExclamationTriangle className="h-6 w-6" />
+    </div>
     <p className="text-[13px] font-bold text-[#0F1D24]">No plans found</p>
     <p className="mt-1 max-w-xs text-[11.5px] text-[#9B9B9B]">There are no daily production plans yet. Create one to get started.</p>
-    <motion.button
+    <button
       onClick={onCreate}
-      whileHover={{ y: -1 }}
-      whileTap={{ scale: 0.97 }}
-      className="mt-4 flex items-center gap-1.5 rounded-sm bg-[#0F1D24] px-4 py-2 text-xs font-semibold text-[#FDC94D] shadow-[0_8px_18px_-8px_rgba(15,29,36,0.45)]"
+      className="mt-4 flex items-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-4 py-2 text-xs font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]"
     >
       <HiOutlinePlus className="h-3.5 w-3.5" />
       Create new plan
-    </motion.button>
-  </motion.div>
+    </button>
+  </div>
 );
 
+/* ---------------------------------------------------------
+   DailyPlanPage — desktop-app layout: full-width top strip,
+   flat panel content, grid-line list instead of floaty cards
+--------------------------------------------------------- */
 const DailyPlanPage = () => {
   const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
@@ -148,61 +142,77 @@ const DailyPlanPage = () => {
   const hasTodayPlan = plans.some((p) => toDateKey(new Date(p.planning_date)) === todayISO());
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] p-2">
-      <div className="mx-auto max-w-full">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#C6C6C6] pb-3">
-          <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-[#EFEFEF]">
+      {/* Page-level full-width title strip */}
+      <div className="w-full border-b border-[#C6C6C6] bg-white">
+        <div
+          className="h-[2px] w-full"
+          style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
+        />
+        <div className="flex h-[40px] w-full items-center justify-between gap-2 px-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => navigate(-1)}
               title="Back"
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-sm border border-[#C6C6C6]/70 bg-white text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
+              className="flex h-6 w-6 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-colors duration-100"
             >
               <HiOutlineArrowLeft className="h-3.5 w-3.5" />
             </button>
-            <h1 className="text-base font-bold leading-tight tracking-tight text-[#0F1D24] sm:text-lg">
-              Daily Production Plans
-            </h1>
+            <div className="border-l border-[#C6C6C6] pl-2.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F1D24]/60">
+                Production Planning
+              </span>
+              <h1 className="text-[13px] font-bold tracking-tight text-[#0F1D24] leading-tight">
+                Daily Production Plans
+              </h1>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-stretch h-6 gap-px bg-[#C6C6C6]">
             <button
               onClick={() => navigate("/employee/dashboard")}
-              className="flex items-center gap-1.5 rounded-sm border border-[#C6C6C6]/70 bg-white px-3 py-1.5 text-xs font-semibold text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
+              className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
             >
-              <HiOutlineSquares2X2 className="h-3.5 w-3.5" />
-              Go to Dashboard
+              <HiOutlineSquares2X2 className="h-3 w-3" />
+              Dashboard
             </button>
             <button
               onClick={handleCreate}
-              className="flex items-center gap-1.5 rounded-sm bg-[#0F1D24] px-3.5 py-1.5 text-xs font-semibold text-[#FDC94D] shadow-[0_8px_18px_-8px_rgba(15,29,36,0.45)] transition-transform hover:-translate-y-0.5 active:scale-[0.98]"
+              className="flex items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]"
             >
-              <HiOutlinePlus className="h-3.5 w-3.5" />
-              Create new plan
+              <HiOutlinePlus className="h-3 w-3" />
+              New Plan
             </button>
           </div>
         </div>
+      </div>
 
+      <main className="w-full px-3 pb-6 pt-3">
         {!loading && !error && plans.length > 0 && !hasTodayPlan && (
-          <div className="mb-3 flex items-center gap-2 rounded-sm border border-red-300 bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700">
+          <div className="mb-3 flex items-center gap-2 border border-red-300 bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700">
             <HiOutlineExclamationTriangle className="h-4 w-4 flex-shrink-0" />
             No plan exists for today — create one immediately.
           </div>
         )}
 
         {loading ? (
-          <div className="py-10 text-center text-xs text-[#9B9B9B]">Loading plans...</div>
+          <div className="border border-[#C6C6C6] bg-white py-10 text-center text-xs text-[#9B9B9B]">
+            Loading plans...
+          </div>
         ) : error ? (
-          <div className="rounded-sm border border-red-300 bg-red-50 py-8 text-center text-xs font-semibold text-red-600">{error}</div>
+          <div className="border border-red-300 bg-red-50 py-8 text-center text-xs font-semibold text-red-600">
+            {error}
+          </div>
         ) : plans.length === 0 ? (
           <EmptyStateWarning onCreate={handleCreate} />
         ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {plans.map((plan, i) => (
-              <DayPlanCard key={plan.daily_plan_id} plan={plan} index={i} onOpen={handleOpen} onDelete={handleDelete} />
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {plans.map((plan) => (
+              <DayPlanCard key={plan.daily_plan_id} plan={plan} onOpen={handleOpen} onDelete={handleDelete} />
             ))}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };
