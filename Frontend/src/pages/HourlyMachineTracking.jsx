@@ -26,8 +26,6 @@ const formatHourSlot = (hour) => {
 };
 
 const seededRandom = (seed) => {
-  // Simple deterministic PRNG (mulberry32) so the demo data is stable
-  // across re-renders instead of regenerating random noise every render.
   let t = seed + 0x6d2b79f5;
   return () => {
     t = Math.imul(t ^ (t >>> 15), t | 1);
@@ -41,17 +39,13 @@ const generateDemoMachines = (count = 85, currentHourCutoffIndex = 14) => {
   return Array.from({ length: count }, (_, i) => {
     const tonnage = TONNAGE_OPTIONS[Math.floor(rand() * TONNAGE_OPTIONS.length)];
     const machineCode = `M-${String(i + 1).padStart(3, "0")}`;
-    const baseTarget = 28 + Math.floor(rand() * 12); // 28-39 per hour
+    const baseTarget = 28 + Math.floor(rand() * 12);
 
     const hourly = ORDERED_HOURS.map((hour, idx) => {
       const target = baseTarget;
-      // Only hours "already elapsed" (idx < cutoff) get an achieved value;
-      // future hours stay blank, mirroring a real shift-in-progress sheet.
       if (idx >= currentHourCutoffIndex) {
         return { hour, target, achieved: null };
       }
-      // ~70% chance of hitting/exceeding target, rest under-achieve —
-      // occasionally a full miss (breakdown-style zero) for realism.
       const roll = rand();
       let achieved;
       if (roll < 0.08) achieved = 0;
@@ -60,12 +54,7 @@ const generateDemoMachines = (count = 85, currentHourCutoffIndex = 14) => {
       return { hour, target, achieved };
     });
 
-    return {
-      machineId: i + 1,
-      machineCode,
-      label: `${tonnage} T`,
-      hourly,
-    };
+    return { machineId: i + 1, machineCode, label: `${tonnage} T`, hourly };
   });
 };
 
@@ -83,8 +72,6 @@ export default function HourlyMachineTrackingDemo() {
   const navigate = useNavigate();
   const [seedTick, setSeedTick] = useState(0);
 
-  // currentHourCutoffIndex simulates "how far into the day we are" —
-  // regenerating bumps it slightly so Refresh visibly changes something.
   const machines = useMemo(
     () => generateDemoMachines(85, 14 + (seedTick % 3)),
     [seedTick],
@@ -94,7 +81,7 @@ export default function HourlyMachineTrackingDemo() {
     () => ORDERED_HOURS.map((hour, idx) => ({
       hour,
       shift: SHIFT_A_HOURS.includes(hour) ? "A" : "B",
-      isShiftStart: idx === 0 || (idx === SHIFT_A_HOURS.length),
+      isShiftStart: idx === 0 || idx === SHIFT_A_HOURS.length,
     })),
     [],
   );
@@ -102,59 +89,59 @@ export default function HourlyMachineTrackingDemo() {
   const handleRefresh = () => setSeedTick((t) => t + 1);
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5]">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-[#C6C6C6]/70 bg-white px-2.5 py-1.5">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#F7F7F5]">
+      {/* Header — fixed height, never scrolls */}
+      <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-2 rounded-sm border border-[#C6C6C6]/70 bg-white px-2.5 py-1.5">
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(-1)}
-            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-sm border border-[#C6C6C6]/70 bg-white text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
+            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-sm border border-[#C6C6C6]/70 bg-white text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
           >
-            <HiOutlineArrowLeft className="h-3.5 w-3.5" />
+            <HiOutlineArrowLeft className="h-3 w-3" />
           </button>
           <div>
-            <h1 className="text-[13px] font-bold leading-tight text-[#0F1D24]">
+            <h1 className="text-[12px] font-bold leading-tight text-[#0F1D24]">
               Hourly Target vs Achievement — All Machines (Demo)
             </h1>
-            <p className="text-[10px] text-[#9B9B9B]">
+            <p className="text-[9px] text-[#9B9B9B]">
               85 machines · 24 hours · Shift A (08:00–20:00) · Shift B (20:00–08:00)
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 rounded-full border border-[#FDC94D]/60 bg-[#FDC94D]/10 px-2 py-0.5">
-            <span className="h-2 w-2 rounded-sm bg-[#FDC94D]" />
-            <span className="text-[10px] font-semibold text-[#0F1D24]">Shift A</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-full border border-[#FDC94D]/60 bg-[#FDC94D]/10 px-1.5 py-0.5">
+            <span className="h-1.5 w-1.5 rounded-sm bg-[#FDC94D]" />
+            <span className="text-[9px] font-semibold text-[#0F1D24]">Shift A</span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-full border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-2 py-0.5">
-            <span className="h-2 w-2 rounded-sm bg-[#0F1D24]" />
-            <span className="text-[10px] font-semibold text-[#0F1D24]">Shift B</span>
+          <div className="flex items-center gap-1.5 rounded-full border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-1.5 py-0.5">
+            <span className="h-1.5 w-1.5 rounded-sm bg-[#0F1D24]" />
+            <span className="text-[9px] font-semibold text-[#0F1D24]">Shift B</span>
           </div>
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-1.5 rounded-sm border border-[#C6C6C6]/70 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
+            className="flex items-center gap-1 rounded-sm border border-[#C6C6C6]/70 bg-white px-2 py-1 text-[10px] font-semibold text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
           >
-            <HiOutlineArrowPath className="h-3.5 w-3.5" />
+            <HiOutlineArrowPath className="h-3 w-3" />
             Refresh
           </button>
         </div>
       </div>
 
-      {/* Table — horizontally scrollable, sticky Hour + Shift columns */}
-      <div className="max-h-[90vh] overflow-auto rounded-sm border border-[#C6C6C6] bg-white">
-        <table className="w-full border-collapse text-[10.5px]">
+      {/* Table — takes remaining height exactly, horizontal scroll ONLY */}
+      <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-sm border border-[#C6C6C6] bg-white">
+        <table className="h-full w-full border-collapse text-[9px]">
           <thead>
             <tr>
               <th
                 rowSpan={2}
-                className="sticky left-0 top-0 z-30 min-w-[90px] border border-[#C6C6C6] bg-[#0F1D24] px-2 py-2 text-left align-middle font-bold text-white"
+                className="sticky left-0 z-20 min-w-[74px] border border-[#C6C6C6] bg-[#0F1D24] px-1.5 py-1 text-left align-middle font-bold text-white"
               >
                 Hour
               </th>
               <th
                 rowSpan={2}
-                className="sticky left-[90px] top-0 z-30 min-w-[46px] border border-[#C6C6C6] bg-[#0F1D24] px-1 py-2 text-center align-middle font-bold text-white"
+                className="sticky left-[74px] z-20 min-w-[34px] border border-[#C6C6C6] bg-[#0F1D24] px-1 py-1 text-center align-middle font-bold text-white"
               >
                 Sft
               </th>
@@ -162,22 +149,18 @@ export default function HourlyMachineTrackingDemo() {
                 <th
                   key={m.machineId}
                   colSpan={2}
-                  className="sticky top-0 z-20 border border-[#C6C6C6] bg-[#0F1D24] px-1.5 py-1.5 text-center font-bold text-[#FDC94D]"
+                  className="border border-[#C6C6C6] bg-[#0F1D24] px-1 py-1 text-center font-bold leading-none text-[#FDC94D]"
                 >
                   {m.label}
-                  <div className="text-[8.5px] font-normal text-white/70">{m.machineCode}</div>
+                  <div className="text-[7px] font-normal leading-none text-white/70">{m.machineCode}</div>
                 </th>
               ))}
             </tr>
             <tr>
               {machines.map((m) => (
                 <React.Fragment key={`${m.machineId}-sub`}>
-                  <th className="sticky top-[42px] z-20 border border-[#C6C6C6] bg-[#0F1D24]/90 px-1.5 py-1 text-center font-semibold text-white">
-                    Tgt
-                  </th>
-                  <th className="sticky top-[42px] z-20 border border-[#C6C6C6] bg-[#0F1D24]/90 px-1.5 py-1 text-center font-semibold text-white">
-                    Ach.
-                  </th>
+                  <th className="border border-[#C6C6C6] bg-[#0F1D24]/90 px-1 py-0.5 text-center font-semibold text-white">Tgt</th>
+                  <th className="border border-[#C6C6C6] bg-[#0F1D24]/90 px-1 py-0.5 text-center font-semibold text-white">Ach.</th>
                 </React.Fragment>
               ))}
             </tr>
@@ -189,7 +172,7 @@ export default function HourlyMachineTrackingDemo() {
                   <tr>
                     <td
                       colSpan={2 + machines.length * 2}
-                      className={`sticky left-0 z-10 border border-[#C6C6C6] px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${
+                      className={`sticky left-0 z-10 border border-[#C6C6C6] px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide ${
                         row.shift === "A" ? "bg-[#FDC94D] text-[#0F1D24]" : "bg-[#0F1D24] text-[#FDC94D]"
                       }`}
                     >
@@ -198,11 +181,11 @@ export default function HourlyMachineTrackingDemo() {
                   </tr>
                 )}
                 <tr className={SHIFT_COLORS[row.shift].row}>
-                  <td className="sticky left-0 z-10 border border-[#C6C6C6] bg-white px-2 py-1.5 font-semibold text-[#0F1D24]">
+                  <td className="sticky left-0 z-10 border border-[#C6C6C6] bg-white px-1.5 py-0.5 font-semibold leading-none text-[#0F1D24]">
                     {formatHourSlot(row.hour)}
                   </td>
-                  <td className="sticky left-[90px] z-10 border border-[#C6C6C6] px-1 py-1.5 text-center">
-                    <span className={`rounded-full px-1.5 py-0.5 text-[8.5px] font-bold ${SHIFT_COLORS[row.shift].label}`}>
+                  <td className="sticky left-[74px] z-10 border border-[#C6C6C6] bg-white px-1 py-0.5 text-center">
+                    <span className={`rounded-full px-1 py-0.5 text-[7.5px] font-bold ${SHIFT_COLORS[row.shift].label}`}>
                       {row.shift}
                     </span>
                   </td>
@@ -210,10 +193,10 @@ export default function HourlyMachineTrackingDemo() {
                     const cell = m.hourly[rowIdx];
                     return (
                       <React.Fragment key={`${m.machineId}-${row.hour}`}>
-                        <td className="border border-[#C6C6C6] px-1.5 py-1.5 text-center font-mono text-[#0F1D24]">
+                        <td className="border border-[#C6C6C6] px-1 py-0.5 text-center font-mono leading-none text-[#0F1D24]">
                           {cell.target}
                         </td>
-                        <td className={`border border-[#C6C6C6] px-1.5 py-1.5 text-center font-mono font-semibold ${cellTone(cell.target, cell.achieved)}`}>
+                        <td className={`border border-[#C6C6C6] px-1 py-0.5 text-center font-mono font-semibold leading-none ${cellTone(cell.target, cell.achieved)}`}>
                           {cell.achieved ?? ""}
                         </td>
                       </React.Fragment>
