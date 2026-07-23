@@ -4,12 +4,16 @@ import {
   HiOutlinePaperAirplane,
   HiOutlineTrash,
   HiOutlineChevronDown,
+  HiOutlineCalendarDays,
   HiOutlinePlus,
   HiOutlinePlay,
   HiOutlineCheck,
   HiOutlineXMark,
   HiOutlineWrenchScrewdriver,
-  HiOutlineSquares2X2,
+  HiOutlineClipboardDocumentList,
+  HiOutlineArrowLeft,
+  HiOutlineCog6Tooth,
+  HiOutlineArrowRight,
 } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import useDailyProductionPlan from "../../hooks/useDailyProductionPlan";
@@ -122,45 +126,80 @@ const CHANGE_TYPES = ["Planned", "Unplanned"];
 const MC_REASONS = ["Breakdown", "Quality Issue", "Trial Run", "Tool Damage", "Other"];
 
 // ============================================================
-// Page-level full-width title strip — same pattern as
-// DailyPlanPage: gradient accent line + eyebrow/heading block +
-// right-side action-button group (gap-px grid-line trick).
+// Page-level full-width title strip — gradient accent line +
+// eyebrow/heading block + right-side action-button group.
+//
+// Back button ALWAYS steps back through browser/router history
+// (navigate(-1)), never a hardcoded route.
 // ============================================================
-function PageTitleStrip({ eyebrow, title, subtitle, backHref, actions }) {
+
+// ============================================================
+// Page-level full-width title strip for the desktop production UI.
+//
+// Everything in the 44px bar is vertically centered on a single
+// flex axis — the back button, the eyebrow/title/subtitle block,
+// and every action — so nothing drifts up/down regardless of how
+// much text a page passes in.
+//
+// Back button ALWAYS steps back through browser/router history
+// (navigate(-1)), never a hardcoded route, so it reliably returns
+// the user to wherever they actually came from.
+// ============================================================
+function PageTitleStrip({ eyebrow, title, subtitle, showBack = true, actions }) {
   const navigate = useNavigate();
+
   return (
-    <div className="w-full border-b border-[#C6C6C6] bg-white">
+    <header className="w-full border-b border-[#C6C6C6] bg-white">
+      {/* Gradient accent line */}
       <div
         className="h-[2px] w-full"
         style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
       />
-      <div className="flex h-[40px] w-full flex-wrap items-center justify-between gap-2 px-3">
-        <div className="flex items-center gap-2">
-          {backHref !== undefined && (
+
+      <div className="flex h-11 w-full items-center justify-between gap-3 px-3">
+        {/* Left: back button + heading block — single centered row */}
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          {showBack && (
             <button
-              onClick={() => (backHref ? navigate(backHref) : navigate(-1))}
+              type="button"
+              onClick={() => navigate(-1)}
               title="Back"
-              className="flex h-6 w-6 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-colors duration-100"
+              aria-label="Go back"
+              className="flex h-7 w-7 shrink-0 items-center justify-center border border-[#C6C6C6] bg-white p-0 leading-none text-[#0F1D24] outline-none transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] focus-visible:ring-2 focus-visible:ring-[#FDC94D] focus-visible:ring-offset-1"
             >
-              <HiOutlineArrowUturnLeft className="h-3.5 w-3.5" />
+              <HiOutlineArrowLeft className="h-3.5 w-3.5 shrink-0" />
             </button>
           )}
-          <div className={backHref !== undefined ? "border-l border-[#C6C6C6] pl-2.5" : ""}>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F1D24]/60">
-              {eyebrow}
-            </span>
-            <h1 className="text-[13px] font-bold tracking-tight text-[#0F1D24] leading-tight">
-              {title}
-            </h1>
+
+          <div
+            className={`flex min-w-0 flex-1 flex-col justify-center gap-0.5 ${
+              showBack ? "border-l border-[#C6C6C6] pl-2.5" : ""
+            }`}
+          >
+            <div className="flex items-baseline gap-2">
+              {eyebrow && (
+                <span className="shrink-0 text-[10px] font-bold uppercase leading-none tracking-wider text-[#0F1D24]/60">
+                  {eyebrow}
+                </span>
+              )}
+              <h1 className="truncate text-[13px] font-bold leading-none tracking-tight text-[#0F1D24]">
+                {title}
+              </h1>
+            </div>
             {subtitle && (
-              <p className="font-mono text-[10px] text-[#9B9B9B] leading-tight">{subtitle}</p>
+              <p className="truncate font-mono text-[10px] leading-none text-[#9B9B9B]">{subtitle}</p>
             )}
           </div>
         </div>
 
-        {actions && <div className="flex items-stretch h-6 gap-px bg-[#C6C6C6]">{actions}</div>}
+        {/* Right: action button group — same fixed height, gap-line trick */}
+        {actions && (
+          <div className="flex h-7 shrink-0 items-stretch gap-px bg-[#C6C6C6] [&>*]:flex [&>*]:items-center [&>*]:whitespace-nowrap">
+            {actions}
+          </div>
+        )}
       </div>
-    </div>
+    </header>
   );
 }
 
@@ -199,7 +238,7 @@ function ThemedSelect({ value, onChange, options, placeholder = "-- select --", 
       </button>
 
       {open && !disabled && (
-        <ul className="absolute z-30 mt-1 max-h-56 w-full overflow-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
+        <ul className="absolute z-50 mt-1 max-h-56 w-full overflow-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
           {options.length === 0 && (
             <li className="px-2.5 py-2 text-[11.5px] text-[#9B9B9B]">No options</li>
           )}
@@ -217,6 +256,159 @@ function ThemedSelect({ value, onChange, options, placeholder = "-- select --", 
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Themed custom date picker — replaces the native <input type="date">
+// with a calendar panel matching ThemedSelect's visual language.
+// Value/onChange use plain "YYYY-MM-DD" strings, same as native input.
+//
+// NOTE: this panel is `position: absolute` and must never sit inside
+// an ancestor with `overflow-hidden` / `overflow-auto` — that clips
+// the popup instead of letting it float over the page. Give the
+// popup a high z-index (z-50) so it always sits above cards/tables.
+// ============================================================
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function formatDateDisplay(value) {
+  if (!value) return "";
+  const [y, m, d] = value.split("-").map(Number);
+  if (!y || !m || !d) return value;
+  return `${String(d).padStart(2, "0")} ${MONTH_NAMES[m - 1].slice(0, 3)} ${y}`;
+}
+
+function toISO(year, month, day) {
+  const dt = new Date(year, month, day);
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${dt.getFullYear()}-${mm}-${dd}`;
+}
+
+function ThemedDatePicker({ value, onChange, disabled = false, className = "" }) {
+  const [open, setOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => {
+    const d = value ? new Date(`${value}T00:00:00`) : new Date();
+    return isNaN(d) ? new Date() : d;
+  });
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  useEffect(() => {
+    if (value) {
+      const d = new Date(`${value}T00:00:00`);
+      if (!isNaN(d)) setViewDate(d);
+    }
+  }, [value]);
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const startWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cells = [];
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const isSelected = (d) => value === toISO(year, month, d);
+  const isToday = (d) => {
+    const t = new Date();
+    return t.getFullYear() === year && t.getMonth() === month && t.getDate() === d;
+  };
+
+  const goToday = () => {
+    const t = new Date();
+    setViewDate(t);
+    onChange(toISO(t.getFullYear(), t.getMonth(), t.getDate()));
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className={`relative ${className}`}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((o) => !o)}
+        className={`flex h-8 w-full items-center justify-between border px-2.5 text-[11.5px] font-medium outline-none transition-colors duration-100
+          ${disabled ? "cursor-not-allowed border-[#C6C6C6] bg-[#F5F5F5] text-[#9B9B9B]" : "border-[#C6C6C6] bg-white text-[#0F1D24] hover:border-[#0F1D24]"}
+          ${open ? "border-[#0F1D24]" : ""}`}
+      >
+        <span className={value ? "truncate font-mono text-[#0F1D24]" : "truncate text-[#9B9B9B]"}>
+          {value ? formatDateDisplay(value) : "-- select date --"}
+        </span>
+        <HiOutlineCalendarDays className="h-3.5 w-3.5 shrink-0 text-[#9B9B9B]" />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute z-50 mt-1 w-64 border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
+          <div className="flex items-center justify-between bg-[#0F1D24] px-2 py-1.5">
+            <button
+              type="button"
+              onClick={() => setViewDate(new Date(year, month - 1, 1))}
+              className="flex h-6 w-6 items-center justify-center text-[#FDC94D] transition-colors duration-100 hover:bg-white/10"
+            >
+              ‹
+            </button>
+            <span className="text-[11.5px] font-bold text-white">
+              {MONTH_NAMES[month]} {year}
+            </span>
+            <button
+              type="button"
+              onClick={() => setViewDate(new Date(year, month + 1, 1))}
+              className="flex h-6 w-6 items-center justify-center text-[#FDC94D] transition-colors duration-100 hover:bg-white/10"
+            >
+              ›
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-px bg-[#C6C6C6] p-px">
+            {WEEKDAY_LABELS.map((w) => (
+              <div key={w} className="bg-[#FAFAFA] py-1 text-center text-[9px] font-bold uppercase text-[#9B9B9B]">
+                {w}
+              </div>
+            ))}
+            {cells.map((d, idx) => (
+              <button
+                type="button"
+                key={idx}
+                disabled={!d}
+                onClick={() => {
+                  onChange(toISO(year, month, d));
+                  setOpen(false);
+                }}
+                className={`h-7 bg-white text-[11px] font-medium transition-colors duration-100
+                  ${!d ? "cursor-default" : "hover:bg-[#FDC94D]/25"}
+                  ${d && isSelected(d) ? "bg-[#0F1D24] text-[#FDC94D] hover:bg-[#0F1D24]" : "text-[#0F1D24]"}
+                  ${d && isToday(d) && !isSelected(d) ? "font-bold underline decoration-[#FDC94D] decoration-2 underline-offset-2" : ""}`}
+              >
+                {d || ""}
+              </button>
+            ))}
+          </div>
+
+          <div className="border-t border-[#C6C6C6] px-2 py-1.5 text-right">
+            <button
+              type="button"
+              onClick={goToday}
+              className="text-[10.5px] font-semibold text-[#0F1D24] hover:underline"
+            >
+              Today
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -339,8 +531,7 @@ function MouldChangeModal({ row, header, monthlyParts, onClose, onSubmit }) {
 
           <div>
             <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Planned Date</label>
-            <input type="date" value={plannedDate} onChange={(e) => setPlannedDate(e.target.value)}
-              className="h-8 w-full border border-[#C6C6C6] px-2.5 text-[11.5px] outline-none focus:border-[#0F1D24]" />
+            <ThemedDatePicker value={plannedDate} onChange={setPlannedDate} />
           </div>
 
           <div>
@@ -496,6 +687,8 @@ function MouldChangeHistory({ changes, mcLoading, mcError, start, complete, canc
 // Main component
 // ============================================================
 export default function DailyProductionPlan() {
+  const navigate = useNavigate();
+
   const {
     loading, header, details, hallMachines, monthlyParts, error,
     startPlanning, submitNewPlan, addRow, updateRow, removeRow, publish, reset,
@@ -512,6 +705,7 @@ export default function DailyProductionPlan() {
   const [rowAssignments, setRowAssignments] = useState({}); // machineId -> { monthlyDetailId, targetQty, plannedCycleTime, operatorCode }
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState("");
+  const [activeMachineId, setActiveMachineId] = useState(null); // master-detail selection for View 2
 
   // ---- Mould change: fetched for the currently open existing plan only ----
   const mcEnabled = !!(header && !header.isNew);
@@ -536,6 +730,16 @@ export default function DailyProductionPlan() {
     listMonthlyPlans().then((res) => setMonthlyPlans(res.data || [])).catch(() => setMonthlyPlans([]));
   }, []);
 
+  // Default the master-detail selection to the first machine once the hall's
+  // machine list loads for a new plan.
+  useEffect(() => {
+    if (header?.isNew && hallMachines.length > 0 && activeMachineId === null) {
+      setActiveMachineId(hallMachines[0].id);
+    }
+    if (!header?.isNew) setActiveMachineId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [header?.isNew, hallMachines]);
+
   const handleStart = async (e) => {
     e.preventDefault();
     if (!monthlyPlanId) return;
@@ -554,6 +758,14 @@ export default function DailyProductionPlan() {
       partId: md?.part_id || "",
       plannedCycleTime: md?.planned_cycle_time || md?.actual_cycle_time || "",
       targetQty: rowAssignments[machineId]?.targetQty || "",
+    });
+  };
+
+  const clearAssignment = (machineId) => {
+    setRowAssignments((prev) => {
+      const next = { ...prev };
+      delete next[machineId];
+      return next;
     });
   };
 
@@ -602,8 +814,10 @@ export default function DailyProductionPlan() {
     await addChange(payload);
   };
 
+  const selectedMonthlyPlan = monthlyPlans.find((p) => String(p.monthly_plan_id) === String(monthlyPlanId));
+
   // ==========================================================
-  // View 1 — Setup form
+  // View 1 — Setup form (desktop-style: context sidebar + form panel)
   // ==========================================================
   if (!header) {
     return (
@@ -611,60 +825,106 @@ export default function DailyProductionPlan() {
         <PageTitleStrip
           eyebrow="Production Planning"
           title="Daily Production Plan"
-          backHref="/employee/dashboard"
-          actions={
-            <button
-              onClick={() => window.history.back()}
-              className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
-            >
-              <HiOutlineSquares2X2 className="h-3 w-3" />
-              Dashboard
-            </button>
-          }
+          subtitle="Start a new plan"
         />
 
         <main className="w-full px-3 pb-6 pt-3">
-          <form onSubmit={handleStart} className="mx-auto max-w-lg border border-[#C6C6C6] bg-white">
-            <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-4 py-2.5">
-              <h2 className="text-[13px] font-bold text-[#0F1D24]">Start Planning</h2>
+          {/* NOTE: no overflow-hidden here — the ThemedDatePicker popup is
+              position:absolute and would get clipped by an ancestor that
+              hides overflow. Sharp-corner panels don't need it anyway. */}
+          <form
+            onSubmit={handleStart}
+            className="mx-auto grid max-w-4xl grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[260px_1fr]"
+          >
+            {/* Context / summary sidebar */}
+            <div className="bg-[#0F1D24] p-5 text-white">
+              <div className="mb-1 flex items-center gap-2">
+                <HiOutlineClipboardDocumentList className="h-4 w-4 text-[#FDC94D]" />
+                <h2 className="text-[11px] font-bold uppercase tracking-wider text-[#FDC94D]">New Daily Plan</h2>
+              </div>
+              <p className="text-[11.5px] leading-relaxed text-white/70">
+                Select a monthly plan and the hall, date and shift to pull in that hall's machines
+                for allocation.
+              </p>
+
+              <div className="mt-5 space-y-3 border-t border-white/10 pt-4">
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Monthly Plan</p>
+                  <p className="text-[12.5px] font-semibold">{selectedMonthlyPlan?.plan_number || "Not selected"}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Date</p>
+                  <p className="font-mono text-[12.5px] font-semibold">{formatDateDisplay(planningDate)}</p>
+                </div>
+                <div className="flex gap-6">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Hall</p>
+                    <p className="text-[12.5px] font-semibold">{hall}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Shift</p>
+                    <p className="text-[12.5px] font-semibold">Shift {shift}</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="p-4">
-              <div className="mb-3">
-                <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Monthly Plan</label>
-                <ThemedSelect
-                  value={monthlyPlanId}
-                  onChange={setMonthlyPlanId}
-                  options={monthlyPlans.map((p) => ({ value: p.monthly_plan_id, label: p.plan_number }))}
-                  placeholder="-- select monthly plan --"
-                  className="h-9"
-                />
+            {/* Form panel */}
+            <div className="bg-white">
+              <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-4 py-2.5">
+                <h2 className="text-[13px] font-bold text-[#0F1D24]">Plan Setup</h2>
               </div>
 
-              <div className="mb-3 grid grid-cols-3 gap-2">
+              <div className="space-y-4 p-4">
                 <div>
-                  <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Date</label>
-                  <input
-                    type="date" value={planningDate} onChange={(e) => setPlanningDate(e.target.value)} required
-                    className="h-9 w-full border border-[#C6C6C6] px-2 text-[12.5px] outline-none focus:border-[#0F1D24]"
+                  <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Monthly Plan</label>
+                  <ThemedSelect
+                    value={monthlyPlanId}
+                    onChange={setMonthlyPlanId}
+                    options={monthlyPlans.map((p) => ({ value: p.monthly_plan_id, label: p.plan_number }))}
+                    placeholder="-- select monthly plan --"
                   />
                 </div>
-                <div>
-                  <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Hall</label>
-                  <ThemedSelect value={hall} onChange={setHall} options={HALLS.map((h) => ({ value: h, label: h }))} />
+
+                <div className="h-px w-full bg-[#C6C6C6]" />
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Date</label>
+                    <ThemedDatePicker value={planningDate} onChange={setPlanningDate} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Hall</label>
+                    <ThemedSelect value={hall} onChange={setHall} options={HALLS.map((h) => ({ value: h, label: h }))} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Shift</label>
+                    <ThemedSelect value={shift} onChange={setShift} options={SHIFTS.map((s) => ({ value: s, label: `Shift ${s}` }))} />
+                  </div>
                 </div>
-                <div>
-                  <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Shift</label>
-                  <ThemedSelect value={shift} onChange={setShift} options={SHIFTS.map((s) => ({ value: s, label: `Shift ${s}` }))} />
-                </div>
+
+                {error && <p className="text-[11.5px] font-semibold text-red-600">{error}</p>}
+                {!monthlyPlanId && (
+                  <p className="text-[10.5px] text-[#9B9B9B]">Pick a monthly plan to continue.</p>
+                )}
               </div>
 
-              {error && <p className="mb-2 text-[11.5px] font-semibold text-red-600">{error}</p>}
-
-              <button type="submit" disabled={loading}
-                className="h-9 w-full border border-[#0F1D24] bg-[#0F1D24] text-[13px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:opacity-50">
-                {loading ? "Loading..." : "Start Planning"}
-              </button>
+              <div className="flex items-center justify-end gap-px bg-[#C6C6C6] border-t border-[#C6C6C6]">
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="flex h-10 items-center justify-center bg-white px-4 text-[12px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#F5F5F5]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || !monthlyPlanId}
+                  className="flex h-10 items-center justify-center bg-[#0F1D24] px-5 text-[12px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? "Loading..." : "Start Planning"}
+                </button>
+              </div>
             </div>
           </form>
         </main>
@@ -673,16 +933,32 @@ export default function DailyProductionPlan() {
   }
 
   // ==========================================================
-  // View 2 — New plan: assign parts to machines before creating
+  // View 2 — New plan: master-detail machine assignment
+  // Left: scrollable list of the hall's machines with an
+  // assigned/unassigned indicator. Right: a focused form to
+  // set Part, Target Qty, Planned CT and Operator Code for
+  // whichever machine is selected — the classic desktop-app
+  // "list + detail pane" pattern instead of one dense table row.
   // ==========================================================
   if (header.isNew) {
+    const assignedCount = Object.keys(rowAssignments).filter(
+      (id) => rowAssignments[id]?.monthlyDetailId && rowAssignments[id]?.targetQty
+    ).length;
+    const activeMachine = hallMachines.find((m) => m.id === activeMachineId);
+    const activeAssignment = activeMachineId ? rowAssignments[activeMachineId] || {} : {};
+
+    const goToMachine = (offset) => {
+      const idx = hallMachines.findIndex((m) => m.id === activeMachineId);
+      const next = hallMachines[idx + offset];
+      if (next) setActiveMachineId(next.id);
+    };
+
     return (
       <div className="min-h-screen bg-[#EFEFEF]">
         <PageTitleStrip
           eyebrow="Production Planning"
           title={`New Daily Plan — ${hall} · Shift ${shift}`}
-          subtitle={planningDate}
-          backHref="/employee/dashboard"
+          subtitle={`${planningDate} · ${assignedCount} of ${hallMachines.length} machines assigned`}
           actions={
             <button
               onClick={reset}
@@ -695,67 +971,160 @@ export default function DailyProductionPlan() {
         />
 
         <main className="w-full space-y-2 px-3 pb-6 pt-3">
-          <div className="overflow-x-auto border border-[#C6C6C6] bg-white">
-            <table className="w-full min-w-[760px] text-[12px]">
-              <thead className="bg-[#0F1D24] text-white">
-                <tr>
-                  <th className="px-2.5 py-2 text-left font-semibold">Machine</th>
-                  <th className="px-2.5 py-2 text-left font-semibold">Part</th>
-                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Target Qty</th>
-                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Planned CT</th>
-                  <th className="px-2.5 py-2 text-left font-semibold">Operator Code</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hallMachines.map((m) => {
-                  const a = rowAssignments[m.id] || {};
-                  return (
-                    <tr key={m.id} className="border-t border-[#C6C6C6]">
-                      <td className="px-2.5 py-1.5 font-mono font-semibold text-[#0F1D24]">
-                        {m.machine_code} <span className="text-[#9B9B9B]">{m.machine_name}</span>
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <ThemedSelect
-                          value={a.monthlyDetailId || ""}
-                          onChange={(val) => handlePartPick(m.id, val)}
-                          options={monthlyParts.map((p) => ({ value: p.monthly_detail_id, label: `${p.part_number} - ${p.part_name}` }))}
-                          placeholder="-- none --"
-                        />
-                      </td>
-                      <td className="px-2.5 py-1.5 text-right">
+          <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[280px_1fr]">
+            {/* Machine list */}
+            <div className="max-h-[520px] overflow-y-auto bg-white">
+              <div className="sticky top-0 border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
+                <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#0F1D24]">
+                  Hall Machines
+                </h2>
+              </div>
+              {hallMachines.map((m) => {
+                const a = rowAssignments[m.id];
+                const assigned = !!(a?.monthlyDetailId && a?.targetQty);
+                const isActive = m.id === activeMachineId;
+                return (
+                  <button
+                    type="button"
+                    key={m.id}
+                    onClick={() => setActiveMachineId(m.id)}
+                    className={`flex w-full items-center justify-between gap-2 border-b border-[#C6C6C6] px-3 py-2 text-left transition-colors duration-100
+                      ${isActive ? "bg-[#0F1D24] text-[#FDC94D]" : "bg-white text-[#0F1D24] hover:bg-[#FAFAFA]"}`}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-mono text-[11.5px] font-semibold">{m.machine_code}</p>
+                      <p className={`truncate text-[10.5px] ${isActive ? "text-[#FDC94D]/70" : "text-[#9B9B9B]"}`}>
+                        {m.machine_name}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 border px-1.5 py-[1px] text-[9px] font-bold uppercase tracking-wide
+                        ${assigned
+                          ? isActive
+                            ? "border-[#FDC94D]/60 bg-[#FDC94D]/10 text-[#FDC94D]"
+                            : "border-green-600/30 bg-green-50 text-green-700"
+                          : isActive
+                            ? "border-white/30 bg-white/10 text-white/70"
+                            : "border-[#C6C6C6] bg-[#F5F5F5] text-[#9B9B9B]"}`}
+                    >
+                      {assigned ? "Assigned" : "Empty"}
+                    </span>
+                  </button>
+                );
+              })}
+              {hallMachines.length === 0 && (
+                <p className="px-3 py-6 text-center text-[11.5px] text-[#9B9B9B]">No machines found for this hall.</p>
+              )}
+            </div>
+
+            {/* Detail form */}
+            <div className="bg-white">
+              {activeMachine ? (
+                <>
+                  <div className="flex items-center justify-between border-b border-[#C6C6C6] bg-[#FAFAFA] px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <HiOutlineCog6Tooth className="h-4 w-4 text-[#0F1D24]" />
+                      <div>
+                        <h2 className="text-[13px] font-bold text-[#0F1D24]">
+                          {activeMachine.machine_code} <span className="font-normal text-[#9B9B9B]">{activeMachine.machine_name}</span>
+                        </h2>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-px bg-[#C6C6C6]">
+                      <button
+                        type="button"
+                        onClick={() => goToMachine(-1)}
+                        title="Previous machine"
+                        className="flex h-7 w-7 items-center justify-center bg-white text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+                      >
+                        <HiOutlineArrowLeft className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => goToMachine(1)}
+                        title="Next machine"
+                        className="flex h-7 w-7 items-center justify-center bg-white text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+                      >
+                        <HiOutlineArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 p-4">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Part</label>
+                      <ThemedSelect
+                        value={activeAssignment.monthlyDetailId || ""}
+                        onChange={(val) => handlePartPick(activeMachineId, val)}
+                        options={monthlyParts.map((p) => ({ value: p.monthly_detail_id, label: `${p.part_number} - ${p.part_name}` }))}
+                        placeholder="-- select part --"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Target Qty</label>
                         <input
-                          type="number" min="1" value={a.targetQty || ""}
-                          onChange={(e) => setAssignment(m.id, { targetQty: e.target.value })}
-                          className="h-7 w-20 border border-[#C6C6C6] px-1.5 text-right text-[11.5px] font-mono outline-none focus:border-[#0F1D24]"
+                          type="number" min="1" value={activeAssignment.targetQty || ""}
+                          onChange={(e) => setAssignment(activeMachineId, { targetQty: e.target.value })}
+                          placeholder="0"
+                          className="h-9 w-full border border-[#C6C6C6] px-2.5 text-[12.5px] font-mono outline-none focus:border-[#0F1D24]"
                         />
-                      </td>
-                      <td className="px-2.5 py-1.5 text-right">
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Planned Cycle Time</label>
                         <input
-                          type="number" step="0.01" min="0" value={a.plannedCycleTime || ""}
-                          onChange={(e) => setAssignment(m.id, { plannedCycleTime: e.target.value })}
-                          className="h-7 w-20 border border-[#C6C6C6] px-1.5 text-right text-[11.5px] font-mono outline-none focus:border-[#0F1D24]"
+                          type="number" step="0.01" min="0" value={activeAssignment.plannedCycleTime || ""}
+                          onChange={(e) => setAssignment(activeMachineId, { plannedCycleTime: e.target.value })}
+                          placeholder="seconds"
+                          className="h-9 w-full border border-[#C6C6C6] px-2.5 text-[12.5px] font-mono outline-none focus:border-[#0F1D24]"
                         />
-                      </td>
-                      <td className="px-2.5 py-1.5">
-                        <input
-                          value={a.operatorCode || ""}
-                          onChange={(e) => setAssignment(m.id, { operatorCode: e.target.value })}
-                          placeholder="optional"
-                          className="h-7 w-full border border-[#C6C6C6] px-1.5 text-[11.5px] outline-none focus:border-[#0F1D24]"
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Operator Code (optional)</label>
+                      <input
+                        value={activeAssignment.operatorCode || ""}
+                        onChange={(e) => setAssignment(activeMachineId, { operatorCode: e.target.value })}
+                        placeholder="e.g. OP-014"
+                        className="h-9 w-full border border-[#C6C6C6] px-2.5 text-[12.5px] outline-none focus:border-[#0F1D24]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-px bg-[#C6C6C6] border-t border-[#C6C6C6]">
+                    <button
+                      type="button"
+                      onClick={() => clearAssignment(activeMachineId)}
+                      className="flex h-10 items-center justify-center gap-1.5 bg-white px-4 text-[12px] font-semibold text-red-600 transition-colors duration-100 hover:bg-red-50"
+                    >
+                      <HiOutlineTrash className="h-3.5 w-3.5" />
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => goToMachine(1)}
+                      className="flex h-10 items-center justify-center gap-1.5 bg-[#0F1D24] px-5 text-[12px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90"
+                    >
+                      Save &amp; Next
+                      <HiOutlineArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex h-full items-center justify-center p-10 text-[11.5px] text-[#9B9B9B]">
+                  Select a machine from the list to assign a part.
+                </div>
+              )}
+            </div>
           </div>
 
           {(formError || error) && <p className="text-[11.5px] font-semibold text-red-600">{formError || error}</p>}
 
           <button onClick={handleCreatePlan} disabled={creating}
             className="border border-[#0F1D24] bg-[#FDC94D] px-4 py-2 text-[12.5px] font-bold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:opacity-50">
-            {creating ? "Creating..." : "Create Plan"}
+            {creating ? "Creating..." : `Create Plan (${assignedCount} machine${assignedCount === 1 ? "" : "s"})`}
           </button>
         </main>
       </div>
@@ -770,7 +1139,6 @@ export default function DailyProductionPlan() {
       <PageTitleStrip
         eyebrow={header.plan_number}
         title={`${header.planning_date} · ${header.hall} · Shift ${header.shift}`}
-        backHref="/employee/dashboard"
         actions={
           <>
             <span className={`flex items-center bg-white px-2.5 text-[11px] font-bold ${STATUS_COLORS[header.status] || STATUS_COLORS.Draft}`}>
