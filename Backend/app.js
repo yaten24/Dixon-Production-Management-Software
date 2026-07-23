@@ -34,6 +34,7 @@ app.use(
 app.use(express.json());
 
 app.use("/api/machines", machineRoutes);
+app.use('/api/production', require('./routes/productionHeatMapRoutes'));
 app.use("/api/parts", partRoutes);
 app.use("/api/operators", operatorRoutes);
 app.use("/api/users", userRoutes);
@@ -55,6 +56,5 @@ app.use("/api/mould-change-dashboard", mouldChangeDashboardRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use('/api/monthly-plans', require('./routes/monthlyPlan.routes'));
 app.use('/api/daily-plans', require('./routes/dailyPlan.routes'));
-app.use('/api/hourly-tracking', require('./routes/hourlyTracking.routes'));
 
 module.exports = app;
