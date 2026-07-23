@@ -125,26 +125,6 @@ const CHANGE_TYPES = ["Planned", "Unplanned"];
 // Free-text-ish reasons for Unplanned changes (backend requires `reason` when Unplanned)
 const MC_REASONS = ["Breakdown", "Quality Issue", "Trial Run", "Tool Damage", "Other"];
 
-// ============================================================
-// Page-level full-width title strip — gradient accent line +
-// eyebrow/heading block + right-side action-button group.
-//
-// Back button ALWAYS steps back through browser/router history
-// (navigate(-1)), never a hardcoded route.
-// ============================================================
-
-// ============================================================
-// Page-level full-width title strip for the desktop production UI.
-//
-// Everything in the 44px bar is vertically centered on a single
-// flex axis — the back button, the eyebrow/title/subtitle block,
-// and every action — so nothing drifts up/down regardless of how
-// much text a page passes in.
-//
-// Back button ALWAYS steps back through browser/router history
-// (navigate(-1)), never a hardcoded route, so it reliably returns
-// the user to wherever they actually came from.
-// ============================================================
 function PageTitleStrip({ eyebrow, title, subtitle, showBack = true, actions }) {
   const navigate = useNavigate();
 
@@ -182,9 +162,9 @@ function PageTitleStrip({ eyebrow, title, subtitle, showBack = true, actions }) 
                   {eyebrow}
                 </span>
               )}
-              <h1 className="truncate text-[13px] font-bold leading-none tracking-tight text-[#0F1D24]">
+              {/* <h1 className="truncate text-[13px] font-bold leading-none tracking-tight text-[#0F1D24]">
                 {title}
-              </h1>
+              </h1> */}
             </div>
             {subtitle && (
               <p className="truncate font-mono text-[10px] leading-none text-[#9B9B9B]">{subtitle}</p>

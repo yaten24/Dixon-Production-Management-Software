@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import {
@@ -7,8 +7,13 @@ import {
   HiOutlineBuildingOffice2,
   HiOutlineClock,
   HiOutlineArrowDownTray,
+  HiOutlinePrinter,
+  HiOutlineMagnifyingGlass,
+  HiOutlineXMark,
+  HiOutlineCog6Tooth,
 } from "react-icons/hi2";
 import { getDailyPlan, getDailyPlanDetails } from "../../api/dailyPlanApi";
+import PageTitleStrip from "./PageTitleStrip";
 
 const STATUS_STYLES = {
   Draft: "bg-[#F5F5F5] text-[#9B9B9B]",
@@ -17,26 +22,28 @@ const STATUS_STYLES = {
   Closed: "bg-red-100 text-red-600",
 };
 
-const InfoPill = ({ icon: Icon, label, value }) => (
-  <div className="flex items-center gap-2">
-    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center border border-[#C6C6C6] bg-[#FAFAFA] text-[#0F1D24]">
+// ============================================================
+// Sidebar summary tile — used inside the navy context panel.
+// ============================================================
+const SummaryTile = ({ icon: Icon, label, value }) => (
+  <div className="flex items-center gap-2.5">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-white/15 bg-white/5 text-[#FDC94D]">
       <Icon className="h-3.5 w-3.5" />
     </div>
     <div className="min-w-0 leading-tight">
-      <p className="text-[9px] font-bold uppercase tracking-wide text-[#9B9B9B]">
-        {label}
-      </p>
-      <p className="truncate text-[12.5px] font-bold text-[#0F1D24]">{value}</p>
+      <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">{label}</p>
+      <p className="truncate text-[12.5px] font-semibold text-white">{value}</p>
     </div>
   </div>
 );
 
-const StatPill = ({ value, label }) => (
-  <div className="text-center leading-tight">
-    <p className="text-sm font-bold text-[#0F1D24]">{value}</p>
-    <p className="text-[9px] font-medium uppercase tracking-wide text-[#9B9B9B]">
-      {label}
-    </p>
+// ============================================================
+// Stat card — used in the top metrics row.
+// ============================================================
+const StatCard = ({ value, label }) => (
+  <div className="flex-1 border border-[#C6C6C6] bg-white px-4 py-3">
+    <p className="text-xl font-bold leading-none text-[#0F1D24]">{value}</p>
+    <p className="mt-1.5 text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">{label}</p>
   </div>
 );
 
@@ -48,6 +55,7 @@ const ViewDailyPlanPage = () => {
   const [details, setDetails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -80,6 +88,26 @@ const ViewDailyPlanPage = () => {
       cancelled = true;
     };
   }, [id]);
+
+  const filteredDetails = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return details;
+    return details.filter((d) =>
+      [d.machine_name, d.operator_code, d.part_name]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(q))
+    );
+  }, [details, search]);
+
+  const totals = useMemo(() => {
+    return filteredDetails.reduce(
+      (acc, d) => ({
+        targetQty: acc.targetQty + (Number(d.target_qty) || 0),
+        estHours: acc.estHours + (Number(d.estimated_run_hours) || 0),
+      }),
+      { targetQty: 0, estHours: 0 }
+    );
+  }, [filteredDetails]);
 
   const handleExport = () => {
     if (!header) return;
@@ -119,6 +147,8 @@ const ViewDailyPlanPage = () => {
     XLSX.writeFile(workbook, `daily_plan_${header.plan_number || id}.xlsx`);
   };
 
+  const handlePrint = () => window.print();
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#EFEFEF]">
@@ -146,72 +176,93 @@ const ViewDailyPlanPage = () => {
 
   return (
     <div className="min-h-screen bg-[#EFEFEF]">
-      {/* Page-level full-width title strip */}
-      <div className="w-full border-b border-[#C6C6C6] bg-white">
-        <div
-          className="h-[2px] w-full"
-          style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
-        />
-        <div className="flex h-[40px] w-full flex-wrap items-center justify-between gap-2 px-3">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate(-1)}
-              title="Back"
-              className="flex h-6 w-6 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-colors duration-100"
+      <PageTitleStrip
+        eyebrow="Daily Plan"
+        title={header.plan_number}
+        subtitle={`${header.planning_date} · ${header.hall} · Shift ${header.shift}`}
+        actions={
+          <>
+            <span
+              className={`flex items-center bg-white px-2.5 text-[11px] font-bold ${
+                STATUS_STYLES[header.status] || STATUS_STYLES.Draft
+              }`}
             >
-              <HiOutlineArrowLeft className="h-3.5 w-3.5" />
+              {header.status}
+            </span>
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+            >
+              <HiOutlinePrinter className="h-3.5 w-3.5" />
+              Print
             </button>
-            <div className="flex items-center gap-1.5 border-l border-[#C6C6C6] pl-2.5">
-              <h1 className="text-[13px] font-bold leading-none tracking-tight text-[#0F1D24]">
-                {header.plan_number}
-              </h1>
-              <span
-                className={`border border-[#C6C6C6] px-1.5 py-[1px] text-[8.5px] font-bold uppercase tracking-wide ${
-                  STATUS_STYLES[header.status] || STATUS_STYLES.Draft
-                }`}
-              >
-                {header.status}
-              </span>
-            </div>
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]"
+            >
+              <HiOutlineArrowDownTray className="h-3.5 w-3.5" />
+              Export to Excel
+            </button>
+          </>
+        }
+      />
+
+      <main className="w-full space-y-3 px-3 pb-6 pt-3">
+        {/* Context sidebar + stat cards */}
+        <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[260px_1fr]">
+          <div className="space-y-4 bg-[#0F1D24] p-5">
+            <SummaryTile icon={HiOutlineCalendarDays} label="Date" value={header.planning_date} />
+            <SummaryTile icon={HiOutlineBuildingOffice2} label="Hall" value={header.hall} />
+            <SummaryTile icon={HiOutlineClock} label="Shift" value={`Shift ${header.shift}`} />
+            {header.remarks && (
+              <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/60">
+                {header.remarks}
+              </p>
+            )}
           </div>
 
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-3 h-6 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]"
-          >
-            <HiOutlineArrowDownTray className="h-3.5 w-3.5" />
-            Export to Excel
-          </button>
+          <div className="flex flex-col gap-px bg-[#C6C6C6] sm:flex-row">
+            <StatCard value={header.total_machines} label="Total Machines" />
+            <StatCard value={header.planned_machines} label="Planned Machines" />
+            <StatCard value={header.total_target_qty} label="Total Target Qty" />
+          </div>
         </div>
-      </div>
 
-      <main className="w-full px-3 pb-6 pt-3">
-        {/* Compact info + stats bar */}
-        <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2.5 border border-[#C6C6C6] bg-white px-3.5 py-2.5">
-          <InfoPill icon={HiOutlineCalendarDays} label="Date" value={header.planning_date} />
-          <InfoPill icon={HiOutlineBuildingOffice2} label="Hall" value={header.hall} />
-          <InfoPill icon={HiOutlineClock} label="Shift" value={header.shift} />
-
-          <div className="hidden h-8 w-px bg-[#C6C6C6] sm:block" />
-
-          <div className="flex flex-1 items-center justify-start gap-6 sm:justify-end">
-            <StatPill value={header.total_machines} label="Total Machines" />
-            <StatPill value={header.planned_machines} label="Planned Machines" />
-            <StatPill value={header.total_target_qty} label="Total Target Qty" />
+        {/* Toolbar: search + result count */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2">
+          <div className="flex items-center gap-2">
+            <HiOutlineCog6Tooth className="h-4 w-4 text-[#0F1D24]" />
+            <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Machine Allocations</h2>
+            <span className="border border-[#C6C6C6] bg-[#FAFAFA] px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">
+              {filteredDetails.length}
+              {search ? ` / ${details.length}` : ""}
+            </span>
           </div>
 
-          {header.remarks && (
-            <p className="w-full border-t border-[#C6C6C6] pt-2 text-[11px] text-[#9B9B9B]">
-              {header.remarks}
-            </p>
-          )}
+          <div className="relative">
+            <HiOutlineMagnifyingGlass className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9B9B9B]" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search machine, operator, part..."
+              className="h-8 w-64 border border-[#C6C6C6] bg-white pl-8 pr-7 text-[11.5px] outline-none focus:border-[#0F1D24]"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[#9B9B9B] hover:text-[#0F1D24]"
+              >
+                <HiOutlineXMark className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Machine-wise details table */}
-        <div className="overflow-hidden border border-[#C6C6C6] bg-white">
-          <div className="overflow-x-auto">
+        <div className="border border-[#C6C6C6] bg-white">
+          <div className="max-h-[560px] overflow-auto">
             <table className="w-full text-left text-[12px]">
-              <thead className="bg-[#0F1D24] text-white">
+              <thead className="sticky top-0 z-10 bg-[#0F1D24] text-white">
                 <tr>
                   <th className="px-2.5 py-2 font-semibold">Machine</th>
                   <th className="px-2.5 py-2 font-semibold">Operator</th>
@@ -222,15 +273,20 @@ const ViewDailyPlanPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {details.length === 0 ? (
+                {filteredDetails.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-6 text-center text-[11.5px] text-[#9B9B9B]">
-                      No machine allocations yet.
+                    <td colSpan={6} className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]">
+                      {search ? "No machines match your search." : "No machine allocations yet."}
                     </td>
                   </tr>
                 ) : (
-                  details.map((d) => (
-                    <tr key={d.daily_detail_id} className="border-t border-[#C6C6C6] hover:bg-[#FAFAFA]">
+                  filteredDetails.map((d, idx) => (
+                    <tr
+                      key={d.daily_detail_id}
+                      className={`border-t border-[#C6C6C6] transition-colors duration-100 hover:bg-[#FDC94D]/10 ${
+                        idx % 2 === 1 ? "bg-[#FAFAFA]/60" : "bg-white"
+                      }`}
+                    >
                       <td className="px-2.5 py-1.5 font-mono font-semibold text-[#0F1D24]">
                         {d.machine_name || `#${d.machine_id}`}
                       </td>
@@ -249,6 +305,22 @@ const ViewDailyPlanPage = () => {
                   ))
                 )}
               </tbody>
+              {filteredDetails.length > 0 && (
+                <tfoot className="sticky bottom-0 border-t-2 border-[#0F1D24] bg-[#FAFAFA]">
+                  <tr>
+                    <td colSpan={3} className="px-2.5 py-2 text-right text-[10.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+                      Totals
+                    </td>
+                    <td className="px-2.5 py-2 text-right font-mono font-bold text-[#0F1D24]">
+                      {totals.targetQty.toLocaleString()}
+                    </td>
+                    <td className="px-2.5 py-2" />
+                    <td className="px-2.5 py-2 text-right font-mono font-bold text-[#0F1D24]">
+                      {totals.estHours.toFixed(1)}
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </div>
