@@ -12,8 +12,8 @@ const UserHome = () => {
       <Header />
 
       <main
-        className="w-full px-2 pb-2"
-        style={{ paddingTop: HEADER_HEIGHT + 10 }}
+        className="w-full"
+        style={{ paddingTop: HEADER_HEIGHT+1}}
       >
         <OverviewSection />
         <QuickAccess />

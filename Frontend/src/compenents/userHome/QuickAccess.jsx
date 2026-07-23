@@ -13,7 +13,7 @@ const QuickAccess = () => {
   };
 
   return (
-    <section className="relative mt-1.5 border border-[#C6C6C6] bg-white">
+    <section className="relative border border-[#C6C6C6] bg-white">
       <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-2.5 py-1.5">
         <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F1D24]/60">
           Modules
