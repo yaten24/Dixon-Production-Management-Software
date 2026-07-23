@@ -64,7 +64,7 @@ export default function PlanSelectionPage() {
         </div>
       </div>
 
-      <main className="w-full px-3 pb-6 pt-3">
+      <main className="w-full">
         <div className="mx-auto max-w-2xl">
           <div className="border border-[#C6C6C6] bg-white shadow-[0_1px_2px_rgba(15,29,36,0.06)]">
             <p className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2 text-[11px] font-medium text-[#9B9B9B]">

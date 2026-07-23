@@ -252,7 +252,7 @@ export default function MonthlyPlanView() {
         }
       />
 
-      <main className="w-full space-y-3 px-3 pb-6 pt-3">
+      <main className="w-full">
         {/* Context sidebar + stat cards */}
         <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[260px_1fr]">
           <div className="space-y-4 bg-[#0F1D24] p-5">

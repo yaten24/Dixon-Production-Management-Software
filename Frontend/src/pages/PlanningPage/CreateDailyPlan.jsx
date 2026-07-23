@@ -808,7 +808,7 @@ export default function DailyProductionPlan() {
           subtitle="Start a new plan"
         />
 
-        <main className="w-full px-3 pb-6 pt-3">
+        <main className="w-full">
           {/* NOTE: no overflow-hidden here — the ThemedDatePicker popup is
               position:absolute and would get clipped by an ancestor that
               hides overflow. Sharp-corner panels don't need it anyway. */}
@@ -950,7 +950,7 @@ export default function DailyProductionPlan() {
           }
         />
 
-        <main className="w-full space-y-2 px-3 pb-6 pt-3">
+        <main className="w-full">
           <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[280px_1fr]">
             {/* Machine list */}
             <div className="max-h-[520px] overflow-y-auto bg-white">
