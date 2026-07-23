@@ -1,10 +1,20 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  HiOutlineArrowLeft,
+  HiOutlineChevronDown,
+  HiOutlinePlus,
+  HiOutlineTrash,
+  HiOutlineClipboardDocumentList,
+  HiOutlineSparkles,
+  HiOutlineDocumentCheck,
+} from "react-icons/hi2";
 import { searchParts } from "../../api/partApi";
 import useCreateMonthlyPlan from "../../hooks/useCreateMonthlyPlan";
 
-const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
 const emptyRow = () => ({
   key: crypto.randomUUID(), partQuery: "", part: null, results: [],
   targetQty: "", plannedCycleTime: "", searching: false,
@@ -16,6 +26,116 @@ const effectiveCycleTime = (row) => {
   if (row.part?.actual_cycle_time > 0) return Number(row.part.actual_cycle_time);
   return Number(row.part?.standard_cycle_time) || 0;
 };
+
+// ============================================================
+// PageTitleStrip — shared header pattern (gradient accent line,
+// back button, eyebrow/title/subtitle, right-aligned action group).
+// ============================================================
+function PageTitleStrip({ eyebrow, title, subtitle, showBack = true, actions }) {
+  const navigate = useNavigate();
+
+  return (
+    <header className="w-full border-b border-[#C6C6C6] bg-white">
+      <div
+        className="h-[2px] w-full"
+        style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
+      />
+      <div className="flex h-11 w-full items-center justify-between gap-3 px-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          {showBack && (
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              title="Back"
+              aria-label="Go back"
+              className="flex h-7 w-7 shrink-0 items-center justify-center border border-[#C6C6C6] bg-white p-0 leading-none text-[#0F1D24] outline-none transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] focus-visible:ring-2 focus-visible:ring-[#FDC94D] focus-visible:ring-offset-1"
+            >
+              <HiOutlineArrowLeft className="h-3.5 w-3.5 shrink-0" />
+            </button>
+          )}
+          <div className={`flex min-w-0 flex-1 flex-col justify-center gap-0.5 ${showBack ? "border-l border-[#C6C6C6] pl-2.5" : ""}`}>
+            <div className="flex items-baseline gap-2">
+              {eyebrow && (
+                <span className="shrink-0 text-[10px] font-bold uppercase leading-none tracking-wider text-[#0F1D24]/60">
+                  {eyebrow}
+                </span>
+              )}
+              {/* <h1 className="truncate text-[13px] font-bold leading-none tracking-tight text-[#0F1D24]">{title}</h1> */}
+            </div>
+            {subtitle && <p className="truncate font-mono text-[10px] leading-none text-[#9B9B9B]">{subtitle}</p>}
+          </div>
+        </div>
+        {actions && (
+          <div className="flex h-7 shrink-0 items-stretch gap-px bg-[#C6C6C6] [&>*]:flex [&>*]:items-center [&>*]:whitespace-nowrap">
+            {actions}
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+
+// ============================================================
+// ThemedSelect — flat bordered dropdown matching the desktop
+// design tokens (sharp corners, navy fill on selection).
+// ============================================================
+function ThemedSelect({ value, onChange, options, placeholder = "-- select --", disabled = false, className = "" }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const selected = options.find((o) => String(o.value) === String(value));
+
+  return (
+    <div ref={ref} className={`relative ${className}`}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((o) => !o)}
+        className={`flex h-8 w-full items-center justify-between border px-2.5 text-[11.5px] font-medium outline-none transition-colors duration-100
+          ${disabled ? "cursor-not-allowed border-[#C6C6C6] bg-[#F5F5F5] text-[#9B9B9B]" : "border-[#C6C6C6] bg-white text-[#0F1D24] hover:border-[#0F1D24]"}
+          ${open ? "border-[#0F1D24]" : ""}`}
+      >
+        <span className={selected ? "truncate text-[#0F1D24]" : "truncate text-[#9B9B9B]"}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <HiOutlineChevronDown className={`h-3.5 w-3.5 shrink-0 text-[#9B9B9B] transition-transform duration-100 ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && !disabled && (
+        <ul className="absolute z-50 mt-1 max-h-56 w-full overflow-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
+          {options.map((opt) => (
+            <li
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              className={`cursor-pointer border-b border-[#C6C6C6] px-2.5 py-1.5 text-[11.5px] font-medium last:border-b-0 transition-colors duration-100
+                ${String(opt.value) === String(value) ? "bg-[#0F1D24] text-[#FDC94D]" : "text-[#0F1D24] hover:bg-[#FDC94D]/20"}`}
+            >
+              {opt.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Stat card — matches the metrics-row pattern used elsewhere.
+// ============================================================
+const StatCard = ({ value, label }) => (
+  <div className="flex-1 border border-[#C6C6C6] bg-white px-4 py-3">
+    <p className="text-xl font-bold leading-none text-[#0F1D24]">{value}</p>
+    <p className="mt-1.5 text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">{label}</p>
+  </div>
+);
 
 export default function CreateMonthlyPlan() {
   const navigate = useNavigate();
@@ -29,14 +149,12 @@ export default function CreateMonthlyPlan() {
   const [activeRowKey, setActiveRowKey] = useState(null);
 
   const debounceTimers = useRef({});
-  const containerRef = useRef(null);
+  const tableRef = useRef(null);
 
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setActiveRowKey(null);
-      }
+      if (tableRef.current && !tableRef.current.contains(e.target)) setActiveRowKey(null);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -115,241 +233,288 @@ export default function CreateMonthlyPlan() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] p-3">
-      <motion.h1
-        initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
-        className="mb-3 text-base font-bold text-[#0F1D24]"
-      >
-        Create Monthly Plan
-      </motion.h1>
+    <div className="min-h-screen bg-[#EFEFEF]">
+      <PageTitleStrip
+        eyebrow="Monthly Planning"
+        title="Create Monthly Plan"
+        subtitle={`${MONTH_NAMES[planMonth - 1]} ${planYear}${planNumber ? ` · ${planNumber}` : ""}`}
+      />
 
-      <form onSubmit={handleSubmit} ref={containerRef}>
-        {/* Header fields */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.05 }}
-          className="mb-3 grid grid-cols-1 gap-3 rounded-sm border border-[#C6C6C6] bg-white p-3 md:grid-cols-4"
-        >
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Plan Number</label>
-            <div className="flex gap-1.5">
-              <input
-                value={planNumber}
-                onChange={(e) => setPlanNumber(e.target.value)}
-                placeholder="Manual entry or auto-generate"
-                className="h-8 w-full rounded-sm border border-[#C6C6C6] px-2.5 text-[13px] outline-none transition-colors focus:border-[#0F1D24]"
-              />
-              <button
-                type="button"
-                onClick={handleAutoGenerate}
-                disabled={generating}
-                className="h-8 whitespace-nowrap rounded-sm bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-white transition-opacity disabled:opacity-50"
-              >
-                {generating ? "..." : "Auto Generate"}
-              </button>
+      <main className="w-full px-3 pb-6 pt-3">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Context sidebar + setup form */}
+          <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[260px_1fr]">
+            <div className="bg-[#0F1D24] p-5 text-white">
+              <div className="mb-1 flex items-center gap-2">
+                <HiOutlineClipboardDocumentList className="h-4 w-4 text-[#FDC94D]" />
+                <h2 className="text-[11px] font-bold uppercase tracking-wider text-[#FDC94D]">Plan Overview</h2>
+              </div>
+              <p className="text-[11.5px] leading-relaxed text-white/70">
+                Set the plan number, month and year, then add parts with their monthly targets below.
+              </p>
+
+              <div className="mt-5 space-y-3 border-t border-white/10 pt-4">
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Plan Number</p>
+                  <p className="truncate font-mono text-[12.5px] font-semibold">{planNumber || "Not set"}</p>
+                </div>
+                <div className="flex gap-6">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Month</p>
+                    <p className="text-[12.5px] font-semibold">{MONTH_NAMES[planMonth - 1]}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Year</p>
+                    <p className="font-mono text-[12.5px] font-semibold">{planYear}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white">
+              <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-4 py-2.5">
+                <h2 className="text-[13px] font-bold text-[#0F1D24]">Plan Setup</h2>
+              </div>
+
+              <div className="space-y-4 p-4">
+                <div>
+                  <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Plan Number</label>
+                  <div className="flex gap-px bg-[#C6C6C6]">
+                    <input
+                      value={planNumber}
+                      onChange={(e) => setPlanNumber(e.target.value)}
+                      placeholder="Manual entry or auto-generate"
+                      className="h-8 w-full border-0 bg-white px-2.5 text-[12.5px] outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAutoGenerate}
+                      disabled={generating}
+                      className="flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90 disabled:opacity-50"
+                    >
+                      <HiOutlineSparkles className="h-3.5 w-3.5" />
+                      {generating ? "..." : "Auto Generate"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="h-px w-full bg-[#C6C6C6]" />
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Month</label>
+                    <ThemedSelect
+                      value={planMonth}
+                      onChange={(v) => setPlanMonth(Number(v))}
+                      options={MONTH_NAMES.map((m, i) => ({ value: i + 1, label: m }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Year</label>
+                    <input
+                      type="number"
+                      value={planYear}
+                      onChange={(e) => setPlanYear(e.target.value)}
+                      className="h-8 w-full border border-[#C6C6C6] px-2.5 text-[12.5px] font-mono outline-none focus:border-[#0F1D24]"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div>
-            <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Month</label>
-            <select
-              value={planMonth}
-              onChange={(e) => setPlanMonth(e.target.value)}
-              className="h-8 w-full rounded-sm border border-[#C6C6C6] px-2.5 text-[13px] outline-none focus:border-[#0F1D24]"
-            >
-              {MONTH_NAMES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Year</label>
-            <input
-              type="number"
-              value={planYear}
-              onChange={(e) => setPlanYear(e.target.value)}
-              className="h-8 w-full rounded-sm border border-[#C6C6C6] px-2.5 text-[13px] font-mono outline-none focus:border-[#0F1D24]"
-            />
-          </div>
-        </motion.div>
 
-        {/* Parts */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.1 }}
-          className="mb-3 rounded-sm border border-[#C6C6C6] bg-white p-3"
-        >
-          <div className="mb-2.5 flex items-center justify-between">
-            <h2 className="text-[13px] font-bold text-[#0F1D24]">Parts</h2>
+          {/* Totals row */}
+          <div className="flex flex-col gap-px bg-[#C6C6C6] sm:flex-row">
+            <StatCard value={totalTargetParts} label="Total Parts" />
+            <StatCard value={totalTargetQty.toLocaleString()} label="Total Target Qty" />
+            <StatCard value={totalRequiredHours.toFixed(2)} label="Total Required Hours" />
+          </div>
+
+          {/* Parts toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2">
+            <div className="flex items-center gap-2">
+              <HiOutlineClipboardDocumentList className="h-4 w-4 text-[#0F1D24]" />
+              <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Parts</h2>
+              <span className="border border-[#C6C6C6] bg-[#FAFAFA] px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">
+                {rows.length}
+              </span>
+            </div>
             <button
               type="button"
               onClick={addRow}
-              className="rounded-sm border border-[#0F1D24] px-2.5 py-1 text-[11px] font-semibold text-[#0F1D24] transition-colors hover:bg-[#0F1D24] hover:text-white"
+              className="flex items-center gap-1.5 border border-[#0F1D24] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
             >
-              + Add Row
+              <HiOutlinePlus className="h-3.5 w-3.5" />
+              Add Row
             </button>
           </div>
 
-          {/* Column headers (desktop only) */}
-          <div className="mb-1.5 hidden grid-cols-[2fr_1fr_0.7fr_0.7fr_0.7fr_0.9fr_0.9fr_0.9fr_28px] gap-2 px-1 text-[9.5px] font-mono uppercase tracking-wide text-[#9B9B9B] lg:grid">
-            <span>Part</span>
-            <span>Category</span>
-            <span className="text-right">Std CT</span>
-            <span className="text-right">Actual CT</span>
-            <span className="text-right">Target/Hr</span>
-            <span className="text-right">Monthly Target</span>
-            <span className="text-right">Planned CT</span>
-            <span className="text-right">Req. Hours</span>
-            <span />
-          </div>
+          {/* Parts table — no overflow-hidden/auto ancestor, so the
+              per-row search dropdown can float over sibling rows. */}
+          <div ref={tableRef} className="border border-[#C6C6C6] bg-white">
+            <table className="w-full min-w-[920px] text-left text-[12px]">
+              <thead className="bg-[#0F1D24] text-white">
+                <tr>
+                  <th className="px-2.5 py-2 font-semibold">Part</th>
+                  <th className="px-2.5 py-2 font-semibold">Category</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Std CT</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Actual CT</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Target/Hr</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Monthly Target</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Planned CT</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Req. Hours</th>
+                  <th className="px-2.5 py-2 text-center font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence initial={false}>
+                  {rows.map((row, idx) => {
+                    const cyc = effectiveCycleTime(row);
+                    const targetPerHour = cyc > 0 ? (3600 / cyc).toFixed(1) : "—";
+                    const requiredHours = row.targetQty && cyc > 0 ? ((Number(row.targetQty) * cyc) / 3600).toFixed(2) : "—";
 
-          <div className="space-y-1.5">
-            <AnimatePresence initial={false}>
-              {rows.map((row) => {
-                const cyc = effectiveCycleTime(row);
-                const targetPerHour = cyc > 0 ? (3600 / cyc).toFixed(1) : "-";
-                const requiredHours = row.targetQty && cyc > 0 ? ((Number(row.targetQty) * cyc) / 3600).toFixed(2) : "-";
-
-                return (
-                  <motion.div
-                    key={row.key}
-                    layout
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.18 }}
-                    className="grid grid-cols-2 gap-2 rounded-sm border border-[#C6C6C6]/60 p-2 lg:grid-cols-[2fr_1fr_0.7fr_0.7fr_0.7fr_0.9fr_0.9fr_0.9fr_28px] lg:items-center lg:border-0 lg:border-b lg:border-[#C6C6C6]/60 lg:p-1 lg:pb-2"
-                  >
-                    {/* Part search */}
-                    <div className="relative col-span-2 lg:col-span-1">
-                      <input
-                        value={row.partQuery}
-                        onChange={(e) => handleSearch(row.key, e.target.value)}
-                        onFocus={() => row.results.length > 0 && setActiveRowKey(row.key)}
-                        placeholder="Search part number / name"
-                        className="h-8 w-full rounded-sm border border-[#C6C6C6] px-2 text-[12.5px] outline-none transition-colors focus:border-[#0F1D24]"
-                      />
-                      {row.searching && (
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-[#9B9B9B]">...</span>
-                      )}
-                      <AnimatePresence>
-                        {activeRowKey === row.key && row.results.length > 0 && (
-                          <motion.ul
-                            initial={{ opacity: 0, y: -4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -4 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute z-20 mt-1 max-h-44 w-72 overflow-y-auto rounded-sm border border-[#C6C6C6] bg-white shadow-lg"
-                          >
-                            {row.results.map((p) => (
-                              <li
-                                key={p.id}
-                                onClick={() => selectPart(row.key, p)}
-                                className="cursor-pointer border-b border-[#C6C6C6]/40 px-2.5 py-1.5 text-[11.5px] last:border-b-0 hover:bg-[#FDC94D]/20"
-                              >
-                                <div className="font-mono font-semibold text-[#0F1D24]">{p.part_number}</div>
-                                <div className="text-[#0F1D24]">{p.part_name}</div>
-                                <div className="text-[10px] text-[#9B9B9B]">{p.product_category}</div>
-                              </li>
-                            ))}
-                          </motion.ul>
-                        )}
-                      </AnimatePresence>
-                    </div>
-
-                    <div className="text-[11px] text-[#9B9B9B] lg:col-span-1">
-                      <span className="mr-1 font-mono text-[9px] uppercase text-[#C6C6C6] lg:hidden">Category:</span>
-                      {row.part?.product_category || "-"}
-                    </div>
-
-                    <div className="text-right text-[11px] font-mono text-[#0F1D24]">
-                      <span className="mr-1 font-mono text-[9px] uppercase text-[#C6C6C6] lg:hidden">Std CT:</span>
-                      {row.part?.standard_cycle_time ?? "-"}
-                    </div>
-
-                    <div className="text-right text-[11px] font-mono text-[#0F1D24]">
-                      <span className="mr-1 font-mono text-[9px] uppercase text-[#C6C6C6] lg:hidden">Actual CT:</span>
-                      {row.part?.actual_cycle_time ?? "-"}
-                    </div>
-
-                    <div className="text-right text-[11px] font-mono text-[#0F1D24]">
-                      <span className="mr-1 font-mono text-[9px] uppercase text-[#C6C6C6] lg:hidden">Target/Hr:</span>
-                      {targetPerHour}
-                    </div>
-
-                    <div className="text-right">
-                      <input
-                        type="number" min="1" value={row.targetQty}
-                        onChange={(e) => updateRow(row.key, { targetQty: e.target.value })}
-                        placeholder="Qty"
-                        className="h-8 w-full rounded-sm border border-[#C6C6C6] px-2 text-right text-[12.5px] font-mono outline-none focus:border-[#0F1D24] lg:w-20"
-                      />
-                    </div>
-
-                    <div className="text-right">
-                      <input
-                        type="number" step="0.01" min="0" value={row.plannedCycleTime}
-                        onChange={(e) => updateRow(row.key, { plannedCycleTime: e.target.value })}
-                        placeholder="optional"
-                        className="h-8 w-full rounded-sm border border-[#C6C6C6] px-2 text-right text-[12.5px] font-mono outline-none focus:border-[#0F1D24] lg:w-20"
-                      />
-                    </div>
-
-                    <div className="text-right text-[11px] font-mono font-semibold text-[#0F1D24]">
-                      <span className="mr-1 font-mono text-[9px] uppercase text-[#C6C6C6] lg:hidden">Req. Hrs:</span>
-                      {requiredHours}
-                    </div>
-
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => removeRow(row.key)}
-                        className="flex h-6 w-6 items-center justify-center rounded-sm text-[#9B9B9B] transition-colors hover:bg-red-50 hover:text-red-500"
-                        title="Remove row"
+                    return (
+                      <motion.tr
+                        key={row.key}
+                        layout
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className={`border-t border-[#C6C6C6] transition-colors duration-100 hover:bg-[#FDC94D]/10 ${
+                          idx % 2 === 1 ? "bg-[#FAFAFA]/60" : "bg-white"
+                        }`}
                       >
-                        ✕
-                      </button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
+                        <td className="relative px-2.5 py-1.5">
+                          <input
+                            value={row.partQuery}
+                            onChange={(e) => handleSearch(row.key, e.target.value)}
+                            onFocus={() => row.results.length > 0 && setActiveRowKey(row.key)}
+                            placeholder="Search part number / name"
+                            className="h-8 w-56 border border-[#C6C6C6] px-2 text-[12px] outline-none focus:border-[#0F1D24]"
+                          />
+                          {row.searching && (
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] text-[#9B9B9B]">...</span>
+                          )}
+                          <AnimatePresence>
+                            {activeRowKey === row.key && row.results.length > 0 && (
+                              <motion.ul
+                                initial={{ opacity: 0, y: -4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -4 }}
+                                transition={{ duration: 0.12 }}
+                                className="absolute z-30 mt-1 max-h-44 w-72 overflow-y-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.15)]"
+                              >
+                                {row.results.map((p) => (
+                                  <li
+                                    key={p.id}
+                                    onClick={() => selectPart(row.key, p)}
+                                    className="cursor-pointer border-b border-[#C6C6C6] px-2.5 py-1.5 text-[11.5px] last:border-b-0 hover:bg-[#FDC94D]/20"
+                                  >
+                                    <div className="font-mono font-semibold text-[#0F1D24]">{p.part_number}</div>
+                                    <div className="text-[#0F1D24]">{p.part_name}</div>
+                                    <div className="text-[10px] text-[#9B9B9B]">{p.product_category}</div>
+                                  </li>
+                                ))}
+                              </motion.ul>
+                            )}
+                          </AnimatePresence>
+                        </td>
+
+                        <td className="px-2.5 py-1.5 text-[#9B9B9B]">{row.part?.product_category || "—"}</td>
+                        <td className="px-2.5 py-1.5 text-right font-mono text-[#9B9B9B]">{row.part?.standard_cycle_time ?? "—"}</td>
+                        <td className="px-2.5 py-1.5 text-right font-mono text-[#9B9B9B]">{row.part?.actual_cycle_time ?? "—"}</td>
+                        <td className="px-2.5 py-1.5 text-right font-mono text-[#9B9B9B]">{targetPerHour}</td>
+
+                        <td className="px-2.5 py-1.5 text-right">
+                          <input
+                            type="number" min="1" value={row.targetQty}
+                            onChange={(e) => updateRow(row.key, { targetQty: e.target.value })}
+                            placeholder="Qty"
+                            className="h-8 w-20 border border-[#C6C6C6] px-2 text-right text-[12px] font-mono outline-none focus:border-[#0F1D24]"
+                          />
+                        </td>
+
+                        <td className="px-2.5 py-1.5 text-right">
+                          <input
+                            type="number" step="0.01" min="0" value={row.plannedCycleTime}
+                            onChange={(e) => updateRow(row.key, { plannedCycleTime: e.target.value })}
+                            placeholder="opt."
+                            className="h-8 w-20 border border-[#C6C6C6] px-2 text-right text-[12px] font-mono outline-none focus:border-[#0F1D24]"
+                          />
+                        </td>
+
+                        <td className="px-2.5 py-1.5 text-right font-mono font-semibold text-[#0F1D24]">{requiredHours}</td>
+
+                        <td className="px-2.5 py-1.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => removeRow(row.key)}
+                            disabled={rows.length === 1}
+                            title="Remove row"
+                            className="mx-auto flex h-6 w-6 items-center justify-center text-red-500 transition-colors duration-100 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                          >
+                            <HiOutlineTrash className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </AnimatePresence>
+              </tbody>
+              {validRows.length > 0 && (
+                <tfoot className="border-t-2 border-[#0F1D24] bg-[#FAFAFA]">
+                  <tr>
+                    <td colSpan={5} className="px-2.5 py-2 text-right text-[10.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+                      Totals
+                    </td>
+                    <td className="px-2.5 py-2 text-right font-mono font-bold text-[#0F1D24]">
+                      {totalTargetQty.toLocaleString()}
+                    </td>
+                    <td className="px-2.5 py-2" />
+                    <td className="px-2.5 py-2 text-right font-mono font-bold text-[#0F1D24]">
+                      {totalRequiredHours.toFixed(2)}
+                    </td>
+                    <td className="px-2.5 py-2" />
+                  </tr>
+                </tfoot>
+              )}
+            </table>
           </div>
 
-          <motion.div
-            layout
-            className="mt-3 flex flex-wrap gap-4 border-t border-[#C6C6C6] pt-2.5 text-[11.5px] font-mono text-[#0F1D24]"
-          >
-            <span>Total Parts: <b>{totalTargetParts}</b></span>
-            <span>Total Target Qty: <b>{totalTargetQty}</b></span>
-            <span>Total Required Hours: <b>{totalRequiredHours.toFixed(2)}</b></span>
-          </motion.div>
-        </motion.div>
+          <AnimatePresence>
+            {(formError || error) && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-[11.5px] font-semibold text-red-600"
+              >
+                {formError || error}
+              </motion.p>
+            )}
+          </AnimatePresence>
 
-        <AnimatePresence>
-          {(formError || error) && (
-            <motion.p
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="mb-2.5 text-[11.5px] font-semibold text-red-600"
+          {/* Footer actions */}
+          <div className="flex items-center justify-end gap-px bg-[#C6C6C6] border border-[#C6C6C6]">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="flex h-10 items-center justify-center bg-white px-4 text-[12px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#F5F5F5]"
             >
-              {formError || error}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
-        <motion.button
-          type="submit"
-          disabled={submitting}
-          whileHover={{ y: -1 }}
-          whileTap={{ scale: 0.97 }}
-          className="rounded-sm bg-[#FDC94D] px-4 py-2 text-[12.5px] font-bold text-[#0F1D24] shadow-[0_8px_18px_-8px_rgba(15,29,36,0.35)] transition-opacity disabled:opacity-50"
-        >
-          {submitting ? "Creating..." : "Create Plan"}
-        </motion.button>
-      </form>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex h-10 items-center justify-center gap-1.5 bg-[#0F1D24] px-5 text-[12px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <HiOutlineDocumentCheck className="h-3.5 w-3.5" />
+              {submitting ? "Creating..." : "Create Plan"}
+            </button>
+          </div>
+        </form>
+      </main>
     </div>
   );
 }
