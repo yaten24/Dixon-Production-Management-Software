@@ -9,7 +9,9 @@ import {
   HiOutlineCheck,
   HiOutlineXMark,
   HiOutlineWrenchScrewdriver,
+  HiOutlineSquares2X2,
 } from "react-icons/hi2";
+import { useNavigate } from "react-router-dom";
 import useDailyProductionPlan from "../../hooks/useDailyProductionPlan";
 import { listMonthlyPlans, generatePlanNumber as generateMonthlyNumber } from "../../api/monthlyPlanApi";
 import { generateDailyPlanNumber } from "../../api/dailyPlanApi";
@@ -118,6 +120,49 @@ const CHANGE_TYPES = ["Planned", "Unplanned"];
 
 // Free-text-ish reasons for Unplanned changes (backend requires `reason` when Unplanned)
 const MC_REASONS = ["Breakdown", "Quality Issue", "Trial Run", "Tool Damage", "Other"];
+
+// ============================================================
+// Page-level full-width title strip — same pattern as
+// DailyPlanPage: gradient accent line + eyebrow/heading block +
+// right-side action-button group (gap-px grid-line trick).
+// ============================================================
+function PageTitleStrip({ eyebrow, title, subtitle, backHref, actions }) {
+  const navigate = useNavigate();
+  return (
+    <div className="w-full border-b border-[#C6C6C6] bg-white">
+      <div
+        className="h-[2px] w-full"
+        style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
+      />
+      <div className="flex h-[40px] w-full flex-wrap items-center justify-between gap-2 px-3">
+        <div className="flex items-center gap-2">
+          {backHref !== undefined && (
+            <button
+              onClick={() => (backHref ? navigate(backHref) : navigate(-1))}
+              title="Back"
+              className="flex h-6 w-6 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-colors duration-100"
+            >
+              <HiOutlineArrowUturnLeft className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <div className={backHref !== undefined ? "border-l border-[#C6C6C6] pl-2.5" : ""}>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F1D24]/60">
+              {eyebrow}
+            </span>
+            <h1 className="text-[13px] font-bold tracking-tight text-[#0F1D24] leading-tight">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="font-mono text-[10px] text-[#9B9B9B] leading-tight">{subtitle}</p>
+            )}
+          </div>
+        </div>
+
+        {actions && <div className="flex items-stretch h-6 gap-px bg-[#C6C6C6]">{actions}</div>}
+      </div>
+    </div>
+  );
+}
 
 // ============================================================
 // Themed custom dropdown — flat bordered panel, no motion,
@@ -562,53 +607,67 @@ export default function DailyProductionPlan() {
   // ==========================================================
   if (!header) {
     return (
-      <div className="min-h-screen bg-[#EFEFEF] p-4">
-        <form
-          onSubmit={handleStart}
-          className="mx-auto max-w-lg border border-[#C6C6C6] bg-white"
-        >
-          <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-4 py-2.5">
-            <h1 className="text-[13px] font-bold text-[#0F1D24]">Daily Production Plan</h1>
-          </div>
+      <div className="min-h-screen bg-[#EFEFEF]">
+        <PageTitleStrip
+          eyebrow="Production Planning"
+          title="Daily Production Plan"
+          backHref="/employee/dashboard"
+          actions={
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+            >
+              <HiOutlineSquares2X2 className="h-3 w-3" />
+              Dashboard
+            </button>
+          }
+        />
 
-          <div className="p-4">
-            <div className="mb-3">
-              <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Monthly Plan</label>
-              <ThemedSelect
-                value={monthlyPlanId}
-                onChange={setMonthlyPlanId}
-                options={monthlyPlans.map((p) => ({ value: p.monthly_plan_id, label: p.plan_number }))}
-                placeholder="-- select monthly plan --"
-                className="h-9"
-              />
+        <main className="w-full px-3 pb-6 pt-3">
+          <form onSubmit={handleStart} className="mx-auto max-w-lg border border-[#C6C6C6] bg-white">
+            <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-4 py-2.5">
+              <h2 className="text-[13px] font-bold text-[#0F1D24]">Start Planning</h2>
             </div>
 
-            <div className="mb-3 grid grid-cols-3 gap-2">
-              <div>
-                <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Date</label>
-                <input
-                  type="date" value={planningDate} onChange={(e) => setPlanningDate(e.target.value)} required
-                  className="h-9 w-full border border-[#C6C6C6] px-2 text-[12.5px] outline-none focus:border-[#0F1D24]"
+            <div className="p-4">
+              <div className="mb-3">
+                <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Monthly Plan</label>
+                <ThemedSelect
+                  value={monthlyPlanId}
+                  onChange={setMonthlyPlanId}
+                  options={monthlyPlans.map((p) => ({ value: p.monthly_plan_id, label: p.plan_number }))}
+                  placeholder="-- select monthly plan --"
+                  className="h-9"
                 />
               </div>
-              <div>
-                <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Hall</label>
-                <ThemedSelect value={hall} onChange={setHall} options={HALLS.map((h) => ({ value: h, label: h }))} />
+
+              <div className="mb-3 grid grid-cols-3 gap-2">
+                <div>
+                  <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Date</label>
+                  <input
+                    type="date" value={planningDate} onChange={(e) => setPlanningDate(e.target.value)} required
+                    className="h-9 w-full border border-[#C6C6C6] px-2 text-[12.5px] outline-none focus:border-[#0F1D24]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Hall</label>
+                  <ThemedSelect value={hall} onChange={setHall} options={HALLS.map((h) => ({ value: h, label: h }))} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Shift</label>
+                  <ThemedSelect value={shift} onChange={setShift} options={SHIFTS.map((s) => ({ value: s, label: `Shift ${s}` }))} />
+                </div>
               </div>
-              <div>
-                <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Shift</label>
-                <ThemedSelect value={shift} onChange={setShift} options={SHIFTS.map((s) => ({ value: s, label: `Shift ${s}` }))} />
-              </div>
+
+              {error && <p className="mb-2 text-[11.5px] font-semibold text-red-600">{error}</p>}
+
+              <button type="submit" disabled={loading}
+                className="h-9 w-full border border-[#0F1D24] bg-[#0F1D24] text-[13px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:opacity-50">
+                {loading ? "Loading..." : "Start Planning"}
+              </button>
             </div>
-
-            {error && <p className="mb-2 text-[11.5px] font-semibold text-red-600">{error}</p>}
-
-            <button type="submit" disabled={loading}
-              className="h-9 w-full border border-[#0F1D24] bg-[#0F1D24] text-[13px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:opacity-50">
-              {loading ? "Loading..." : "Start Planning"}
-            </button>
-          </div>
-        </form>
+          </form>
+        </main>
       </div>
     );
   }
@@ -618,81 +677,87 @@ export default function DailyProductionPlan() {
   // ==========================================================
   if (header.isNew) {
     return (
-      <div className="min-h-screen space-y-2 bg-[#EFEFEF] p-2">
-        <div className="flex items-center justify-between border border-[#C6C6C6] bg-white px-3 py-2">
-          <div>
-            <h1 className="text-[13px] font-bold text-[#0F1D24]">New Daily Plan — {hall} · Shift {shift}</h1>
-            <p className="font-mono text-[11px] text-[#9B9B9B]">{planningDate}</p>
+      <div className="min-h-screen bg-[#EFEFEF]">
+        <PageTitleStrip
+          eyebrow="Production Planning"
+          title={`New Daily Plan — ${hall} · Shift ${shift}`}
+          subtitle={planningDate}
+          backHref="/employee/dashboard"
+          actions={
+            <button
+              onClick={reset}
+              className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+            >
+              <HiOutlineArrowUturnLeft className="h-3 w-3" />
+              Change Selection
+            </button>
+          }
+        />
+
+        <main className="w-full space-y-2 px-3 pb-6 pt-3">
+          <div className="overflow-x-auto border border-[#C6C6C6] bg-white">
+            <table className="w-full min-w-[760px] text-[12px]">
+              <thead className="bg-[#0F1D24] text-white">
+                <tr>
+                  <th className="px-2.5 py-2 text-left font-semibold">Machine</th>
+                  <th className="px-2.5 py-2 text-left font-semibold">Part</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Target Qty</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Planned CT</th>
+                  <th className="px-2.5 py-2 text-left font-semibold">Operator Code</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hallMachines.map((m) => {
+                  const a = rowAssignments[m.id] || {};
+                  return (
+                    <tr key={m.id} className="border-t border-[#C6C6C6]">
+                      <td className="px-2.5 py-1.5 font-mono font-semibold text-[#0F1D24]">
+                        {m.machine_code} <span className="text-[#9B9B9B]">{m.machine_name}</span>
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <ThemedSelect
+                          value={a.monthlyDetailId || ""}
+                          onChange={(val) => handlePartPick(m.id, val)}
+                          options={monthlyParts.map((p) => ({ value: p.monthly_detail_id, label: `${p.part_number} - ${p.part_name}` }))}
+                          placeholder="-- none --"
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5 text-right">
+                        <input
+                          type="number" min="1" value={a.targetQty || ""}
+                          onChange={(e) => setAssignment(m.id, { targetQty: e.target.value })}
+                          className="h-7 w-20 border border-[#C6C6C6] px-1.5 text-right text-[11.5px] font-mono outline-none focus:border-[#0F1D24]"
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5 text-right">
+                        <input
+                          type="number" step="0.01" min="0" value={a.plannedCycleTime || ""}
+                          onChange={(e) => setAssignment(m.id, { plannedCycleTime: e.target.value })}
+                          className="h-7 w-20 border border-[#C6C6C6] px-1.5 text-right text-[11.5px] font-mono outline-none focus:border-[#0F1D24]"
+                        />
+                      </td>
+                      <td className="px-2.5 py-1.5">
+                        <input
+                          value={a.operatorCode || ""}
+                          onChange={(e) => setAssignment(m.id, { operatorCode: e.target.value })}
+                          placeholder="optional"
+                          className="h-7 w-full border border-[#C6C6C6] px-1.5 text-[11.5px] outline-none focus:border-[#0F1D24]"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <button onClick={reset}
-            className="flex h-8 items-center gap-1.5 border border-[#C6C6C6] px-3 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#F5F5F5]">
-            <HiOutlineArrowUturnLeft className="h-3.5 w-3.5" />
-            Change Selection
+
+          {(formError || error) && <p className="text-[11.5px] font-semibold text-red-600">{formError || error}</p>}
+
+          <button onClick={handleCreatePlan} disabled={creating}
+            className="border border-[#0F1D24] bg-[#FDC94D] px-4 py-2 text-[12.5px] font-bold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:opacity-50">
+            {creating ? "Creating..." : "Create Plan"}
           </button>
-        </div>
-
-        <div className="overflow-x-auto border border-[#C6C6C6] bg-white">
-          <table className="w-full min-w-[760px] text-[12px]">
-            <thead className="bg-[#0F1D24] text-white">
-              <tr>
-                <th className="px-2.5 py-2 text-left font-semibold">Machine</th>
-                <th className="px-2.5 py-2 text-left font-semibold">Part</th>
-                <th className="px-2.5 py-2 text-right font-semibold font-mono">Target Qty</th>
-                <th className="px-2.5 py-2 text-right font-semibold font-mono">Planned CT</th>
-                <th className="px-2.5 py-2 text-left font-semibold">Operator Code</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hallMachines.map((m) => {
-                const a = rowAssignments[m.id] || {};
-                return (
-                  <tr key={m.id} className="border-t border-[#C6C6C6]">
-                    <td className="px-2.5 py-1.5 font-mono font-semibold text-[#0F1D24]">
-                      {m.machine_code} <span className="text-[#9B9B9B]">{m.machine_name}</span>
-                    </td>
-                    <td className="px-2.5 py-1.5">
-                      <ThemedSelect
-                        value={a.monthlyDetailId || ""}
-                        onChange={(val) => handlePartPick(m.id, val)}
-                        options={monthlyParts.map((p) => ({ value: p.monthly_detail_id, label: `${p.part_number} - ${p.part_name}` }))}
-                        placeholder="-- none --"
-                      />
-                    </td>
-                    <td className="px-2.5 py-1.5 text-right">
-                      <input
-                        type="number" min="1" value={a.targetQty || ""}
-                        onChange={(e) => setAssignment(m.id, { targetQty: e.target.value })}
-                        className="h-7 w-20 border border-[#C6C6C6] px-1.5 text-right text-[11.5px] font-mono outline-none focus:border-[#0F1D24]"
-                      />
-                    </td>
-                    <td className="px-2.5 py-1.5 text-right">
-                      <input
-                        type="number" step="0.01" min="0" value={a.plannedCycleTime || ""}
-                        onChange={(e) => setAssignment(m.id, { plannedCycleTime: e.target.value })}
-                        className="h-7 w-20 border border-[#C6C6C6] px-1.5 text-right text-[11.5px] font-mono outline-none focus:border-[#0F1D24]"
-                      />
-                    </td>
-                    <td className="px-2.5 py-1.5">
-                      <input
-                        value={a.operatorCode || ""}
-                        onChange={(e) => setAssignment(m.id, { operatorCode: e.target.value })}
-                        placeholder="optional"
-                        className="h-7 w-full border border-[#C6C6C6] px-1.5 text-[11.5px] outline-none focus:border-[#0F1D24]"
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {(formError || error) && <p className="text-[11.5px] font-semibold text-red-600">{formError || error}</p>}
-
-        <button onClick={handleCreatePlan} disabled={creating}
-          className="border border-[#0F1D24] bg-[#FDC94D] px-4 py-2 text-[12.5px] font-bold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:opacity-50">
-          {creating ? "Creating..." : "Create Plan"}
-        </button>
+        </main>
       </div>
     );
   }
@@ -701,126 +766,128 @@ export default function DailyProductionPlan() {
   // View 3 — Existing plan: stats + editable machine table + mould changes
   // ==========================================================
   return (
-    <div className="min-h-screen space-y-1.5 bg-[#EFEFEF] p-2">
-      <div className="flex items-center justify-between border border-[#C6C6C6] bg-white px-3 py-2">
-        <div>
-          <h1 className="text-base font-bold tracking-tight text-[#0F1D24]">{header.plan_number}</h1>
-          <p className="mt-0.5 font-mono text-[11px] text-[#9B9B9B]">
-            {header.planning_date} · {header.hall} · Shift {header.shift}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className={`border border-[#C6C6C6] px-2.5 py-1 text-[11px] font-bold ${STATUS_COLORS[header.status] || STATUS_COLORS.Draft}`}>
-            {header.status}
-          </span>
-          <button onClick={reset}
-            className="flex h-8 items-center gap-1.5 border border-[#C6C6C6] px-3 text-xs font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#F5F5F5]">
-            <HiOutlineArrowUturnLeft className="h-3.5 w-3.5" />
-            Change Selection
-          </button>
-          {header.status === "Draft" && (
+    <div className="min-h-screen bg-[#EFEFEF]">
+      <PageTitleStrip
+        eyebrow={header.plan_number}
+        title={`${header.planning_date} · ${header.hall} · Shift ${header.shift}`}
+        backHref="/employee/dashboard"
+        actions={
+          <>
+            <span className={`flex items-center bg-white px-2.5 text-[11px] font-bold ${STATUS_COLORS[header.status] || STATUS_COLORS.Draft}`}>
+              {header.status}
+            </span>
             <button
-              onClick={handlePublish}
-              disabled={loading}
-              className="flex h-8 items-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-3 text-xs font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={reset}
+              className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
             >
-              <HiOutlinePaperAirplane className="h-3.5 w-3.5" />
-              Publish Plan
+              <HiOutlineArrowUturnLeft className="h-3 w-3" />
+              Change Selection
             </button>
-          )}
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="flex flex-wrap gap-4 border border-[#C6C6C6] bg-white px-3 py-2 text-[11.5px] font-mono text-[#0F1D24]">
-        <span>Total Machines: <b>{header.total_machines}</b></span>
-        <span>Planned Machines: <b>{header.planned_machines}</b></span>
-        <span>Total Target Qty: <b>{header.total_target_qty}</b></span>
-      </div>
-
-      {/* Machine table */}
-      <div className="overflow-x-auto border border-[#C6C6C6] bg-white">
-        <table className="w-full min-w-[820px] text-[12px]">
-          <thead className="bg-[#0F1D24] text-white">
-            <tr>
-              <th className="px-2.5 py-2 text-left font-semibold">Machine</th>
-              <th className="px-2.5 py-2 text-left font-semibold">Part</th>
-              <th className="px-2.5 py-2 text-right font-semibold font-mono">Target</th>
-              <th className="px-2.5 py-2 text-right font-semibold font-mono">Planned CT</th>
-              <th className="px-2.5 py-2 text-right font-semibold font-mono">Est. Hours</th>
-              <th className="px-2.5 py-2 text-center font-semibold">Mould Change</th>
-              {header.status === "Draft" && <th className="px-2.5 py-2 text-center font-semibold">Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {details.map((row) => {
-              const openChange = openMachineCodes.has(row.machine_code);
-              return (
-                <tr key={row.daily_detail_id} className="border-t border-[#C6C6C6]">
-                  <td className="px-2.5 py-2 font-mono font-semibold text-[#0F1D24]">
-                    {row.machine_code} <span className="text-[#9B9B9B]">{row.machine_name}</span>
-                  </td>
-                  <td className="px-2.5 py-2">
-                    <div className="font-mono text-[#0F1D24]">{row.part_number}</div>
-                    <div className="text-[#9B9B9B]">{row.part_name}</div>
-                  </td>
-                  <td className="px-2.5 py-2 text-right font-mono">{row.target_qty}</td>
-                  <td className="px-2.5 py-2 text-right font-mono">{row.planned_cycle_time ?? "-"}</td>
-                  <td className="px-2.5 py-2 text-right font-mono">{row.estimated_run_hours ?? "-"}</td>
-                  <td className="px-2.5 py-2 text-center">
-                    {openChange ? (
-                      <span className="border border-[#C6C6C6] bg-[#9B9B9B]/15 px-2 py-0.5 text-[10.5px] font-bold text-[#0F1D24]">
-                        In Progress
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => setMcModalRow(row)}
-                        className="mx-auto flex h-7 items-center gap-1 border border-[#C6C6C6] px-2 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#F5F5F5]"
-                      >
-                        <HiOutlinePlus className="h-3.5 w-3.5" />
-                        Add
-                      </button>
-                    )}
-                  </td>
-                  {header.status === "Draft" && (
-                    <td className="px-2.5 py-2 text-center">
-                      <button onClick={() => removeRow(row.daily_detail_id)}
-                        className="mx-auto flex h-6 w-6 items-center justify-center text-red-500 hover:bg-red-50">
-                        <HiOutlineTrash className="h-3.5 w-3.5" />
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-            {details.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]">No machine assignments yet.</td></tr>
+            {header.status === "Draft" && (
+              <button
+                onClick={handlePublish}
+                disabled={loading}
+                className="flex items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <HiOutlinePaperAirplane className="h-3 w-3" />
+                Publish Plan
+              </button>
             )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mould change history */}
-      <MouldChangeHistory
-        changes={mouldChanges}
-        mcLoading={mcLoading}
-        mcError={mcError}
-        start={start}
-        complete={complete}
-        cancel={cancel}
-        removeChange={removeChange}
+          </>
+        }
       />
 
-      {mcModalRow && (
-        <MouldChangeModal
-          row={mcModalRow}
-          header={header}
-          monthlyParts={monthlyParts}
-          onClose={() => setMcModalRow(null)}
-          onSubmit={handleAddMouldChange}
+      <main className="w-full space-y-1.5 px-3 pb-6 pt-3">
+        {/* Stats */}
+        <div className="flex flex-wrap gap-4 border border-[#C6C6C6] bg-white px-3 py-2 text-[11.5px] font-mono text-[#0F1D24]">
+          <span>Total Machines: <b>{header.total_machines}</b></span>
+          <span>Planned Machines: <b>{header.planned_machines}</b></span>
+          <span>Total Target Qty: <b>{header.total_target_qty}</b></span>
+        </div>
+
+        {/* Machine table */}
+        <div className="overflow-x-auto border border-[#C6C6C6] bg-white">
+          <table className="w-full min-w-[820px] text-[12px]">
+            <thead className="bg-[#0F1D24] text-white">
+              <tr>
+                <th className="px-2.5 py-2 text-left font-semibold">Machine</th>
+                <th className="px-2.5 py-2 text-left font-semibold">Part</th>
+                <th className="px-2.5 py-2 text-right font-semibold font-mono">Target</th>
+                <th className="px-2.5 py-2 text-right font-semibold font-mono">Planned CT</th>
+                <th className="px-2.5 py-2 text-right font-semibold font-mono">Est. Hours</th>
+                <th className="px-2.5 py-2 text-center font-semibold">Mould Change</th>
+                {header.status === "Draft" && <th className="px-2.5 py-2 text-center font-semibold">Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {details.map((row) => {
+                const openChange = openMachineCodes.has(row.machine_code);
+                return (
+                  <tr key={row.daily_detail_id} className="border-t border-[#C6C6C6]">
+                    <td className="px-2.5 py-2 font-mono font-semibold text-[#0F1D24]">
+                      {row.machine_code} <span className="text-[#9B9B9B]">{row.machine_name}</span>
+                    </td>
+                    <td className="px-2.5 py-2">
+                      <div className="font-mono text-[#0F1D24]">{row.part_number}</div>
+                      <div className="text-[#9B9B9B]">{row.part_name}</div>
+                    </td>
+                    <td className="px-2.5 py-2 text-right font-mono">{row.target_qty}</td>
+                    <td className="px-2.5 py-2 text-right font-mono">{row.planned_cycle_time ?? "-"}</td>
+                    <td className="px-2.5 py-2 text-right font-mono">{row.estimated_run_hours ?? "-"}</td>
+                    <td className="px-2.5 py-2 text-center">
+                      {openChange ? (
+                        <span className="border border-[#C6C6C6] bg-[#9B9B9B]/15 px-2 py-0.5 text-[10.5px] font-bold text-[#0F1D24]">
+                          In Progress
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setMcModalRow(row)}
+                          className="mx-auto flex h-7 items-center gap-1 border border-[#C6C6C6] px-2 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#F5F5F5]"
+                        >
+                          <HiOutlinePlus className="h-3.5 w-3.5" />
+                          Add
+                        </button>
+                      )}
+                    </td>
+                    {header.status === "Draft" && (
+                      <td className="px-2.5 py-2 text-center">
+                        <button onClick={() => removeRow(row.daily_detail_id)}
+                          className="mx-auto flex h-6 w-6 items-center justify-center text-red-500 hover:bg-red-50">
+                          <HiOutlineTrash className="h-3.5 w-3.5" />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+              {details.length === 0 && (
+                <tr><td colSpan={7} className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]">No machine assignments yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mould change history */}
+        <MouldChangeHistory
+          changes={mouldChanges}
+          mcLoading={mcLoading}
+          mcError={mcError}
+          start={start}
+          complete={complete}
+          cancel={cancel}
+          removeChange={removeChange}
         />
-      )}
+
+        {mcModalRow && (
+          <MouldChangeModal
+            row={mcModalRow}
+            header={header}
+            monthlyParts={monthlyParts}
+            onClose={() => setMcModalRow(null)}
+            onSubmit={handleAddMouldChange}
+          />
+        )}
+      </main>
     </div>
   );
 }
