@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-  HiOutlineArrowRight,
   HiOutlineArrowLeft,
+  HiOutlineArrowRight,
   HiOutlineTrash,
   HiOutlinePlus,
   HiOutlineSquares2X2,
   HiOutlineExclamationTriangle,
   HiOutlineUserGroup,
+  HiOutlineCalendarDays,
+  HiOutlineMagnifyingGlass,
+  HiOutlineXMark,
 } from "react-icons/hi2";
 import { listDailyPlans, deleteDailyPlan } from "../../api/dailyPlanApi";
 
@@ -34,133 +36,38 @@ const toDateKey = (date) => {
 
 const todayISO = () => toDateKey(new Date());
 
-// ==========================================================
-// Animated starfield background — pure CSS, no library
-// ==========================================================
-const StarsBackground = () => {
-  const [stars] = useState(() =>
-    Array.from({ length: 60 }, (_, i) => ({
-      id: i,
-      top: Math.random() * 100,
-      left: Math.random() * 100,
-      size: Math.random() * 1.6 + 0.6,
-      delay: Math.random() * 4,
-      duration: Math.random() * 3 + 2,
-    })),
-  );
-
-  return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <style>{`
-        @keyframes dpTwinkle {
-          0%, 100% { opacity: 0.12; transform: scale(0.8); }
-          50% { opacity: 0.85; transform: scale(1.15); }
-        }
-      `}</style>
-      {stars.map((s) => (
-        <span
-          key={s.id}
-          style={{
-            position: "absolute",
-            top: `${s.top}%`,
-            left: `${s.left}%`,
-            width: `${s.size}px`,
-            height: `${s.size}px`,
-            borderRadius: "9999px",
-            background: "#0F1D24",
-            animation: `dpTwinkle ${s.duration}s ease-in-out ${s.delay}s infinite`,
-          }}
-        />
-      ))}
+// ============================================================
+// Sidebar summary tile — matches the navy context panel used
+// across the daily/monthly plan pages.
+// ============================================================
+const SummaryTile = ({ icon: Icon, label, value }) => (
+  <div className="flex items-center gap-2.5">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-white/15 bg-white/5 text-[#FDC94D]">
+      <Icon className="h-3.5 w-3.5" />
     </div>
-  );
-};
-
-const DayPlanCard = ({ plan, index, onOpen, onDelete }) => {
-  const parsedDate = new Date(plan.planning_date);
-  const { weekday, day, month } = formatDate(plan.planning_date);
-  const isToday = toDateKey(parsedDate) === todayISO();
-
-  const handleDeleteClick = (e) => {
-    e.stopPropagation();
-    onDelete(plan.daily_plan_id);
-  };
-
-  return (
-    <motion.div
-      onClick={() => onOpen(plan)}
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -1 }}
-      transition={{ duration: 0.2, ease: "easeOut", delay: index * 0.02 }}
-      className="group flex cursor-pointer items-center gap-2 rounded-sm border border-[#C6C6C6]/50 bg-white px-2.5 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.05)] transition-all duration-200 hover:border-[#0F1D24]/30 hover:shadow-[0_6px_16px_-6px_rgba(15,29,36,0.2)]"
-    >
-      <div className="flex h-7 w-7 flex-shrink-0 flex-col items-center justify-center rounded-sm bg-[#0F1D24] text-[#FDC94D]">
-        <span className="text-[10px] font-bold leading-none">{day}</span>
-      </div>
-
-      <div className="flex flex-1 flex-col truncate">
-        <span className="flex items-center gap-1.5 truncate text-[12.5px] font-bold tracking-tight text-[#0F1D24]">
-          {weekday}, {month} {day}
-          {isToday && (
-            <span className="flex-shrink-0 rounded-full bg-[#FDC94D]/25 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-[#0F1D24]">
-              Today
-            </span>
-          )}
-        </span>
-        <span className="truncate text-[10px] text-[#9B9B9B]">{plan.hall} · Shift {plan.shift}</span>
-      </div>
-
-      <HiOutlineUserGroup className="h-3.5 w-3.5 flex-shrink-0 text-[#C6C6C6] opacity-0 transition-all duration-200 group-hover:text-[#0F1D24] group-hover:opacity-100" />
-
-      <HiOutlineArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-[#C6C6C6] opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-[#0F1D24] group-hover:opacity-100" />
-
-      <button
-        onClick={handleDeleteClick}
-        title="Delete plan"
-        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-sm text-[#C6C6C6] opacity-0 transition-all duration-200 hover:bg-red-50 hover:text-red-500 group-hover:opacity-100"
-      >
-        <HiOutlineTrash className="h-3 w-3" />
-      </button>
-    </motion.div>
-  );
-};
-
-const EmptyStateWarning = ({ onCreate }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.97 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.3, ease: "easeOut" }}
-    className="flex flex-col items-center justify-center rounded-sm border border-dashed border-[#C6C6C6] bg-white py-12 text-center"
-  >
-    <motion.div
-      animate={{ y: [0, -6, 0] }}
-      transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-      className="mb-3 flex h-12 w-12 items-center justify-center rounded-sm bg-red-50 text-red-500"
-    >
-      <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
-        <HiOutlineExclamationTriangle className="h-6 w-6" />
-      </motion.div>
-    </motion.div>
-    <p className="text-[13px] font-bold text-[#0F1D24]">No plans found</p>
-    <p className="mt-1 max-w-xs text-[11.5px] text-[#9B9B9B]">There are no daily production plans yet. Create one to get started.</p>
-    <motion.button
-      onClick={onCreate}
-      whileHover={{ y: -1 }}
-      whileTap={{ scale: 0.97 }}
-      className="mt-4 flex items-center gap-1.5 rounded-sm bg-[#0F1D24] px-4 py-2 text-xs font-semibold text-[#FDC94D] shadow-[0_8px_18px_-8px_rgba(15,29,36,0.45)]"
-    >
-      <HiOutlinePlus className="h-3.5 w-3.5" />
-      Create new plan
-    </motion.button>
-  </motion.div>
+    <div className="min-w-0 leading-tight">
+      <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">{label}</p>
+      <p className="truncate text-[12.5px] font-semibold text-white">{value}</p>
+    </div>
+  </div>
 );
 
-const DailyPlanPageForOperatorAllocation = () => {
+// ============================================================
+// Stat card — matches the metrics-row pattern used elsewhere.
+// ============================================================
+const StatCard = ({ value, label }) => (
+  <div className="flex-1 border border-[#C6C6C6] bg-white px-4 py-3">
+    <p className="text-xl font-bold leading-none text-[#0F1D24]">{value}</p>
+    <p className="mt-1.5 text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">{label}</p>
+  </div>
+);
+
+export default function DailyPlanPageForOperatorAllocation() {
   const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
   const fetchPlans = async () => {
     setLoading(true);
@@ -187,80 +94,241 @@ const DailyPlanPageForOperatorAllocation = () => {
     }
   };
 
-  // Card click now goes straight to operator assignment — this page's
-  // sole purpose is picking a plan to assign operators for.
+  // Row click goes straight to operator assignment — this page's sole
+  // purpose is picking a plan to assign operators for.
   const handleAssignOperators = (plan) => navigate(`/employee/production/plans/${plan.daily_plan_id}/operator/allocation`);
   const handleCreate = () => navigate("/employee/production/plans/daily/create");
 
   const hasTodayPlan = plans.some((p) => toDateKey(new Date(p.planning_date)) === todayISO());
 
+  const filteredPlans = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return plans;
+    return plans.filter((p) =>
+      [p.hall, p.shift, p.planning_date]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(q))
+    );
+  }, [plans, search]);
+
   return (
-    <div className="relative min-h-screen bg-[#F7F7F5] p-2">
-      <StarsBackground />
+    <div className="min-h-screen bg-[#EFEFEF]">
+      {/* Page title strip */}
+      <header className="w-full border-b border-[#C6C6C6] bg-white">
+        <div
+          className="h-[2px] w-full"
+          style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
+        />
+        <div className="flex h-11 w-full items-center justify-between gap-3 px-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <button
+              onClick={() => navigate(-1)}
+              title="Back"
+              aria-label="Go back"
+              className="flex h-7 w-7 shrink-0 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+            >
+              <HiOutlineArrowLeft className="h-3.5 w-3.5" />
+            </button>
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 border-l border-[#C6C6C6] pl-2.5">
+              <div className="flex items-baseline gap-2">
+                <span className="shrink-0 text-[10px] font-bold uppercase leading-none tracking-wider text-[#0F1D24]/60">
+                  Operator Allocation
+                </span>
+                <h1 className="truncate text-[13px] font-bold leading-none tracking-tight text-[#0F1D24]">
+                  Assign Operators — Daily Plans
+                </h1>
+              </div>
+            </div>
+          </div>
 
-      <div className="relative z-10 mx-auto max-w-full">
-        {/* Compact single-row header — everything fits in one line */}
-        <div className="mb-3 flex flex-nowrap items-center gap-2 overflow-x-auto rounded-sm border border-[#C6C6C6]/70 bg-white px-2 py-1.5">
-          <button
-            onClick={() => navigate(-1)}
-            title="Back"
-            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-sm border border-[#C6C6C6]/70 bg-white text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
-          >
-            <HiOutlineArrowLeft className="h-3.5 w-3.5" />
-          </button>
-
-          <h1 className="flex-shrink-0 truncate text-[13px] font-bold leading-none tracking-tight text-[#0F1D24]">
-            Assign Operators — Daily Plans
-          </h1>
-
-          <div className="mx-0.5 h-4 w-px flex-shrink-0 bg-[#C6C6C6]" />
-
-          <button
-            onClick={() => navigate("/employee/dashboard")}
-            className="flex flex-shrink-0 items-center gap-1.5 rounded-sm border border-[#C6C6C6]/70 bg-white px-2 py-1 text-[11px] font-semibold text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
-          >
-            <HiOutlineSquares2X2 className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Dashboard</span>
-          </button>
-
-          <button
-            onClick={handleCreate}
-            className="ml-auto flex flex-shrink-0 items-center gap-1.5 rounded-sm bg-[#0F1D24] px-2.5 py-1 text-[11px] font-semibold text-[#FDC94D] shadow-[0_6px_14px_-6px_rgba(15,29,36,0.45)] transition-transform hover:-translate-y-0.5 active:scale-[0.98]"
-          >
-            <HiOutlinePlus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Create new plan</span>
-          </button>
+          <div className="flex h-7 shrink-0 items-stretch gap-px bg-[#C6C6C6] [&>*]:flex [&>*]:items-center [&>*]:whitespace-nowrap">
+            <button
+              onClick={() => navigate("/employee/dashboard")}
+              className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+            >
+              <HiOutlineSquares2X2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </button>
+            <button
+              onClick={handleCreate}
+              className="flex items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]"
+            >
+              <HiOutlinePlus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Create new plan</span>
+            </button>
+          </div>
         </div>
+      </header>
 
+      <main className="w-full pb-6">
         {!loading && !error && plans.length > 0 && !hasTodayPlan && (
-          <div className="mb-2.5 flex items-center gap-2 rounded-sm border border-red-300 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700">
-            <HiOutlineExclamationTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+          <div className="flex items-center gap-2 border border-red-300 bg-red-50 px-3 py-2 text-[11.5px] font-semibold text-red-700">
+            <HiOutlineExclamationTriangle className="h-4 w-4 flex-shrink-0" />
             No plan exists for today — create one immediately.
           </div>
         )}
 
-        {loading ? (
-          <div className="py-10 text-center text-xs text-[#9B9B9B]">Loading plans...</div>
-        ) : error ? (
-          <div className="rounded-sm border border-red-300 bg-red-50 py-8 text-center text-xs font-semibold text-red-600">{error}</div>
-        ) : plans.length === 0 ? (
-          <EmptyStateWarning onCreate={handleCreate} />
-        ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {plans.map((plan, i) => (
-              <DayPlanCard
-                key={plan.daily_plan_id}
-                plan={plan}
-                index={i}
-                onOpen={handleAssignOperators}
-                onDelete={handleDelete}
-              />
-            ))}
+        {/* Context sidebar + stat cards */}
+        <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[260px_1fr]">
+          <div className="space-y-4 bg-[#0F1D24] p-5">
+            <SummaryTile icon={HiOutlineCalendarDays} label="Today" value={formatDate(new Date().toISOString()).weekday + ", " + formatDate(new Date().toISOString()).month + " " + formatDate(new Date().toISOString()).day} />
+            <SummaryTile
+              icon={HiOutlineExclamationTriangle}
+              label="Today's Plan"
+              value={hasTodayPlan ? "Created" : "Missing"}
+            />
           </div>
-        )}
-      </div>
+
+          <div className="flex flex-col gap-px bg-[#C6C6C6] sm:flex-row">
+            <StatCard value={plans.length} label="Total Plans" />
+            <StatCard value={hasTodayPlan ? "Yes" : "No"} label="Plan For Today" />
+            <StatCard value={new Set(plans.map((p) => p.hall)).size} label="Halls In Use" />
+          </div>
+        </div>
+
+        {/* Toolbar: search + result count */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2">
+          <div className="flex items-center gap-2">
+            <HiOutlineUserGroup className="h-4 w-4 text-[#0F1D24]" />
+            <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Daily Plans</h2>
+            <span className="border border-[#C6C6C6] bg-[#FAFAFA] px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">
+              {filteredPlans.length}
+              {search ? ` / ${plans.length}` : ""}
+            </span>
+          </div>
+
+          <div className="relative">
+            <HiOutlineMagnifyingGlass className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9B9B9B]" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search hall, shift, date..."
+              className="h-8 w-64 border border-[#C6C6C6] bg-white pl-8 pr-7 text-[11.5px] outline-none focus:border-[#0F1D24]"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[#9B9B9B] hover:text-[#0F1D24]"
+              >
+                <HiOutlineXMark className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Plans table */}
+        <div className="border border-[#C6C6C6] bg-white">
+          <div className="max-h-[560px] overflow-auto">
+            <table className="w-full text-left text-[12px]">
+              <thead className="sticky top-0 z-10 bg-[#0F1D24] text-white">
+                <tr>
+                  <th className="px-2.5 py-2 font-semibold">Date</th>
+                  <th className="px-2.5 py-2 font-semibold">Hall</th>
+                  <th className="px-2.5 py-2 font-semibold">Shift</th>
+                  <th className="px-2.5 py-2 font-semibold">Status</th>
+                  <th className="px-2.5 py-2 text-center font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]">
+                      Loading plans…
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-8 text-center text-[11.5px] font-semibold text-red-600">
+                      {error}
+                    </td>
+                  </tr>
+                ) : filteredPlans.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-10">
+                      <div className="flex flex-col items-center justify-center gap-2 text-center">
+                        <HiOutlineExclamationTriangle className="h-6 w-6 text-[#9B9B9B]" />
+                        <p className="text-[12.5px] font-bold text-[#0F1D24]">
+                          {search ? "No plans match your search." : "No plans found"}
+                        </p>
+                        {!search && (
+                          <>
+                            <p className="max-w-xs text-[11px] text-[#9B9B9B]">
+                              There are no daily production plans yet. Create one to get started.
+                            </p>
+                            <button
+                              onClick={handleCreate}
+                              className="mt-1.5 flex items-center gap-1.5 bg-[#0F1D24] px-3 py-1.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]"
+                            >
+                              <HiOutlinePlus className="h-3.5 w-3.5" />
+                              Create new plan
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredPlans.map((plan, idx) => {
+                    const parsedDate = new Date(plan.planning_date);
+                    const { weekday, day, month } = formatDate(plan.planning_date);
+                    const isToday = toDateKey(parsedDate) === todayISO();
+
+                    return (
+                      <tr
+                        key={plan.daily_plan_id}
+                        onClick={() => handleAssignOperators(plan)}
+                        className={`group cursor-pointer border-t border-[#C6C6C6] transition-colors duration-100 hover:bg-[#FDC94D]/10 ${
+                          idx % 2 === 1 ? "bg-[#FAFAFA]/60" : "bg-white"
+                        }`}
+                      >
+                        <td className="px-2.5 py-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
+                              <span className="text-[10px] font-bold leading-none">{day}</span>
+                            </div>
+                            <span className="font-mono font-semibold text-[#0F1D24]">
+                              {weekday}, {month} {day}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-2.5 py-1.5 text-[#0F1D24]">{plan.hall}</td>
+                        <td className="px-2.5 py-1.5 text-[#9B9B9B]">Shift {plan.shift}</td>
+                        <td className="px-2.5 py-1.5">
+                          {isToday ? (
+                            <span className="border border-[#C6C6C6] bg-[#FDC94D]/25 px-2 py-0.5 text-[10.5px] font-bold text-[#0F1D24]">
+                              Today
+                            </span>
+                          ) : (
+                            <span className="text-[#9B9B9B]">—</span>
+                          )}
+                        </td>
+                        <td className="px-2.5 py-1.5">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleAssignOperators(plan); }}
+                              title="Assign operators"
+                              className="flex h-6 w-6 items-center justify-center text-[#0F1D24] hover:bg-[#FDC94D]/25"
+                            >
+                              <HiOutlineArrowRight className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDelete(plan.daily_plan_id); }}
+                              title="Delete plan"
+                              className="flex h-6 w-6 items-center justify-center text-red-500 hover:bg-red-50"
+                            >
+                              <HiOutlineTrash className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
     </div>
   );
-};
-
-export default DailyPlanPageForOperatorAllocation;
+}
