@@ -1,9 +1,22 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useParams } from "react-router-dom";
 import * as XLSX from "xlsx";
-import { HiOutlineArrowLeft, HiOutlineDocumentArrowDown, HiOutlinePencil, HiOutlineTrash, HiOutlineCheck, HiOutlineXMark } from "react-icons/hi2";
+import {
+  HiOutlineDocumentArrowDown,
+  HiOutlinePencil,
+  HiOutlineTrash,
+  HiOutlineCheck,
+  HiOutlineXMark,
+  HiOutlineCalendarDays,
+  HiOutlineBuildingOffice2,
+  HiOutlineClock,
+  HiOutlineMagnifyingGlass,
+  HiOutlineClipboardDocumentList,
+} from "react-icons/hi2";
 import { searchParts } from "../../api/partApi";
 import useMonthlyPlanView from "../../hooks/useMonthlyPlanView";
+// NOTE: adjust this import to wherever PageTitleStrip actually lives relative to this file.
+import PageTitleStrip from "./PageTitleStrip";
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -15,9 +28,34 @@ const STATUS_COLORS = {
   Closed: "bg-red-100 text-red-700",
 };
 
+// ============================================================
+// Sidebar summary tile — matches the navy context panel pattern
+// used across the daily/monthly plan pages.
+// ============================================================
+const SummaryTile = ({ icon: Icon, label, value }) => (
+  <div className="flex items-center gap-2.5">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-white/15 bg-white/5 text-[#FDC94D]">
+      <Icon className="h-3.5 w-3.5" />
+    </div>
+    <div className="min-w-0 leading-tight">
+      <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">{label}</p>
+      <p className="truncate text-[12.5px] font-semibold text-white">{value}</p>
+    </div>
+  </div>
+);
+
+// ============================================================
+// Stat card — matches the metrics row pattern.
+// ============================================================
+const StatCard = ({ value, label }) => (
+  <div className="flex-1 border border-[#C6C6C6] bg-white px-4 py-3">
+    <p className="text-xl font-bold leading-none text-[#0F1D24]">{value}</p>
+    <p className="mt-1.5 text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">{label}</p>
+  </div>
+);
+
 export default function MonthlyPlanView() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { header, details, loading, error, addPart, updatePart, removePart } = useMonthlyPlanView(id);
 
   // ---- Add-part form state ----
@@ -35,6 +73,9 @@ export default function MonthlyPlanView() {
   const [editingId, setEditingId] = useState(null);
   const [editQty, setEditQty] = useState("");
   const [editCycleTime, setEditCycleTime] = useState("");
+
+  // ---- Table search/filter state ----
+  const [tableSearch, setTableSearch] = useState("");
 
   const debounceRef = useRef(null);
   const searchBoxRef = useRef(null);
@@ -146,64 +187,96 @@ export default function MonthlyPlanView() {
     XLSX.writeFile(wb, `${header?.plan_number || "monthly-plan"}.xlsx`);
   };
 
-  if (loading) return <div className="p-8 text-center text-[12px] text-[#9B9B9B]">Loading plan...</div>;
-  if (error) return <div className="p-8 text-center text-[12px] font-semibold text-red-600">{error}</div>;
-  if (!header) return null;
+  // --- Derived: filtered rows + totals (mirrors the daily-plan view pattern) ---
+  const filteredDetails = useMemo(() => {
+    const q = tableSearch.trim().toLowerCase();
+    if (!q) return details;
+    return details.filter((d) =>
+      [d.part_number, d.part_name, d.product_category]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(q))
+    );
+  }, [details, tableSearch]);
+
+  const totals = useMemo(() => {
+    return filteredDetails.reduce(
+      (acc, d) => ({
+        targetQty: acc.targetQty + (Number(d.monthly_target_qty) || 0),
+        completedQty: acc.completedQty + (Number(d.completed_qty) || 0),
+        balanceQty: acc.balanceQty + (Number(d.balance_qty) || 0),
+      }),
+      { targetQty: 0, completedQty: 0, balanceQty: 0 }
+    );
+  }, [filteredDetails]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#EFEFEF]">
+        <p className="text-sm font-medium text-[#9B9B9B]">Loading plan…</p>
+      </div>
+    );
+  }
+
+  if (error || !header) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#EFEFEF]">
+        <p className="text-sm font-medium text-red-500">{error || "Plan not found"}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#EFEFEF]">
-      {/* Page-level full-width title strip */}
-      <div className="w-full border-b border-[#C6C6C6] bg-white">
-        <div
-          className="h-[2px] w-full"
-          style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
-        />
-        <div className="flex h-[40px] w-full flex-wrap items-center justify-between gap-2 px-3">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate(-1)}
-              title="Back"
-              className="flex h-6 w-6 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-colors duration-100"
+      <PageTitleStrip
+        eyebrow="Monthly Plan"
+        title={header.plan_number}
+        subtitle={`${MONTH_NAMES[header.plan_month - 1]} ${header.plan_year} · ${header.hall || "All Hall"} · ${header.working_days} working days`}
+        actions={
+          <>
+            <span
+              className={`flex items-center border border-[#C6C6C6] px-2.5 text-[11px] font-bold ${
+                STATUS_COLORS[header.status] || STATUS_COLORS.Draft
+              }`}
             >
-              <HiOutlineArrowLeft className="h-3.5 w-3.5" />
-            </button>
-            <div className="border-l border-[#C6C6C6] pl-2.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F1D24]/60">
-                {header.plan_number}
-              </span>
-              <h1 className="text-[13px] font-bold tracking-tight text-[#0F1D24] leading-tight">
-                {MONTH_NAMES[header.plan_month - 1]} {header.plan_year} · {header.hall || "All Hall"} · {header.working_days} working days
-              </h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className={`border border-[#C6C6C6] px-2.5 py-1 text-[11px] font-bold ${STATUS_COLORS[header.status] || STATUS_COLORS.Draft}`}>
               {header.status}
             </span>
             <button
               onClick={exportToExcel}
               disabled={details.length === 0}
-              className="flex items-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-3 h-6 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:opacity-40"
+              className="flex items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:opacity-40"
             >
               <HiOutlineDocumentArrowDown className="h-3.5 w-3.5" />
               Export Excel
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      <main className="w-full px-3 pb-6 pt-3">
-        {/* Summary */}
-        <div className="mb-3 flex flex-wrap gap-4 border border-[#C6C6C6] bg-white px-3 py-2 text-[11.5px] font-mono text-[#0F1D24]">
-          <span>Total Parts: <b>{header.total_parts ?? details.length}</b></span>
-          <span>Total Target Qty: <b>{header.total_target_qty ?? 0}</b></span>
+      <main className="w-full space-y-3 px-3 pb-6 pt-3">
+        {/* Context sidebar + stat cards */}
+        <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[260px_1fr]">
+          <div className="space-y-4 bg-[#0F1D24] p-5">
+            <SummaryTile
+              icon={HiOutlineCalendarDays}
+              label="Period"
+              value={`${MONTH_NAMES[header.plan_month - 1]} ${header.plan_year}`}
+            />
+            <SummaryTile icon={HiOutlineBuildingOffice2} label="Hall" value={header.hall || "All Hall"} />
+            <SummaryTile icon={HiOutlineClock} label="Working Days" value={header.working_days} />
+          </div>
+
+          <div className="flex flex-col gap-px bg-[#C6C6C6] sm:flex-row">
+            <StatCard value={header.total_parts ?? details.length} label="Total Parts" />
+            <StatCard value={header.total_target_qty ?? totals.targetQty} label="Total Target Qty" />
+            <StatCard value={totals.completedQty.toLocaleString()} label="Completed Qty" />
+            <StatCard value={totals.balanceQty.toLocaleString()} label="Balance Qty" />
+          </div>
         </div>
 
         {/* Add part */}
-        <form onSubmit={handleAddPart} className="mb-3 border border-[#C6C6C6] bg-white">
+        <form onSubmit={handleAddPart} className="border border-[#C6C6C6] bg-white">
           <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-1.5">
-            <h2 className="text-[13px] font-bold text-[#0F1D24]">Add Part</h2>
+            <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Add Part</h2>
           </div>
           <div className="p-3">
             <div className="grid grid-cols-1 gap-2 md:grid-cols-4" ref={searchBoxRef}>
@@ -258,81 +331,143 @@ export default function MonthlyPlanView() {
           </div>
         </form>
 
+        {/* Toolbar: search + result count */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2">
+          <div className="flex items-center gap-2">
+            <HiOutlineClipboardDocumentList className="h-4 w-4 text-[#0F1D24]" />
+            <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Plan Details</h2>
+            <span className="border border-[#C6C6C6] bg-[#FAFAFA] px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">
+              {filteredDetails.length}
+              {tableSearch ? ` / ${details.length}` : ""}
+            </span>
+          </div>
+
+          <div className="relative">
+            <HiOutlineMagnifyingGlass className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9B9B9B]" />
+            <input
+              value={tableSearch}
+              onChange={(e) => setTableSearch(e.target.value)}
+              placeholder="Search part, category..."
+              className="h-8 w-64 border border-[#C6C6C6] bg-white pl-8 pr-7 text-[11.5px] outline-none focus:border-[#0F1D24]"
+            />
+            {tableSearch && (
+              <button
+                onClick={() => setTableSearch("")}
+                className="absolute right-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[#9B9B9B] hover:text-[#0F1D24]"
+              >
+                <HiOutlineXMark className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Details table */}
-        <div className="overflow-x-auto border border-[#C6C6C6] bg-white">
-          <table className="w-full min-w-[820px] text-[12px]">
-            <thead className="bg-[#0F1D24] text-white">
-              <tr>
-                <th className="px-2.5 py-2 text-left font-semibold">Part</th>
-                <th className="px-2.5 py-2 text-left font-semibold">Category</th>
-                <th className="px-2.5 py-2 text-right font-semibold font-mono">Target</th>
-                <th className="px-2.5 py-2 text-right font-semibold font-mono">Planned CT</th>
-                <th className="px-2.5 py-2 text-right font-semibold font-mono">Completed</th>
-                <th className="px-2.5 py-2 text-right font-semibold font-mono">Balance</th>
-                <th className="px-2.5 py-2 text-center font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {details.map((row) => {
-                const isEditing = editingId === row.monthly_detail_id;
-                return (
-                  <tr key={row.monthly_detail_id} className="border-t border-[#C6C6C6]">
-                    <td className="px-2.5 py-2">
-                      <div className="font-mono font-semibold text-[#0F1D24]">{row.part_number}</div>
-                      <div className="text-[#9B9B9B]">{row.part_name}</div>
-                    </td>
-                    <td className="px-2.5 py-2 text-[#9B9B9B]">{row.product_category}</td>
-                    <td className="px-2.5 py-2 text-right font-mono">
-                      {isEditing ? (
-                        <input
-                          type="number" min="1" value={editQty}
-                          onChange={(e) => setEditQty(e.target.value)}
-                          className="h-7 w-20 border border-[#C6C6C6] px-1.5 text-right text-[12px] font-mono outline-none focus:border-[#0F1D24]"
-                        />
-                      ) : row.monthly_target_qty}
-                    </td>
-                    <td className="px-2.5 py-2 text-right font-mono">
-                      {isEditing ? (
-                        <input
-                          type="number" step="0.01" min="0" value={editCycleTime}
-                          onChange={(e) => setEditCycleTime(e.target.value)}
-                          className="h-7 w-20 border border-[#C6C6C6] px-1.5 text-right text-[12px] font-mono outline-none focus:border-[#0F1D24]"
-                        />
-                      ) : (row.planned_cycle_time ?? "-")}
-                    </td>
-                    <td className="px-2.5 py-2 text-right font-mono">{row.completed_qty}</td>
-                    <td className="px-2.5 py-2 text-right font-mono">{row.balance_qty}</td>
-                    <td className="px-2.5 py-2">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {isEditing ? (
-                          <>
-                            <button onClick={() => saveEdit(row.monthly_detail_id)} className="flex h-6 w-6 items-center justify-center text-green-600 hover:bg-green-50">
-                              <HiOutlineCheck className="h-3.5 w-3.5" />
-                            </button>
-                            <button onClick={cancelEdit} className="flex h-6 w-6 items-center justify-center text-[#9B9B9B] hover:bg-[#F5F5F5]">
-                              <HiOutlineXMark className="h-3.5 w-3.5" />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => startEdit(row)} className="flex h-6 w-6 items-center justify-center text-[#0F1D24] hover:bg-[#FDC94D]/20">
-                              <HiOutlinePencil className="h-3.5 w-3.5" />
-                            </button>
-                            <button onClick={() => handleDelete(row.monthly_detail_id)} className="flex h-6 w-6 items-center justify-center text-red-500 hover:bg-red-50">
-                              <HiOutlineTrash className="h-3.5 w-3.5" />
-                            </button>
-                          </>
-                        )}
-                      </div>
+        <div className="border border-[#C6C6C6] bg-white">
+          <div className="max-h-[560px] overflow-auto">
+            <table className="w-full min-w-[820px] text-left text-[12px]">
+              <thead className="sticky top-0 z-10 bg-[#0F1D24] text-white">
+                <tr>
+                  <th className="px-2.5 py-2 font-semibold">Part</th>
+                  <th className="px-2.5 py-2 font-semibold">Category</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Target</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Planned CT</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Completed</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Balance</th>
+                  <th className="px-2.5 py-2 text-center font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDetails.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]">
+                      {tableSearch ? "No parts match your search." : "No parts added to this plan yet."}
                     </td>
                   </tr>
-                );
-              })}
-              {details.length === 0 && (
-                <tr><td colSpan={7} className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]">No parts added to this plan yet.</td></tr>
+                ) : (
+                  filteredDetails.map((row, idx) => {
+                    const isEditing = editingId === row.monthly_detail_id;
+                    return (
+                      <tr
+                        key={row.monthly_detail_id}
+                        className={`border-t border-[#C6C6C6] transition-colors duration-100 hover:bg-[#FDC94D]/10 ${
+                          idx % 2 === 1 ? "bg-[#FAFAFA]/60" : "bg-white"
+                        }`}
+                      >
+                        <td className="px-2.5 py-1.5">
+                          <div className="font-mono font-semibold text-[#0F1D24]">{row.part_number}</div>
+                          <div className="text-[#9B9B9B]">{row.part_name}</div>
+                        </td>
+                        <td className="px-2.5 py-1.5 text-[#9B9B9B]">{row.product_category}</td>
+                        <td className="px-2.5 py-1.5 text-right font-mono font-semibold text-[#0F1D24]">
+                          {isEditing ? (
+                            <input
+                              type="number" min="1" value={editQty}
+                              onChange={(e) => setEditQty(e.target.value)}
+                              className="h-7 w-20 border border-[#C6C6C6] px-1.5 text-right text-[12px] font-mono outline-none focus:border-[#0F1D24]"
+                            />
+                          ) : row.monthly_target_qty}
+                        </td>
+                        <td className="px-2.5 py-1.5 text-right font-mono text-[#9B9B9B]">
+                          {isEditing ? (
+                            <input
+                              type="number" step="0.01" min="0" value={editCycleTime}
+                              onChange={(e) => setEditCycleTime(e.target.value)}
+                              className="h-7 w-20 border border-[#C6C6C6] px-1.5 text-right text-[12px] font-mono outline-none focus:border-[#0F1D24]"
+                            />
+                          ) : (row.planned_cycle_time ?? "—")}
+                        </td>
+                        <td className="px-2.5 py-1.5 text-right font-mono text-[#9B9B9B]">{row.completed_qty}</td>
+                        <td className="px-2.5 py-1.5 text-right font-mono text-[#9B9B9B]">{row.balance_qty}</td>
+                        <td className="px-2.5 py-1.5">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {isEditing ? (
+                              <>
+                                <button onClick={() => saveEdit(row.monthly_detail_id)} className="flex h-6 w-6 items-center justify-center border border-transparent text-green-600 hover:border-green-200 hover:bg-green-50">
+                                  <HiOutlineCheck className="h-3.5 w-3.5" />
+                                </button>
+                                <button onClick={cancelEdit} className="flex h-6 w-6 items-center justify-center border border-transparent text-[#9B9B9B] hover:border-[#C6C6C6] hover:bg-[#F5F5F5]">
+                                  <HiOutlineXMark className="h-3.5 w-3.5" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button onClick={() => startEdit(row)} className="flex h-6 w-6 items-center justify-center border border-transparent text-[#0F1D24] hover:border-[#FDC94D] hover:bg-[#FDC94D]/20">
+                                  <HiOutlinePencil className="h-3.5 w-3.5" />
+                                </button>
+                                <button onClick={() => handleDelete(row.monthly_detail_id)} className="flex h-6 w-6 items-center justify-center border border-transparent text-red-500 hover:border-red-200 hover:bg-red-50">
+                                  <HiOutlineTrash className="h-3.5 w-3.5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+              {filteredDetails.length > 0 && (
+                <tfoot className="sticky bottom-0 border-t-2 border-[#0F1D24] bg-[#FAFAFA]">
+                  <tr>
+                    <td colSpan={2} className="px-2.5 py-2 text-right text-[10.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+                      Totals
+                    </td>
+                    <td className="px-2.5 py-2 text-right font-mono font-bold text-[#0F1D24]">
+                      {totals.targetQty.toLocaleString()}
+                    </td>
+                    <td className="px-2.5 py-2" />
+                    <td className="px-2.5 py-2 text-right font-mono font-bold text-[#0F1D24]">
+                      {totals.completedQty.toLocaleString()}
+                    </td>
+                    <td className="px-2.5 py-2 text-right font-mono font-bold text-[#0F1D24]">
+                      {totals.balanceQty.toLocaleString()}
+                    </td>
+                    <td className="px-2.5 py-2" />
+                  </tr>
+                </tfoot>
               )}
-            </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </main>
     </div>
