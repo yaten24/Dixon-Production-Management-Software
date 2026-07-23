@@ -12,13 +12,13 @@ const SIZE_STYLES = {
   lg: {
     pad: "p-3",
     title: "text-[10.5px]",
-    value: "text-[38px]",
+    value: "text-[75px]",
     subtitle: "text-[11px]",
   },
   md: {
     pad: "p-2",
     title: "text-[9px]",
-    value: "text-[19px]",
+    value: "text-[25px]",
     subtitle: "text-[9.5px]",
   },
 };
@@ -78,7 +78,7 @@ const OverviewCard = ({ item }) => {
   return (
     <div className="relative flex h-full border border-[#C6C6C6] bg-white hover:bg-[#FAFAFA] transition-colors duration-100">
       {/* Left accent rail */}
-      <div className={`w-[3px] flex-shrink-0 ${tone.accent}`} />
+      {/* <div className={`w-[3px] flex-shrink-0 ${tone.accent}`} /> */}
 
       <div className={`relative flex flex-1 items-start justify-between ${s.pad} gap-2`}>
         <div className="flex min-w-0 flex-1 flex-col justify-center">

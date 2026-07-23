@@ -110,7 +110,7 @@ const OverviewSection = ({ hall }) => {
         </div>
       )}
 
-      <div className="p-1.5">
+      <div>
         {loading && !data ? (
           <div className="grid grid-cols-2 gap-1.5 md:grid-cols-6 md:auto-rows-[66px]">
             {[SIZE_SPAN.lg, SIZE_SPAN.md, SIZE_SPAN.md, SIZE_SPAN.md, SIZE_SPAN.md].map((span, i) => (
@@ -121,7 +121,7 @@ const OverviewSection = ({ hall }) => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-1.5 md:grid-cols-6 md:auto-rows-[66px]">
+          <div className="grid grid-cols-2 md:grid-cols-6 md:auto-rows-[66px]">
             {overviewData.map((item) => (
               <div key={item.id} className={SIZE_SPAN[item.size] || SIZE_SPAN.md}>
                 <OverviewCard item={item} />
