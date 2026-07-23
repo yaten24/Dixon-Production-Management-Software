@@ -10,9 +10,6 @@ import {
   FaFilter,
   FaSyncAlt,
   FaUndo,
-  FaHistory,
-  FaFileExcel,
-  FaThLarge,
 } from "react-icons/fa";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -90,14 +87,18 @@ const CustomDatePicker = ({ value, onChange }) => {
 
   return (
     <div ref={wrapperRef} className="relative flex-shrink-0">
-      <button
+      <motion.button
         type="button"
+        whileHover={{ y: -1 }}
+        whileTap={{ scale: 0.97 }}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded border border-[#C6C6C6] bg-white px-2 text-[11px] font-medium text-[#0F1D24] transition-colors hover:border-[#0F1D24]"
+        className={`flex h-7 flex-shrink-0 items-center gap-1.5 border bg-white px-2 text-[11px] font-medium text-[#0F1D24] transition-colors ${
+          open ? "border-[#0F1D24]" : "border-[#C6C6C6] hover:border-[#0F1D24]/60"
+        }`}
       >
         <FaCalendarAlt className="text-[10px] text-[#0F1D24]" />
         <span className="whitespace-nowrap">{formatDisplay(selectedKey)}</span>
-      </button>
+      </motion.button>
 
       <AnimatePresence>
         {open && (
@@ -106,7 +107,7 @@ const CustomDatePicker = ({ value, onChange }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute right-0 top-9 z-50 w-60 overflow-hidden rounded border border-[#C6C6C6]/60 bg-white shadow-xl"
+            className="absolute left-0 top-9 z-50 w-60 overflow-hidden border border-[#C6C6C6]/60 bg-white shadow-xl"
           >
             <div className="flex items-center justify-between bg-[#0F1D24] px-2 py-1.5">
               <button
@@ -132,7 +133,9 @@ const CustomDatePicker = ({ value, onChange }) => {
               {WEEKDAYS.map((w, i) => (
                 <div
                   key={`${w}-${i}`}
-                  className="flex h-5 items-center justify-center text-[9px] font-semibold text-[#9B9B9B]"
+                  className={`flex h-5 items-center justify-center text-[9px] font-semibold ${
+                    i === 0 || i === 6 ? "text-[#FDC94D]" : "text-[#9B9B9B]"
+                  }`}
                 >
                   {w}
                 </div>
@@ -144,7 +147,7 @@ const CustomDatePicker = ({ value, onChange }) => {
                 if (!date) return <div key={`empty-${i}`} className="h-6 w-6" />;
                 const key = toDateKey(date);
                 const isSelected = key === selectedKey;
-                const isToday = key === todayKey;
+                const isTodayCell = key === todayKey;
                 return (
                   <button
                     type="button"
@@ -153,7 +156,7 @@ const CustomDatePicker = ({ value, onChange }) => {
                     className={`flex h-6 w-6 items-center justify-center rounded text-[10px] font-semibold transition-colors ${
                       isSelected
                         ? "bg-[#FDC94D] text-[#0F1D24]"
-                        : isToday
+                        : isTodayCell
                         ? "border border-[#0F1D24]/40 text-[#0F1D24]"
                         : "text-[#0F1D24] hover:bg-[#F5F5F5]"
                     }`}
@@ -187,6 +190,38 @@ const CustomDatePicker = ({ value, onChange }) => {
   );
 };
 
+// Small vertical rule used to group related actions.
+const Divider = ({ className = "" }) => <div className={`h-5 w-px flex-shrink-0 bg-[#C6C6C6] ${className}`} />;
+
+const ActionButton = ({ onClick, icon: Icon, label, tone = "default", disabled, spinning, title }) => {
+  const toneClass =
+    tone === "primary"
+      ? "bg-[#0F1D24] text-[#FDC94D] hover:bg-[#0F1D24]/90"
+      : tone === "danger"
+      ? "border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+      : "border border-[#C6C6C6] bg-white text-[#0F1D24] hover:border-[#0F1D24]/60 hover:bg-[#F5F5F5]";
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      whileHover={disabled ? undefined : { y: -1 }}
+      whileTap={disabled ? undefined : { scale: 0.96 }}
+      className={`flex h-7 flex-shrink-0 items-center gap-1.5 px-2 text-[11px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${toneClass}`}
+    >
+      <Icon size={10} className={spinning ? "animate-spin" : ""} />
+      <span className="hidden md:inline">{label}</span>
+    </motion.button>
+  );
+};
+
+// ============================================================
+// Proper page header — identity + filters, all in a single row.
+// Wraps gracefully on narrower widths but stays one logical row
+// on desktop instead of stacking into two bands.
+// ============================================================
 const DashboardFilters = ({
   date,
   setDate,
@@ -196,85 +231,91 @@ const DashboardFilters = ({
   onRefresh,
   onReset,
   loading = false,
+  eyebrow = "Production Dashboard",
+  title = "Daily Production Overview",
 }) => {
   return (
-    <div className="flex min-h-10 flex-shrink-0 flex-wrap items-center justify-between gap-2 rounded border border-[#C6C6C6]/50 bg-white px-2 py-1.5 shadow-sm">
-      {/* Back + Icon + Label */}
-      <div className="flex flex-shrink-0 items-center gap-2">
-        {onBack && (
-          <>
-            <button
-              type="button"
-              onClick={onBack}
-              title="Back"
-              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors hover:border-[#0F1D24] hover:bg-[#F5F5F5]"
-            >
-              <FaArrowLeft size={12} />
-            </button>
-            <div className="h-5 w-px flex-shrink-0 bg-[#C6C6C6]" />
-          </>
-        )}
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="flex min-h-11 flex-shrink-0 flex-wrap items-center gap-2 border border-[#C6C6C6]/50 bg-white px-3 py-1.5 shadow-[0_1px_2px_rgba(15,29,36,0.05)]"
+    >
+      {/* Back */}
+      {onBack && (
+        <>
+          <motion.button
+            type="button"
+            onClick={onBack}
+            title="Back"
+            whileHover={{ x: -1 }}
+            whileTap={{ scale: 0.94 }}
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors hover:border-[#0F1D24] hover:bg-[#F5F5F5]"
+          >
+            <FaArrowLeft size={12} />
+          </motion.button>
+          <Divider />
+        </>
+      )}
 
-        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded bg-[#0F1D24]">
-          <FaChartLine className="text-xs text-[#FDC94D]" />
-        </div>
-        <span className="hidden text-xs font-bold uppercase tracking-wide text-[#0F1D24] sm:block">
-          Production Dashboard
-        </span>
+      {/* Identity */}
+      <div
+        className="flex h-7 w-7 flex-shrink-0 items-center justify-center shadow-[0_4px_10px_-2px_rgba(15,29,36,0.35)]"
+        style={{ background: "linear-gradient(135deg, #1a2e38, #0F1D24)" }}
+      >
+        <FaChartLine className="text-xs text-[#FDC94D]" />
+      </div>
+      <div className="hidden min-w-0 leading-tight sm:block">
+        <p className="text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">{eyebrow}</p>
+        <h1 className="truncate text-[12.5px] font-bold text-[#0F1D24]">{title}</h1>
       </div>
 
-      <div className="hidden h-5 w-px flex-shrink-0 bg-[#C6C6C6] sm:block" />
+      {loading && (
+        <span className="flex flex-shrink-0 items-center gap-1 text-[9px] font-medium text-[#9B9B9B]">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FDC94D] opacity-60" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#FDC94D]" />
+          </span>
+          Syncing…
+        </span>
+      )}
 
+      <Divider className="hidden sm:block" />
+
+      {/* Filters */}
       <div className="flex flex-shrink-0 flex-wrap items-center gap-1.5">
         <CustomDatePicker value={date} onChange={setDate} />
 
         {onApply && (
-          <button
-            type="button"
-            onClick={onApply}
-            title="Apply selected filters"
-            className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded bg-[#0F1D24] px-2 text-[11px] font-semibold text-[#FDC94D] transition-colors hover:bg-[#0F1D24]/90"
-          >
-            <FaFilter size={10} />
-            <span className="hidden md:inline">Apply</span>
-          </button>
+          <ActionButton onClick={onApply} icon={FaFilter} label="Apply" tone="primary" title="Apply selected filters" />
         )}
 
         {onRefresh && (
-          <button
-            type="button"
+          <ActionButton
             onClick={onRefresh}
+            icon={FaSyncAlt}
+            label="Refresh"
             disabled={loading}
+            spinning={loading}
             title="Refresh data"
-            className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded border border-[#C6C6C6] bg-white px-2 text-[11px] font-semibold text-[#0F1D24] transition-colors hover:bg-[#F5F5F5] disabled:opacity-60"
-          >
-            <FaSyncAlt size={10} className={loading ? "animate-spin" : ""} />
-            <span className="hidden md:inline">Refresh</span>
-          </button>
+          />
         )}
 
-        {onReset && (
-          <button
-            type="button"
-            onClick={onReset}
-            title="Reset filters"
-            className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded border border-red-200 bg-red-50 px-2 text-[11px] font-semibold text-red-600 transition-colors hover:bg-red-100"
-          >
-            <FaUndo size={10} />
-            <span className="hidden md:inline">Reset</span>
-          </button>
-        )}
-
-        <button
-          onClick={onExport}
-          title="Export to Excel"
-          className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded bg-[#0F1D24] px-2 text-[11px] font-semibold text-[#FDC94D] transition-colors hover:bg-[#0F1D24]/90"
-        >
-          <FaDownload size={10} />
-          <span className="hidden md:inline">Export Excel</span>
-        </button>
+        {onReset && <ActionButton onClick={onReset} icon={FaUndo} label="Reset" tone="danger" title="Reset filters" />}
       </div>
-    </div>
+
+      {/* Push export to the far right, everything else stays left-grouped */}
+      <div className="ml-auto flex flex-shrink-0 items-center gap-1.5">
+        {date && (
+          <span className="hidden text-[10px] font-medium text-[#9B9B9B] lg:block">
+            Viewing <span className="font-semibold text-[#0F1D24]">{formatDisplay(date)}</span>
+          </span>
+        )}
+        {onExport && (
+          <ActionButton onClick={onExport} icon={FaDownload} label="Export Excel" tone="primary" title="Export to Excel" />
+        )}
+      </div>
+    </motion.div>
   );
 };
 

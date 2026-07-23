@@ -97,7 +97,7 @@ const SummaryCard = ({ hall, target, actual, rejection, color, hasData = true, o
         </motion.p>
       </div>
 
-      <div className="relative space-y-1 text-[10px]">
+      <div className="relative text-[10px]">
         <div className="flex items-center justify-between">
           <span className="text-[#9B9B9B]">Target</span>
           <span className="font-semibold tabular-nums text-[#0F1D24]">{target}</span>

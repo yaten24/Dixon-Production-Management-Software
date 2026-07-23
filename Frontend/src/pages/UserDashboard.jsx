@@ -81,7 +81,7 @@ const UserDashboard = () => {
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-[#F5F5F5]">
       <div className="flex flex-1 flex-col overflow-hidden">
-        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden p-1">
+        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden">
           <DashboardFilters
             date={draftDate}
             setDate={setDraftDate}
@@ -109,7 +109,7 @@ const UserDashboard = () => {
 
           {/* Remaining vertical space is split between the two chart sections
               so everything fits on one screen — no page-level scrollbar. */}
-          <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+          <div className="flex min-h-0 flex-1 flex-col">
             <div className={`min-h-0 ${hasHallCharts ? "flex-[3]" : "flex-1"}`}>
               <OverallProductionChart
                 data={hourlyData}

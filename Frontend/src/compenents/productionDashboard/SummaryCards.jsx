@@ -33,7 +33,7 @@ const SummaryCards = ({ overall, hallSummary = [], halls = [], hallAccent, onSel
   const noDataAtAll = normalizedHallCards.every((h) => !h.hasData);
 
   return (
-    <div className="w-full flex-shrink-0 space-y-1">
+    <div className="w-full flex-shrink-0">
       {noDataAtAll && (
         <motion.div
           initial={{ opacity: 0, y: -6 }}
@@ -48,7 +48,7 @@ const SummaryCards = ({ overall, hallSummary = [], halls = [], hallAccent, onSel
       )}
 
       <div
-        className="grid gap-2"
+        className="grid"
         style={{ gridTemplateColumns: `repeat(${allCards.length}, minmax(140px, 1fr))` }}
       >
         {allCards.map((card) => (

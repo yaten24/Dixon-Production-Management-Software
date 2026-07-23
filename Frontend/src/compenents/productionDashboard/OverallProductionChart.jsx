@@ -161,7 +161,7 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
           <div className="mb-1 flex flex-shrink-0 flex-wrap items-center justify-end gap-2 pr-1">
             <div className="flex items-center gap-1.5 rounded-full border border-[#FDC94D]/50 bg-[#FDC94D]/10 px-2 py-0.5">
               <span
-                className="h-2 w-2 rounded-full"
+                className="h-2 w-2 rounded"
                 style={{ background: SHIFT_COLORS.A.swatch }}
               />
               <span className="text-[10px] font-semibold text-[#0F1D24]">
@@ -171,7 +171,7 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
             </div>
             <div className="flex items-center gap-1.5 rounded-full border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-2 py-0.5">
               <span
-                className="h-2 w-2 rounded-full"
+                className="h-2 w-2 rounded"
                 style={{ background: SHIFT_COLORS.B.swatch }}
               />
               <span className="text-[10px] font-semibold text-[#0F1D24]">
