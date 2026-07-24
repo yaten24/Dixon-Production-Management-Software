@@ -20,7 +20,7 @@ const ChartCard = ({ icon, iconBg, title, subtitle, onViewHall, full, children }
           >
             {icon}
           </div>
-          <div>
+          <div> 
             <h3 className="text-xs font-bold text-[#0F1D24]">{title}</h3>
             <p className="text-[9px] text-[#9B9B9B]">{subtitle}</p>
           </div>
