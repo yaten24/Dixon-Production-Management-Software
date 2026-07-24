@@ -87,7 +87,7 @@ const Header = ({ subtitle = "Production Management System" }) => {
           {/* <img src={dixonLogo} alt="Dixon" className="w-24 h-8 object-contain" /> */}
           <div className="hidden sm:flex flex-col justify-center leading-none border-[#C6C6C6]">
             <span className="text-[18px] font-bold text-[#0F1D24] tracking-tight">
-              Dixon PMS
+              PMS-Dehradun
             </span>
             <span className="text-[9px] font-medium text-[#9B9B9B]">
               {subtitle}

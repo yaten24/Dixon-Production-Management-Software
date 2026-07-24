@@ -58,6 +58,12 @@ const baseFormData = {
   mouldTarget: "",
   mouldActual: "",
 
+  // plan_id and plan_detail_id travel together: both set when this
+  // machine's entry is prefilled from a real daily plan, both null for
+  // a manual/ad-hoc entry (no plan matched for date+hall+shift, or this
+  // machine isn't part of the matched plan). The backend now rejects a
+  // payload that has one without the other.
+  plan_id: null,
   plan_detail_id: null,
 
   remarks: "",
@@ -179,6 +185,12 @@ const useProductionEntry = () => {
   const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState(null);
 
+  // The plan's own id (daily_plan_header.daily_plan_id). Kept separately
+  // from `plan` so it's available even if the shape of getPlan()'s
+  // response ever changes — checkPlan() is the one source of truth for
+  // "which plan id did we match", getPlan() just fetches its details.
+  const [matchedPlanId, setMatchedPlanId] = useState(null);
+
   useEffect(() => {
     if (!setupComplete) return;
     if (!formData.date || !formData.hall || !formData.shift) return;
@@ -194,14 +206,19 @@ const useProductionEntry = () => {
 
         if (check?.exists && check.plan_id) {
           const full = await getPlan(check.plan_id);
-          if (!cancelled) setPlan(full);
+          if (!cancelled) {
+            setPlan(full);
+            setMatchedPlanId(check.plan_id);
+          }
         } else if (!cancelled) {
           setPlan(null);
+          setMatchedPlanId(null);
         }
       } catch (err) {
         console.error("Failed to load production plan:", err);
         if (!cancelled) {
           setPlan(null);
+          setMatchedPlanId(null);
           setPlanError(
             "Could not load the production plan for this date/hall/shift — continuing with manual entry.",
           );
@@ -335,6 +352,13 @@ const useProductionEntry = () => {
         ? String(plannedMould.new_part_target_quantity)
         : "";
 
+      // plan_id / plan_detail_id must travel together — only set when
+      // this specific machine actually matched a plan detail row. A
+      // plan can exist for the shift while still leaving some machines
+      // unplanned (ad-hoc machine run), and those stay fully manual.
+      const linkedPlanId = planDetail ? matchedPlanId : null;
+      const linkedPlanDetailId = planDetail?.detail_id || null;
+
       setFormData((prev) => ({
         ...baseFormData,
         date: prev.date,
@@ -367,7 +391,8 @@ const useProductionEntry = () => {
         mouldActualCycleTime: mouldActualCT,
         mouldTarget: mouldTargetQty,
 
-        plan_detail_id: planDetail?.detail_id || null,
+        plan_id: linkedPlanId,
+        plan_detail_id: linkedPlanDetailId,
       }));
 
       setShowMouldSection(!!plannedMould);
@@ -381,6 +406,7 @@ const useProductionEntry = () => {
       filteredMachines,
       masterRejectReasons,
       planDetailsByMachineCode,
+      matchedPlanId,
     ],
   );
 
@@ -570,10 +596,25 @@ const useProductionEntry = () => {
       existingProductionId || `PID-${machine.machine_code || machine.id}-${Date.now()}`;
 
     const rejectDetailRows = [];
+    // FIX: reject_reason_id is NOT NULL in production_reject_details. A
+    // custom-typed reason whose reason.trim() came back empty, or whose
+    // createRejectionReason() call failed/returned no id, made
+    // resolveReasonId() return null — that null was going straight into
+    // the insert and blowing up with ER_BAD_NULL_ERROR. Now any row that
+    // has a qty but no resolvable reason id is collected here instead of
+    // silently inserted or silently dropped, so the person gets a clear
+    // message telling them exactly which reason to fix before the save
+    // is retried (rather than losing that reject qty with no explanation,
+    // or crashing on a raw SQL error).
+    const unresolvedReasons = [];
 
     for (const r of rejectRows) {
       if (!(Number(r.qty) > 0)) continue;
       const reason_id = await resolveReasonId(r);
+      if (!reason_id) {
+        unresolvedReasons.push(r.reason?.trim() || "(blank reject reason)");
+        continue;
+      }
       rejectDetailRows.push({
         reject_reason_id: reason_id,
         reject_qty: Number(r.qty) || 0,
@@ -584,11 +625,21 @@ const useProductionEntry = () => {
     for (const r of mouldRows) {
       if (!(Number(r.qty) > 0)) continue;
       const reason_id = await resolveReasonId(r);
+      if (!reason_id) {
+        unresolvedReasons.push(r.reason?.trim() || "(blank mould reject reason)");
+        continue;
+      }
       rejectDetailRows.push({
         reject_reason_id: reason_id,
         reject_qty: Number(r.qty) || 0,
         remarks: "[Mould change reject]",
       });
+    }
+
+    if (unresolvedReasons.length > 0) {
+      throw new Error(
+        `Couldn't save these reject reason(s) — enter a name for each, or remove the row: ${unresolvedReasons.join(", ")}.`,
+      );
     }
 
     const losses = lossRows
@@ -621,6 +672,10 @@ const useProductionEntry = () => {
 
     return {
       production_id,
+      // plan_id and plan_detail_id are always sent together (both a
+      // real id, or both null for a manual entry) — see baseFormData.
+      plan_id: data.plan_id ?? null,
+      plan_detail_id: data.plan_detail_id ?? null,
       entry_date: data.date,
       hall: data.hall,
       shift: data.shift,
@@ -642,7 +697,6 @@ const useProductionEntry = () => {
       rejects: rejectDetailRows,
       losses,
       mould_changes,
-      plan_detail_id: data.plan_detail_id || null,
     };
   };
 

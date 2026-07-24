@@ -319,7 +319,7 @@ const Sidebar = () => {
       <div className="flex-shrink-0 border-t border-[#C6C6C6]/50 bg-white px-3 py-2"> 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-semibold leading-none text-[#0F1D24]">Dixon PMS</p>
+            <p className="text-[10px] font-semibold leading-none text-[#0F1D24]">PMS-Dehradun</p>
             <p className="mt-0.5 font-mono text-[9px] leading-none text-[#9B9B9B]">v1.0.0</p>
           </div>
 

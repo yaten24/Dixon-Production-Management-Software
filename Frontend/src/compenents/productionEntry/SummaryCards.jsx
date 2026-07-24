@@ -1,5 +1,4 @@
 import React from "react";
-import { motion } from "framer-motion";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { FaBullseye, FaGaugeHigh } from "react-icons/fa6";
 
@@ -7,16 +6,10 @@ import { FaBullseye, FaGaugeHigh } from "react-icons/fa6";
 // Actual/Reject stay semantic (green/red) — good vs bad production outcomes
 // need universal color scanning. Target & Efficiency are neutral brand metrics.
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 10, scale: 0.97 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { type: "spring", stiffness: 260, damping: 22 },
-  },
-};
-
+// Desktop-app KPI strip: each tile is only as wide as its content
+// needs (inline-flex, not a stretched equal-width grid column) —
+// no leftover empty space padded out to match the widest sibling.
+// Tiles wrap onto a new line if the row runs out of room.
 const SummaryCards = ({ target, actual, reject, efficiency }) => {
   const cards = [
     {
@@ -24,93 +17,71 @@ const SummaryCards = ({ target, actual, reject, efficiency }) => {
       value: target || 0,
       suffix: "",
       icon: FaBullseye,
-      accent: "#0F1D24",
-      bg: "bg-[#0F1D24]/[0.04]",
-      border: "border-[#0F1D24]/15",
+      border: "border-[#0F1D24]/25",
       iconBg: "bg-[#0F1D24]",
       iconColor: "text-[#FDC94D]",
       valueColor: "text-[#0F1D24]",
+      accent: "#0F1D24",
     },
     {
       label: "Actual",
       value: actual || 0,
       suffix: "",
       icon: FaCheckCircle,
-      accent: "#16A34A",
-      bg: "bg-green-50",
-      border: "border-green-100",
+      border: "border-green-200",
       iconBg: "bg-green-600",
       iconColor: "text-white",
       valueColor: "text-green-700",
+      accent: "#16A34A",
     },
     {
       label: "Reject",
       value: reject || 0,
       suffix: "",
       icon: FaTimesCircle,
-      accent: "#DC2626",
-      bg: "bg-red-50",
-      border: "border-red-100",
+      border: "border-red-200",
       iconBg: "bg-red-600",
       iconColor: "text-white",
       valueColor: "text-red-700",
+      accent: "#DC2626",
     },
     {
       label: "Efficiency",
       value: efficiency || 0,
       suffix: "%",
       icon: FaGaugeHigh,
-      accent: "#FDC94D",
-      bg: "bg-[#FDC94D]/10",
-      border: "border-[#FDC94D]/40",
+      border: "border-[#FDC94D]",
       iconBg: "bg-[#0F1D24]",
       iconColor: "text-[#FDC94D]",
       valueColor: "text-[#0F1D24]",
+      accent: "#FDC94D",
     },
   ];
 
   return (
-    <div className="mb-1 grid grid-cols-2 gap-1.5 lg:grid-cols-4">
-      {cards.map((card, index) => {
+    <div className="mb-1 flex flex-wrap gap-1.5">
+      {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <motion.div
+          <div
             key={card.label}
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-            transition={{ delay: index * 0.05 }}
-            whileHover={{ y: -2 }}
-            className={`relative flex items-center justify-between overflow-hidden rounded border ${card.border} ${card.bg} py-2.5 pl-3.5 pr-3 shadow-sm transition-shadow duration-300 hover:shadow-md`}
+            className={`relative flex items-center gap-3 overflow-hidden border bg-white py-2 pl-3.5 pr-3 ${card.border}`}
           >
-            {/* Left accent bar */}
-            <span
-              className="absolute left-0 top-0 h-full w-1"
-              style={{ background: card.accent }}
-            />
 
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase leading-tight tracking-wider text-[#9B9B9B]">
+            <div className="whitespace-nowrap">
+              <p className="text-[10px] font-bold uppercase leading-tight tracking-wider text-[#9B9B9B]">
                 {card.label}
               </p>
-              <motion.h3
-                key={card.value}
-                initial={{ scale: 1.1 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 350, damping: 18 }}
-                className={`mt-0.5 text-xl font-extrabold leading-tight ${card.valueColor}`}
-              >
+              <h3 className={`mt-0.5 font-mono text-lg font-extrabold leading-tight ${card.valueColor}`}>
                 {card.value}
                 {card.suffix}
-              </motion.h3>
+              </h3>
             </div>
 
-            <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded ${card.iconBg} shadow-sm`}
-            >
+            <div className={`flex h-8 w-8 shrink-0 items-center justify-center ${card.iconBg}`}>
               <Icon className={`text-sm ${card.iconColor}`} />
             </div>
-          </motion.div>
+          </div>
         );
       })}
     </div>

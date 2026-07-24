@@ -9,6 +9,23 @@ const mouldChangeModel = require("../models/mouldChangeModel");
 // so the query never crashes because of a missing optional field.
 const n = (v) => (v === undefined ? null : v);
 
+// NEW: plan_id and plan_detail_id are optional together — either both
+// present (this entry traces back to a real daily plan) or both absent
+// (this is a manual/ad-hoc entry, which the frontend explicitly supports
+// as a fallback when no plan exists for date+hall+shift, or when the
+// machine being entered isn't part of the matched plan). One present
+// without the other is always a bug on the caller's side, not a valid
+// state, so it's rejected up front instead of silently inserting a
+// half-linked row.
+const validatePlanLink = (plan_id, plan_detail_id) => {
+  const hasPlanId = plan_id !== undefined && plan_id !== null && plan_id !== "";
+  const hasDetailId = plan_detail_id !== undefined && plan_detail_id !== null && plan_detail_id !== "";
+  if (hasPlanId !== hasDetailId) {
+    return "plan_id and plan_detail_id must both be provided together, or both omitted for a manual entry.";
+  }
+  return null;
+};
+
 // ==========================================================
 // Get All Production Entries
 // ==========================================================
@@ -125,11 +142,13 @@ exports.createProductionEntry = async (req, res) => {
 
     const {
       production_id,
+      plan_id, // NEW — links this entry back to daily_plan_header, null for manual entries
+      plan_detail_id, // NEW — links this entry back to daily_plan_details, null for manual entries
       entry_date,
       hall,
       shift,
       time_slot,
-      machine_code, // NEW — used to link back to a Planned mould change
+      machine_code, // used to link back to a Planned mould change
       machine_id,
       operator_id,
       part_id,
@@ -171,6 +190,18 @@ exports.createProductionEntry = async (req, res) => {
       });
     }
 
+    const planLinkError = validatePlanLink(plan_id, plan_detail_id);
+    if (planLinkError) {
+      await connection.rollback();
+
+      return res.status(400).json({
+        success: false,
+        message: planLinkError,
+        data: null,
+        error: null,
+      });
+    }
+
     // ==========================================
     // Duplicate Production ID
     // ==========================================
@@ -195,6 +226,8 @@ exports.createProductionEntry = async (req, res) => {
 
     const productionResult = await ProductionEntry.create(connection, {
       production_id,
+      plan_id: n(plan_id),
+      plan_detail_id: n(plan_detail_id),
       entry_date,
       hall,
       shift,
@@ -220,8 +253,21 @@ exports.createProductionEntry = async (req, res) => {
     // Reject Details
     // ==========================================
 
+    // FIX: production_reject_details.reject_reason_id is NOT NULL, so a
+    // row with a missing/unresolved reason id used to reach the DB and
+    // crash the whole transaction with a raw ER_BAD_NULL_ERROR (the
+    // frontend now prevents this from happening in the first place, but
+    // this loop stays defensive for any other caller of this API). Rows
+    // without a usable reject_reason_id are skipped and reported back
+    // instead of aborting the entire save.
+    const skippedRejects = [];
+
     if (Array.isArray(rejects) && rejects.length > 0) {
       for (const reject of rejects) {
+        if (reject.reject_reason_id === undefined || reject.reject_reason_id === null) {
+          skippedRejects.push(reject);
+          continue;
+        }
         await connection.query(
           `
           INSERT INTO production_reject_details
@@ -236,7 +282,7 @@ exports.createProductionEntry = async (req, res) => {
           `,
           [
             productionEntryId,
-            n(reject.reject_reason_id),
+            reject.reject_reason_id,
             n(reject.reject_qty),
             n(reject.remarks),
             created_by,
@@ -326,7 +372,7 @@ exports.createProductionEntry = async (req, res) => {
           );
         }
 
-        // NEW: if this mould change fulfils a "Planned" entry created from
+        // If this mould change fulfils a "Planned" entry created from
         // the Production Plan module, mark it Completed and link it to this
         // actual production entry. Non-fatal if no match is found — that
         // just means this was an unplanned/ad-hoc mould change.
@@ -373,7 +419,9 @@ exports.createProductionEntry = async (req, res) => {
         "Production Entry",
         "CREATE",
         productionEntryId,
-        "Production entry created successfully.",
+        plan_detail_id
+          ? "Production entry created successfully (linked to daily plan)."
+          : "Production entry created successfully (manual entry, no plan link).",
       ],
     );
 
@@ -396,7 +444,10 @@ exports.createProductionEntry = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Production entry created successfully.",
+      message:
+        skippedRejects.length > 0
+          ? `Production entry created successfully, but ${skippedRejects.length} reject row(s) were skipped for missing a reason.`
+          : "Production entry created successfully.",
       data: productionEntry,
       error: null,
     });
@@ -432,11 +483,13 @@ exports.updateProductionEntry = async (req, res) => {
 
     const {
       production_id,
+      plan_id, // NEW
+      plan_detail_id, // NEW
       entry_date,
       hall,
       shift,
       time_slot,
-      machine_code, // NEW — used to link back to a Planned mould change
+      machine_code, // used to link back to a Planned mould change
       machine_id,
       operator_id,
       part_id,
@@ -488,6 +541,18 @@ exports.updateProductionEntry = async (req, res) => {
       });
     }
 
+    const planLinkError = validatePlanLink(plan_id, plan_detail_id);
+    if (planLinkError) {
+      await connection.rollback();
+
+      return res.status(400).json({
+        success: false,
+        message: planLinkError,
+        data: null,
+        error: null,
+      });
+    }
+
     // ==========================================
     // Entry Must Exist
     // ==========================================
@@ -529,6 +594,8 @@ exports.updateProductionEntry = async (req, res) => {
 
     await ProductionEntry.update(connection, id, {
       production_id,
+      plan_id: n(plan_id),
+      plan_detail_id: n(plan_detail_id),
       entry_date,
       hall,
       shift,
@@ -553,8 +620,17 @@ exports.updateProductionEntry = async (req, res) => {
 
     await ProductionEntry.deleteRejectDetails(connection, id);
 
+    // Same guard as create — see comment there. reject_reason_id is
+    // NOT NULL, so a row missing it is skipped rather than crashing the
+    // whole update.
+    const skippedRejects = [];
+
     if (Array.isArray(rejects) && rejects.length > 0) {
       for (const reject of rejects) {
+        if (reject.reject_reason_id === undefined || reject.reject_reason_id === null) {
+          skippedRejects.push(reject);
+          continue;
+        }
         await connection.query(
           `
           INSERT INTO production_reject_details
@@ -569,7 +645,7 @@ exports.updateProductionEntry = async (req, res) => {
           `,
           [
             id,
-            n(reject.reject_reason_id),
+            reject.reject_reason_id,
             n(reject.reject_qty),
             n(reject.remarks),
             updated_by,
@@ -660,7 +736,7 @@ exports.updateProductionEntry = async (req, res) => {
           );
         }
 
-        // NEW: same planned-mould-change link/complete logic as create.
+        // Same planned-mould-change link/complete logic as create.
         if (mould.new_part_id && machine_code) {
           try {
             await mouldChangeModel.linkProductionToMouldChange({
@@ -722,7 +798,10 @@ exports.updateProductionEntry = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Production entry updated successfully.",
+      message:
+        skippedRejects.length > 0
+          ? `Production entry updated successfully, but ${skippedRejects.length} reject row(s) were skipped for missing a reason.`
+          : "Production entry updated successfully.",
       data: productionEntry,
       error: null,
     });
