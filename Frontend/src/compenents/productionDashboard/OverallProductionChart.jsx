@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { FaChartLine } from "react-icons/fa";
-import ChartCard from "./ChartCard";
+import { FaChartLine, FaChevronRight, FaExclamationTriangle } from "react-icons/fa";
 
 const MIN_HEIGHT = 160;
 
@@ -34,6 +33,91 @@ const buildFullDayData = (data) => {
   });
 };
 
+// ============================================================
+// ChartCard — inlined here (single-file, no separate import).
+// `headerExtra` lets a chart inject extra content (warning banner,
+// legend chips, etc.) into the SAME header row as the title/View
+// Details, instead of a second row below — that's the single-row
+// header requirement below.
+// ============================================================
+const ChartCard = ({
+  icon,
+  iconBg,
+  title,
+  subtitle,
+  onViewHall,
+  full,
+  hasData = true,
+  emptyLabel = "No data available",
+  emptyDescription = "No entries found for the selected filters.",
+  headerExtra,
+  children,
+}) => {
+  return (
+    <div
+      className={`flex h-full min-h-0 flex-col border bg-white p-2 ${
+        hasData ? "border-[#C6C6C6]" : "border-amber-300"
+      } ${full ? "w-full" : ""}`}
+    >
+      <div className="mb-2 flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-[#C6C6C6] pb-1.5">
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <div
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center border"
+            style={{
+              background: hasData ? iconBg : "#C6C6C6",
+              borderColor: hasData ? iconBg : "#C6C6C6",
+            }}
+          >
+            {icon}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h3 className="whitespace-nowrap text-[12.5px] font-bold text-[#0F1D24]">{title}</h3>
+              {!hasData && (
+                <span className="flex flex-shrink-0 items-center gap-1 border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-amber-700">
+                  <FaExclamationTriangle className="text-[8px]" />
+                  No Data
+                </span>
+              )}
+            </div>
+            <p className="whitespace-nowrap text-[9.5px] font-medium text-[#9B9B9B]">{subtitle}</p>
+          </div>
+        </div>
+
+        {/* Extra content (warning / legend chips) shares this row,
+            takes the flexible middle space between title and the
+            View Details button. */}
+        {headerExtra && <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">{headerExtra}</div>}
+
+        {onViewHall && (
+          <button
+            onClick={onViewHall}
+            className="ml-auto flex flex-shrink-0 items-center gap-1 border border-[#C6C6C6] px-2 py-1 text-[10px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+          >
+            View Details
+            <FaChevronRight className="text-[8px]" />
+          </button>
+        )}
+      </div>
+
+      {hasData ? (
+        <div className="min-h-0 flex-1">{children}</div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1.5 border border-dashed border-[#C6C6C6] bg-[#FAFAFA] px-4 py-6 text-center">
+          <div className="flex h-9 w-9 items-center justify-center border border-amber-300 bg-amber-50 text-amber-500">
+            <FaExclamationTriangle className="text-sm" />
+          </div>
+          <p className="text-[12px] font-bold text-[#0F1D24]">{emptyLabel}</p>
+          <p className="max-w-xs text-[10.5px] text-[#9B9B9B]">{emptyDescription}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================================
+// OverallProductionChart
+// ============================================================
 const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
   const fullDayData = useMemo(() => buildFullDayData(data), [data]);
   const hasAnyValue = fullDayData.some((d) => d.target > 0 || d.actual > 0);
@@ -62,8 +146,8 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
 
   const compact = height < 280;
   const PADDING = compact
-    ? { top: 46, right: 10, bottom: 32, left: 38 }
-    : { top: 62, right: 12, bottom: 40, left: 44 };
+    ? { top: 26, right: 10, bottom: 40, left: 38 }
+    : { top: 34, right: 12, bottom: 48, left: 44 };
 
   const chartW = Math.max(width - PADDING.left - PADDING.right, 10);
   const chartH = Math.max(height - PADDING.top - PADDING.bottom, 10);
@@ -129,6 +213,51 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
 
   const hovered = hoverIdx !== null ? bars[hoverIdx] : null;
 
+  // Legend + no-data warning — now injected into ChartCard's own
+  // header row via `headerExtra`, instead of a second row inside
+  // the chart body. Shift-name pill labels above the bars were tied
+  // to the old, taller top padding; since that padding just got
+  // reclaimed (legend moved out), those pills are dropped too — the
+  // legend chips already say "Shift A/B", so nothing is lost.
+  const headerExtra = (
+    <>
+      {!hasAnyValue && (
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 border border-amber-300 bg-amber-50 px-2 py-1">
+          <FaExclamationTriangle className="flex-shrink-0 text-[10px] text-amber-600" />
+          <span className="truncate text-[10px] font-semibold text-amber-700">
+            No production entries found for this date — showing 0 across all 24 hours.
+          </span>
+        </div>
+      )}
+
+      <div className="flex flex-shrink-0 items-center gap-1.5">
+        <div className="flex items-center gap-1.5 whitespace-nowrap border border-[#FDC94D] bg-[#FDC94D]/10 px-2 py-0.5">
+          <span className="h-2 w-2 flex-shrink-0" style={{ background: SHIFT_COLORS.A.swatch }} />
+          <span className="text-[10px] font-bold text-[#0F1D24]">
+            Shift A · {String(SHIFT_A_START).padStart(2, "0")}:00–
+            {String(SHIFT_A_END).padStart(2, "0")}:00
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 whitespace-nowrap border border-[#0F1D24] bg-[#0F1D24]/5 px-2 py-0.5">
+          <span className="h-2 w-2 flex-shrink-0" style={{ background: SHIFT_COLORS.B.swatch }} />
+          <span className="text-[10px] font-bold text-[#0F1D24]">
+            Shift B · {String(SHIFT_A_END).padStart(2, "0")}:00–
+            {String(SHIFT_A_START).padStart(2, "0")}:00
+          </span>
+        </div>
+        <div className="mx-0.5 h-4 w-px flex-shrink-0 bg-[#C6C6C6]" />
+        <div className="flex flex-shrink-0 items-center gap-1">
+          <span className="h-2.5 w-2.5 bg-[#C6C6C6]" />
+          <span className="whitespace-nowrap text-[10px] font-semibold text-[#9B9B9B]">Target</span>
+        </div>
+        <div className="flex flex-shrink-0 items-center gap-1">
+          <span className="h-2.5 w-2.5 bg-[#0F1D24]" />
+          <span className="whitespace-nowrap text-[10px] font-semibold text-[#9B9B9B]">Actual</span>
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <ChartCard
       icon={<FaChartLine className="text-[10px] text-[#FDC94D]" />}
@@ -138,6 +267,7 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
         SHIFT_A_START
       ).padStart(2, "0")}:00 (Shift A)`}
       onViewHall={() => onViewHall("All")}
+      headerExtra={headerExtra}
       full
     >
       <style>{`
@@ -157,45 +287,6 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
         </div>
       ) : (
         <div ref={containerRef} className="relative flex h-full min-h-0 w-full flex-col">
-          {/* Legend */}
-          <div className="mb-1 flex flex-shrink-0 flex-wrap items-center justify-end gap-2 pr-1">
-            <div className="flex items-center gap-1.5 rounded-full border border-[#FDC94D]/50 bg-[#FDC94D]/10 px-2 py-0.5">
-              <span
-                className="h-2 w-2 rounded"
-                style={{ background: SHIFT_COLORS.A.swatch }}
-              />
-              <span className="text-[10px] font-semibold text-[#0F1D24]">
-                Shift A · {String(SHIFT_A_START).padStart(2, "0")}:00–
-                {String(SHIFT_A_END).padStart(2, "0")}:00
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-full border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-2 py-0.5">
-              <span
-                className="h-2 w-2 rounded"
-                style={{ background: SHIFT_COLORS.B.swatch }}
-              />
-              <span className="text-[10px] font-semibold text-[#0F1D24]">
-                Shift B · {String(SHIFT_A_END).padStart(2, "0")}:00–
-                {String(SHIFT_A_START).padStart(2, "0")}:00
-              </span>
-            </div>
-            <div className="mx-1 h-4 w-px bg-[#C6C6C6]" />
-            <div className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-[2px] bg-[#C6C6C6]" />
-              <span className="text-[10px] font-medium text-[#9B9B9B]">Target</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-[2px] bg-[#0F1D24]" />
-              <span className="text-[10px] font-medium text-[#9B9B9B]">Actual</span>
-            </div>
-          </div>
-
-          {!hasAnyValue && (
-            <div className="mb-1 flex-shrink-0 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-700">
-              No production entries found for this date — showing 0 across all 24 hours.
-            </div>
-          )}
-
           <div className="min-h-0 flex-1">
             <svg
               viewBox={`0 0 ${width} ${height}`}
@@ -223,40 +314,12 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                 <line
                   x1={shiftSegments[1].startX}
                   x2={shiftSegments[1].startX}
-                  y1={PADDING.top - (compact ? 16 : 26)}
+                  y1={PADDING.top}
                   y2={PADDING.top + chartH}
                   stroke="#0F1D24"
                   strokeWidth={1.5}
                 />
               )}
-
-              {shiftSegments.map((seg, i) => {
-                const cx = (seg.startX + seg.endX) / 2;
-                const pillW = compact ? 56 : 70;
-                const pillH = compact ? 14 : 18;
-                return (
-                  <g key={`seg-label-${i}`}>
-                    <rect
-                      x={cx - pillW / 2}
-                      y={PADDING.top - (compact ? 30 : 44)}
-                      width={pillW}
-                      height={pillH}
-                      rx={pillH / 2}
-                      fill={SHIFT_COLORS[seg.shift].swatch}
-                    />
-                    <text
-                      x={cx}
-                      y={PADDING.top - (compact ? 30 : 44) + pillH / 2 + 3}
-                      textAnchor="middle"
-                      fontSize={compact ? "8.5" : "10"}
-                      fontWeight="700"
-                      fill={seg.shift === "A" ? "#0F1D24" : "#FDC94D"}
-                    >
-                      Shift {seg.shift}
-                    </text>
-                  </g>
-                );
-              })}
 
               {yTicks.map((tick, i) => {
                 const y = PADDING.top + chartH - (tick / maxVal) * chartH;
@@ -291,7 +354,6 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                     y={b.targetY}
                     width={b.barW}
                     height={b.targetH}
-                    rx={2}
                     fill={hoverIdx === i ? "#9B9B9B" : "#C6C6C6"}
                     style={{
                       transformOrigin: `${b.targetX + b.barW / 2}px ${PADDING.top + chartH}px`,
@@ -304,7 +366,6 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                     y={b.actualY}
                     width={b.barW}
                     height={b.actualH}
-                    rx={2}
                     fill={hoverIdx === i ? "#1a2e38" : "#0F1D24"}
                     style={{
                       transformOrigin: `${b.actualX + b.barW / 2}px ${PADDING.top + chartH}px`,
@@ -354,11 +415,11 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
                 <text
                   key={`label-${i}`}
                   x={b.groupX + b.groupW / 2}
-                  y={height - PADDING.bottom + (compact ? 12 : 14)}
+                  y={height - PADDING.bottom + (compact ? 14 : 16)}
                   textAnchor="middle"
-                  fontSize={compact ? "7.5" : "8.5"}
-                  fontWeight="600"
-                  fill="#9B9B9B"
+                  fontSize={compact ? "8.5" : "9.5"}
+                  fontWeight="700"
+                  fill="#4B5563"
                 >
                   {b.hour}
                 </text>
@@ -407,7 +468,7 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
 
           {hovered && (
             <div
-              className="pointer-events-none absolute z-10 rounded border border-[#C6C6C6]/60 bg-white px-2 py-1.5 text-[10px] shadow-md"
+              className="pointer-events-none absolute z-10 border border-[#C6C6C6] bg-white px-2 py-1.5 text-[10px] shadow-[0_4px_10px_rgba(15,29,36,0.12)]"
               style={{
                 left: `${Math.min(
                   Math.max(
@@ -421,11 +482,12 @@ const OverallProductionChart = ({ data = [], onViewHall, loading }) => {
               }}
             >
               <div className="mb-1 flex items-center justify-between gap-3">
-                <span className="font-semibold text-[#0F1D24]">{hovered.hour}</span>
+                <span className="font-bold text-[#0F1D24]">{hovered.hour}</span>
                 <span
-                  className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold"
+                  className="border px-1.5 py-0.5 text-[9px] font-bold"
                   style={{
                     background: SHIFT_COLORS[hovered.shift].swatch,
+                    borderColor: "#0F1D24",
                     color: hovered.shift === "A" ? "#0F1D24" : "#FDC94D",
                   }}
                 >

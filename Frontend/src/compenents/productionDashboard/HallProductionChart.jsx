@@ -58,6 +58,7 @@ const buildShiftSegments = (data) => {
   return segments;
 };
 
+// Flat bordered tooltip — desktop-app style, sharp corners
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload || payload.length === 0) return null;
   const target = payload.find((p) => p.dataKey === "target")?.value ?? 0;
@@ -65,13 +66,13 @@ const CustomTooltip = ({ active, payload, label }) => {
   const shift = payload[0]?.payload?.shift;
 
   return (
-    <div className="rounded border border-[#C6C6C6]/60 bg-white px-2 py-1.5 text-[10px] shadow-md">
+    <div className="border border-[#C6C6C6] bg-white px-2.5 py-2 text-[10.5px] shadow-[0_4px_10px_rgba(15,29,36,0.14)]">
       <div className="mb-1 flex items-center justify-between gap-3">
-        <span className="font-semibold text-[#0F1D24]">{label}</span>
+        <span className="font-bold text-[#0F1D24]">{label}</span>
         {shift && (
           <span
-            className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold"
-            style={{ background: SHIFT_COLORS[shift].swatch, color: SHIFT_COLORS[shift].text }}
+            className="border px-1.5 py-0.5 text-[9px] font-bold"
+            style={{ background: SHIFT_COLORS[shift].swatch, borderColor: "#0F1D24", color: SHIFT_COLORS[shift].text }}
           >
             Shift {shift}
           </span>
@@ -105,7 +106,14 @@ const HallProductionChart = ({ hall, rows, accent, onViewHall }) => {
     [data]
   );
   const efficiency = totals.target > 0 ? Math.round((totals.actual / totals.target) * 1000) / 10 : null;
-  const effTone = efficiency === null ? "text-[#9B9B9B]" : efficiency >= 100 ? "text-emerald-600" : efficiency >= 70 ? "text-amber-600" : "text-red-600";
+  const effTone =
+    efficiency === null
+      ? "text-[#9B9B9B] border-[#C6C6C6] bg-[#F5F5F5]"
+      : efficiency >= 100
+      ? "text-emerald-700 border-emerald-300 bg-emerald-50"
+      : efficiency >= 70
+      ? "text-amber-700 border-amber-300 bg-amber-50"
+      : "text-red-700 border-red-300 bg-red-50";
 
   return (
     <ChartCard
@@ -116,26 +124,26 @@ const HallProductionChart = ({ hall, rows, accent, onViewHall }) => {
       onViewHall={() => onViewHall(hall)}
     >
       <div className="flex h-full min-h-0 w-full flex-col">
-        {/* Legend + efficiency badge — same visual language as the overall chart */}
-        <div className="mb-1 flex flex-shrink-0 flex-wrap items-center justify-between gap-1.5">
+        {/* Legend + efficiency badge — flat bordered tokens */}
+        <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-1.5 border border-[#C6C6C6] bg-[#FAFAFA] px-2 py-1">
           <div className="flex items-center gap-1">
-            <span className="h-2.5 w-2.5 rounded-[2px]" style={{ background: "#C6C6C6" }} />
-            <span className="text-[9.5px] font-medium text-[#9B9B9B]">Target</span>
-            <span className="ml-2 h-2.5 w-2.5 rounded-[2px]" style={{ background: accent }} />
-            <span className="text-[9.5px] font-medium text-[#9B9B9B]">Actual</span>
+            <span className="h-2.5 w-2.5" style={{ background: "#C6C6C6" }} />
+            <span className="text-[9.5px] font-semibold text-[#9B9B9B]">Target</span>
+            <span className="ml-2 h-2.5 w-2.5" style={{ background: accent }} />
+            <span className="text-[9.5px] font-semibold text-[#9B9B9B]">Actual</span>
           </div>
-          <div className={`rounded-full border border-current/20 px-2 py-0.5 text-[9.5px] font-bold ${effTone}`}>
+          <div className={`border px-2 py-0.5 text-[9.5px] font-bold ${effTone}`}>
             {efficiency === null ? "No data" : `${efficiency}% efficiency`}
           </div>
         </div>
 
         {!hasAnyValue && (
-          <div className="mb-1 flex-shrink-0 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[9.5px] text-amber-700">
+          <div className="mb-1.5 flex-shrink-0 border border-amber-300 bg-amber-50 px-2 py-1 text-[9.5px] font-semibold text-amber-700">
             No production entries logged yet for {hall} — showing 0 across all 24 hours.
           </div>
         )}
 
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0 flex-1 border border-[#C6C6C6] bg-white p-1">
           <ResponsiveContainer width="100%" height="100%" minHeight={160}>
             <ComposedChart
               data={data}
@@ -159,13 +167,13 @@ const HallProductionChart = ({ hall, rows, accent, onViewHall }) => {
                 dataKey="hour"
                 tick={{ fontSize: 8.5, fill: "#9B9B9B", fontWeight: 600 }}
                 tickLine={false}
-                axisLine={false}
+                axisLine={{ stroke: "#C6C6C6" }}
                 interval={1}
               />
               <YAxis
                 tick={{ fontSize: 9, fill: "#9B9B9B", fontFamily: "ui-monospace, monospace" }}
                 tickLine={false}
-                axisLine={false}
+                axisLine={{ stroke: "#C6C6C6" }}
                 width={30}
               />
 
@@ -174,7 +182,6 @@ const HallProductionChart = ({ hall, rows, accent, onViewHall }) => {
               <Bar
                 dataKey="target"
                 fill="#C6C6C6"
-                radius={[2, 2, 0, 0]}
                 maxBarSize={14}
                 animationDuration={500}
                 animationEasing="ease-out"
@@ -183,7 +190,6 @@ const HallProductionChart = ({ hall, rows, accent, onViewHall }) => {
               <Bar
                 dataKey="actual"
                 fill={accent}
-                radius={[2, 2, 0, 0]}
                 maxBarSize={14}
                 animationDuration={500}
                 animationBegin={80}

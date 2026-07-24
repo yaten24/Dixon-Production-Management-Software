@@ -79,7 +79,7 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen max-h-screen overflow-hidden bg-[#F5F5F5]">
+    <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
       <div className="flex flex-1 flex-col overflow-hidden">
         <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden">
           <DashboardFilters
@@ -94,7 +94,7 @@ const UserDashboard = () => {
           />
 
           {error && (
-            <div className="flex-shrink-0 rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] text-red-600">
+            <div className="flex-shrink-0 border border-red-300 bg-red-50 px-2 py-1.5 text-[11px] font-semibold text-red-700">
               {error}
             </div>
           )}
@@ -109,7 +109,7 @@ const UserDashboard = () => {
 
           {/* Remaining vertical space is split between the two chart sections
               so everything fits on one screen — no page-level scrollbar. */}
-          <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5">
             <div className={`min-h-0 ${hasHallCharts ? "flex-[3]" : "flex-1"}`}>
               <OverallProductionChart
                 data={hourlyData}

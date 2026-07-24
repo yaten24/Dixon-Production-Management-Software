@@ -1,9 +1,11 @@
 import React from "react";
-import { motion } from "framer-motion";
 import { FaExclamationTriangle } from "react-icons/fa";
 
-import SummaryCard from "./SummaryCard"; // uses the polished standalone version — no more duplicate inline card
+import SummaryCard from "./SummaryCard";
 
+// Desktop-app grid: flat bordered tiles with grid-line gaps
+// (gap-px bg-[#C6C6C6] trick), no motion, bumped font sizes and
+// padding so the extra tile width isn't left as dead space.
 const SummaryCards = ({ overall, hallSummary = [], halls = [], hallAccent, onSelectHall }) => {
   const summaryMap = new Map(hallSummary.map((h) => [h.hall, h]));
 
@@ -35,21 +37,17 @@ const SummaryCards = ({ overall, hallSummary = [], halls = [], hallAccent, onSel
   return (
     <div className="w-full flex-shrink-0">
       {noDataAtAll && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-700"
-        >
+        <div className="flex items-center gap-2 border border-amber-300 bg-amber-50 px-3 py-2 text-[11.5px] font-semibold text-amber-700">
           <FaExclamationTriangle className="flex-shrink-0 text-amber-500" />
           <span>
             No production data uploaded by the supervisor for this date — showing 0 for all halls.
           </span>
-        </motion.div>
+        </div>
       )}
 
       <div
-        className="grid"
-        style={{ gridTemplateColumns: `repeat(${allCards.length}, minmax(140px, 1fr))` }}
+        className="grid gap-px bg-[#C6C6C6] border border-[#C6C6C6]"
+        style={{ gridTemplateColumns: `repeat(${allCards.length}, minmax(220px, 1fr))` }}
       >
         {allCards.map((card) => (
           <SummaryCard
