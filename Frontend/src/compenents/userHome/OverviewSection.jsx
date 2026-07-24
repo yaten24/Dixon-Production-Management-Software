@@ -75,13 +75,10 @@ const OverviewSection = ({ hall }) => {
   const overviewData = buildOverviewData(data);
 
   return (
-    <section className="relative border border-[#C6C6C6] bg-white">
+    <section className="relative flex h-full flex-col border border-[#C6C6C6] bg-white">
       {/* Group-box header strip */}
       <div className="flex flex-wrap items-center justify-between gap-1 border-b border-[#C6C6C6] bg-[#FAFAFA] px-2.5 py-1.5">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F1D24]/60">
-            Live Stats
-          </span>
           <h2 className="text-[13px] font-bold tracking-tight text-[#0F1D24] leading-tight">
             Today's Overview
           </h2>
@@ -110,9 +107,9 @@ const OverviewSection = ({ hall }) => {
         </div>
       )}
 
-      <div>
+      <div className="flex-1">
         {loading && !data ? (
-          <div className="grid grid-cols-2 gap-1.5 md:grid-cols-6 md:auto-rows-[66px]">
+          <div className="grid h-full content-start grid-cols-2 gap-1.5 md:grid-cols-6 md:auto-rows-[66px]">
             {[SIZE_SPAN.lg, SIZE_SPAN.md, SIZE_SPAN.md, SIZE_SPAN.md, SIZE_SPAN.md].map((span, i) => (
               <div
                 key={i}
@@ -121,7 +118,7 @@ const OverviewSection = ({ hall }) => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-6 md:auto-rows-[66px]">
+          <div className="grid h-full content-start grid-cols-2 md:grid-cols-6 md:auto-rows-[66px]">
             {overviewData.map((item) => (
               <div key={item.id} className={SIZE_SPAN[item.size] || SIZE_SPAN.md}>
                 <OverviewCard item={item} />

@@ -13,10 +13,12 @@ const UserHome = () => {
 
       <main
         className="w-full"
-        style={{ paddingTop: HEADER_HEIGHT+1}}
+        style={{ paddingTop: HEADER_HEIGHT + 1 }}
       >
-        <OverviewSection />
-        <QuickAccess />
+        <div className="grid grid-cols-1 items-stretch gap-2 p-2 lg:grid-cols-2">
+          <OverviewSection />
+          <QuickAccess />
+        </div>
       </main>
     </div>
   );

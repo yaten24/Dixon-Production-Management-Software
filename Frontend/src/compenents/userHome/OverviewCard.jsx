@@ -8,11 +8,16 @@ const TONE_STYLES = {
   amber: { value: "text-[#0F1D24]", accent: "bg-[#FDC94D]", iconText: "text-[#0F1D24]" },
 };
 
+// lg value size is now responsive — this card's panel sits at half
+// desktop width (next to Quick Access) instead of full width, so the
+// same 75px figure that used to fit comfortably can crowd or clip at
+// mid-size viewports. It now steps up gradually and only reaches the
+// original 75px once there's enough room (xl+).
 const SIZE_STYLES = {
   lg: {
     pad: "p-3",
     title: "text-[10.5px]",
-    value: "text-[75px]",
+    value: "text-[40px] sm:text-[52px] lg:text-[44px] xl:text-[60px] 2xl:text-[75px]",
     subtitle: "text-[11px]",
   },
   md: {
@@ -85,7 +90,7 @@ const OverviewCard = ({ item }) => {
           <p className={`truncate font-bold uppercase tracking-wide leading-none text-[#9B9B9B] ${s.title}`}>
             {item.title}
           </p>
-          <h2 className={`mt-1 font-mono font-extrabold leading-none tracking-tight ${s.value} ${tone.value}`}>
+          <h2 className={`mt-1 font-mono font-extrabold leading-none tracking-tight truncate ${s.value} ${tone.value}`}>
             {displayValue}
           </h2>
           <p className={`mt-1 truncate font-semibold leading-tight text-[#9B9B9B] ${s.subtitle}`}>

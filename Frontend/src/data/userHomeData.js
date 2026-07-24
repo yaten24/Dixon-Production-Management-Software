@@ -6,7 +6,8 @@ import {
   HiOutlineBuildingOffice2,
   HiOutlineChartBarSquare,
   HiOutlineClipboard,
-  HiOutlineFlag,
+  HiOutlineCalendarDays,
+  HiOutlineCalendar,
 } from "react-icons/hi2";
 
 export const menuCards = [
@@ -24,12 +25,21 @@ export const menuCards = [
   // ================= Planning =================
   {
     id: 2,
-    title: "Production Planning",
-    description: "Daily & Monthly Production Plans",
-    icon: HiOutlineFlag,
+    title: "Daily Plan",
+    description: "Set & Review Today's Production Plan",
+    icon: HiOutlineCalendarDays,
     color: "bg-red-600",
     hover: "hover:border-red-500",
-    path: "/employee/production/plans",
+    path: "/employee/production/plans/daily",
+  },
+  {
+    id: 8,
+    title: "Monthly Plan",
+    description: "Set & Review This Month's Production Plan",
+    icon: HiOutlineCalendar,
+    color: "bg-indigo-600",
+    hover: "hover:border-indigo-500",
+    path: "/employee/production/plans/monthly",
   },
 
   // ================= Allocation =================
@@ -54,17 +64,6 @@ export const menuCards = [
     path: "/employee/production/entry",
   },
 
-  // ================= Mould =================
-  // {
-  //   id: 5,
-  //   title: "Mould Change",
-  //   description: "Manage Mould Change Activities",
-  //   icon: HiOutlineArrowPath,
-  //   color: "bg-indigo-600",
-  //   hover: "hover:border-indigo-500",
-  //   path: "/employee/mould-change",
-  // },
-
   // ================= History =================
   {
     id: 6,
@@ -86,15 +85,4 @@ export const menuCards = [
     hover: "hover:border-orange-500",
     path: "/employee/production/reports",
   },
-
-  // // ================= Analytics =================
-  // {
-  //   id: 8,
-  //   title: "Performance Analytics",
-  //   description: "Analyze Operator & Machine Performance",
-  //   icon: HiOutlineChartBarSquare,
-  //   color: "bg-lime-600",
-  //   hover: "hover:border-lime-500",
-  //   path: "/employee/analytics/performance",
-  // },
 ];

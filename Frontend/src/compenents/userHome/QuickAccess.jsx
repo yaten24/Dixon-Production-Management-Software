@@ -13,7 +13,7 @@ const QuickAccess = () => {
   };
 
   return (
-    <section className="relative border border-[#C6C6C6] bg-white">
+    <section className="relative flex h-full flex-col border border-[#C6C6C6] bg-white">
       <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-2.5 py-1.5">
         <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F1D24]/60">
           Modules
@@ -26,10 +26,12 @@ const QuickAccess = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-px bg-[#C6C6C6] p-px sm:grid-cols-4 lg:grid-cols-6">
-        {menuCards.map((card) => (
-          <QuickAccessCard key={card.id} card={card} onClick={handleNavigation} />
-        ))}
+      <div className="flex flex-1 items-center">
+        <div className="grid w-full grid-cols-3 gap-px bg-[#C6C6C6] p-px sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
+          {menuCards.map((card) => (
+            <QuickAccessCard key={card.id} card={card} onClick={handleNavigation} />
+          ))}
+        </div>
       </div>
     </section>
   );
