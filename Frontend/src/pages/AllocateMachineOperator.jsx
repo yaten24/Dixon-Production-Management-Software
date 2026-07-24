@@ -261,14 +261,15 @@ const AllocateMachineOperator = () => {
             <div className="h-9 w-9 rounded-sm bg-[#2563EB] flex items-center justify-center">
               <Factory className="text-white" size={18} />
             </div>
-            <div>
-              <h1 className="text-base font-semibold text-slate-800">
-                Machine &amp; Operator Allocation
-              </h1>
-              <p className="text-[11px] text-slate-500">
+            <div className={`h-5 w-px flex-shrink-0 bg-[#C6C6C6]`} />
+            <div className="hidden min-w-0 leading-tight sm:block">
+              <p className="text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+                Operator Allocation
+              </p>
+              <h1 className="truncate text-[12.5px] font-bold text-[#0F1D24]">
                 Select date, hall and shift to view or create a production
                 plan.
-              </p>
+              </h1>
             </div>
           </div>
 

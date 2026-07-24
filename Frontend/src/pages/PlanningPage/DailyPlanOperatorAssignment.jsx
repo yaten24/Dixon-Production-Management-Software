@@ -198,7 +198,7 @@ export default function DailyPlanOperatorAssignment() {
           className="h-[2px] w-full"
           style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
         />
-        <div className="flex h-11 w-full items-center justify-between gap-3 px-3">
+        <div className="flex py-1.5 w-full items-center justify-between gap-3 px-3">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <button
               onClick={() => navigate(-1)}
@@ -209,17 +209,14 @@ export default function DailyPlanOperatorAssignment() {
               <ArrowLeft className="h-3.5 w-3.5" />
             </button>
             <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 border-l border-[#C6C6C6] pl-2.5">
-              <div className="flex items-baseline gap-2">
-                <span className="shrink-0 text-[10px] font-bold uppercase leading-none tracking-wider text-[#0F1D24]/60">
-                  Operator Assignment
-                </span>
-                {/* <h1 className="truncate text-[13px] font-bold leading-none tracking-tight text-[#0F1D24]">
-                  {header.plan_number}
-                </h1> */}
+              <div className="hidden min-w-0 leading-tight sm:block">
+                <p className="text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+                  Operator Allocation
+                </p>
+                <h1 className="truncate text-[12.5px] font-bold text-[#0F1D24]">
+                  {header.planning_date} · {header.hall} · Shift {header.shift}
+                </h1>
               </div>
-              <p className="truncate font-mono text-[10px] leading-none text-[#9B9B9B]">
-                {header.planning_date} · {header.hall} · Shift {header.shift}
-              </p>
             </div>
           </div>
 

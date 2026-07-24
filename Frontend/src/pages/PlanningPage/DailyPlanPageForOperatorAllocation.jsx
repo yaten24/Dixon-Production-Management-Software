@@ -46,7 +46,9 @@ const SummaryTile = ({ icon: Icon, label, value }) => (
       <Icon className="h-3.5 w-3.5" />
     </div>
     <div className="min-w-0 leading-tight">
-      <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">{label}</p>
+      <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">
+        {label}
+      </p>
       <p className="truncate text-[12.5px] font-semibold text-white">{value}</p>
     </div>
   </div>
@@ -58,7 +60,9 @@ const SummaryTile = ({ icon: Icon, label, value }) => (
 const StatCard = ({ value, label }) => (
   <div className="flex-1 border border-[#C6C6C6] bg-white px-4 py-3">
     <p className="text-xl font-bold leading-none text-[#0F1D24]">{value}</p>
-    <p className="mt-1.5 text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">{label}</p>
+    <p className="mt-1.5 text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+      {label}
+    </p>
   </div>
 );
 
@@ -82,7 +86,9 @@ export default function DailyPlanPageForOperatorAllocation() {
     }
   };
 
-  useEffect(() => { fetchPlans(); }, []);
+  useEffect(() => {
+    fetchPlans();
+  }, []);
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this plan?")) return;
@@ -96,10 +102,16 @@ export default function DailyPlanPageForOperatorAllocation() {
 
   // Row click goes straight to operator assignment — this page's sole
   // purpose is picking a plan to assign operators for.
-  const handleAssignOperators = (plan) => navigate(`/employee/production/plans/${plan.daily_plan_id}/operator/allocation`);
-  const handleCreate = () => navigate("/employee/production/plans/daily/create");
+  const handleAssignOperators = (plan) =>
+    navigate(
+      `/employee/production/plans/${plan.daily_plan_id}/operator/allocation`,
+    );
+  const handleCreate = () =>
+    navigate("/employee/production/plans/daily/create");
 
-  const hasTodayPlan = plans.some((p) => toDateKey(new Date(p.planning_date)) === todayISO());
+  const hasTodayPlan = plans.some(
+    (p) => toDateKey(new Date(p.planning_date)) === todayISO(),
+  );
 
   const filteredPlans = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -107,7 +119,7 @@ export default function DailyPlanPageForOperatorAllocation() {
     return plans.filter((p) =>
       [p.hall, p.shift, p.planning_date]
         .filter(Boolean)
-        .some((field) => String(field).toLowerCase().includes(q))
+        .some((field) => String(field).toLowerCase().includes(q)),
     );
   }, [plans, search]);
 
@@ -117,9 +129,12 @@ export default function DailyPlanPageForOperatorAllocation() {
       <header className="w-full border-b border-[#C6C6C6] bg-white">
         <div
           className="h-[2px] w-full"
-          style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
+          style={{
+            background:
+              "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)",
+          }}
         />
-        <div className="flex h-11 w-full items-center justify-between gap-3 px-3">
+        <div className="flex py-1.5 w-full items-center justify-between gap-3 px-3">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <button
               onClick={() => navigate(-1)}
@@ -130,11 +145,11 @@ export default function DailyPlanPageForOperatorAllocation() {
               <HiOutlineArrowLeft className="h-3.5 w-3.5" />
             </button>
             <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 border-l border-[#C6C6C6] pl-2.5">
-              <div className="flex items-baseline gap-2">
-                <span className="shrink-0 text-[10px] font-bold uppercase leading-none tracking-wider text-[#0F1D24]/60">
-                  Operator Allocation
-                </span>
-                <h1 className="truncate text-[13px] font-bold leading-none tracking-tight text-[#0F1D24]">
+              <div className="hidden min-w-0 leading-tight sm:block">
+                <p className="text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+                  Operator Allocationng
+                </p>
+                <h1 className="truncate text-[12.5px] font-bold text-[#0F1D24]">
                   Assign Operators — Daily Plans
                 </h1>
               </div>
@@ -171,7 +186,17 @@ export default function DailyPlanPageForOperatorAllocation() {
         {/* Context sidebar + stat cards */}
         <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[260px_1fr]">
           <div className="space-y-4 bg-[#0F1D24] p-5">
-            <SummaryTile icon={HiOutlineCalendarDays} label="Today" value={formatDate(new Date().toISOString()).weekday + ", " + formatDate(new Date().toISOString()).month + " " + formatDate(new Date().toISOString()).day} />
+            <SummaryTile
+              icon={HiOutlineCalendarDays}
+              label="Today"
+              value={
+                formatDate(new Date().toISOString()).weekday +
+                ", " +
+                formatDate(new Date().toISOString()).month +
+                " " +
+                formatDate(new Date().toISOString()).day
+              }
+            />
             <SummaryTile
               icon={HiOutlineExclamationTriangle}
               label="Today's Plan"
@@ -181,8 +206,14 @@ export default function DailyPlanPageForOperatorAllocation() {
 
           <div className="flex flex-col gap-px bg-[#C6C6C6] sm:flex-row">
             <StatCard value={plans.length} label="Total Plans" />
-            <StatCard value={hasTodayPlan ? "Yes" : "No"} label="Plan For Today" />
-            <StatCard value={new Set(plans.map((p) => p.hall)).size} label="Halls In Use" />
+            <StatCard
+              value={hasTodayPlan ? "Yes" : "No"}
+              label="Plan For Today"
+            />
+            <StatCard
+              value={new Set(plans.map((p) => p.hall)).size}
+              label="Halls In Use"
+            />
           </div>
         </div>
 
@@ -190,7 +221,9 @@ export default function DailyPlanPageForOperatorAllocation() {
         <div className="flex flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2">
           <div className="flex items-center gap-2">
             <HiOutlineUserGroup className="h-4 w-4 text-[#0F1D24]" />
-            <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Daily Plans</h2>
+            <h2 className="text-[12.5px] font-bold text-[#0F1D24]">
+              Daily Plans
+            </h2>
             <span className="border border-[#C6C6C6] bg-[#FAFAFA] px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">
               {filteredPlans.length}
               {search ? ` / ${plans.length}` : ""}
@@ -226,19 +259,27 @@ export default function DailyPlanPageForOperatorAllocation() {
                   <th className="px-2.5 py-2 font-semibold">Hall</th>
                   <th className="px-2.5 py-2 font-semibold">Shift</th>
                   <th className="px-2.5 py-2 font-semibold">Status</th>
-                  <th className="px-2.5 py-2 text-center font-semibold">Actions</th>
+                  <th className="px-2.5 py-2 text-center font-semibold">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]">
+                    <td
+                      colSpan={5}
+                      className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]"
+                    >
                       Loading plans…
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-[11.5px] font-semibold text-red-600">
+                    <td
+                      colSpan={5}
+                      className="px-3 py-8 text-center text-[11.5px] font-semibold text-red-600"
+                    >
                       {error}
                     </td>
                   </tr>
@@ -248,12 +289,15 @@ export default function DailyPlanPageForOperatorAllocation() {
                       <div className="flex flex-col items-center justify-center gap-2 text-center">
                         <HiOutlineExclamationTriangle className="h-6 w-6 text-[#9B9B9B]" />
                         <p className="text-[12.5px] font-bold text-[#0F1D24]">
-                          {search ? "No plans match your search." : "No plans found"}
+                          {search
+                            ? "No plans match your search."
+                            : "No plans found"}
                         </p>
                         {!search && (
                           <>
                             <p className="max-w-xs text-[11px] text-[#9B9B9B]">
-                              There are no daily production plans yet. Create one to get started.
+                              There are no daily production plans yet. Create
+                              one to get started.
                             </p>
                             <button
                               onClick={handleCreate}
@@ -270,7 +314,9 @@ export default function DailyPlanPageForOperatorAllocation() {
                 ) : (
                   filteredPlans.map((plan, idx) => {
                     const parsedDate = new Date(plan.planning_date);
-                    const { weekday, day, month } = formatDate(plan.planning_date);
+                    const { weekday, day, month } = formatDate(
+                      plan.planning_date,
+                    );
                     const isToday = toDateKey(parsedDate) === todayISO();
 
                     return (
@@ -284,15 +330,21 @@ export default function DailyPlanPageForOperatorAllocation() {
                         <td className="px-2.5 py-1.5">
                           <div className="flex items-center gap-2">
                             <div className="flex h-7 w-7 shrink-0 items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
-                              <span className="text-[10px] font-bold leading-none">{day}</span>
+                              <span className="text-[10px] font-bold leading-none">
+                                {day}
+                              </span>
                             </div>
                             <span className="font-mono font-semibold text-[#0F1D24]">
                               {weekday}, {month} {day}
                             </span>
                           </div>
                         </td>
-                        <td className="px-2.5 py-1.5 text-[#0F1D24]">{plan.hall}</td>
-                        <td className="px-2.5 py-1.5 text-[#9B9B9B]">Shift {plan.shift}</td>
+                        <td className="px-2.5 py-1.5 text-[#0F1D24]">
+                          {plan.hall}
+                        </td>
+                        <td className="px-2.5 py-1.5 text-[#9B9B9B]">
+                          Shift {plan.shift}
+                        </td>
                         <td className="px-2.5 py-1.5">
                           {isToday ? (
                             <span className="border border-[#C6C6C6] bg-[#FDC94D]/25 px-2 py-0.5 text-[10.5px] font-bold text-[#0F1D24]">
@@ -305,14 +357,20 @@ export default function DailyPlanPageForOperatorAllocation() {
                         <td className="px-2.5 py-1.5">
                           <div className="flex items-center justify-center gap-1.5">
                             <button
-                              onClick={(e) => { e.stopPropagation(); handleAssignOperators(plan); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAssignOperators(plan);
+                              }}
                               title="Assign operators"
                               className="flex h-6 w-6 items-center justify-center text-[#0F1D24] hover:bg-[#FDC94D]/25"
                             >
                               <HiOutlineArrowRight className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              onClick={(e) => { e.stopPropagation(); handleDelete(plan.daily_plan_id); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(plan.daily_plan_id);
+                              }}
                               title="Delete plan"
                               className="flex h-6 w-6 items-center justify-center text-red-500 hover:bg-red-50"
                             >

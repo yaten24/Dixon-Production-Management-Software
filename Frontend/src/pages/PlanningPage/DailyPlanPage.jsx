@@ -90,7 +90,9 @@ const EmptyStateWarning = ({ onCreate }) => (
       <HiOutlineExclamationTriangle className="h-6 w-6" />
     </div>
     <p className="text-[13px] font-bold text-[#0F1D24]">No plans found</p>
-    <p className="mt-1 max-w-xs text-[11.5px] text-[#9B9B9B]">There are no daily production plans yet. Create one to get started.</p>
+    <p className="mt-1 max-w-xs text-[11.5px] text-[#9B9B9B]">
+      There are no daily production plans yet. Create one to get started.
+    </p>
     <button
       onClick={onCreate}
       className="mt-4 flex items-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-4 py-2 text-xs font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]"
@@ -124,7 +126,9 @@ const DailyPlanPage = () => {
     }
   };
 
-  useEffect(() => { fetchPlans(); }, []);
+  useEffect(() => {
+    fetchPlans();
+  }, []);
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this plan?")) return;
@@ -136,10 +140,14 @@ const DailyPlanPage = () => {
     }
   };
 
-  const handleOpen = (plan) => navigate(`/employee/production/plans/daily/detail/${plan.daily_plan_id}`);
-  const handleCreate = () => navigate("/employee/production/plans/daily/create");
+  const handleOpen = (plan) =>
+    navigate(`/employee/production/plans/daily/detail/${plan.daily_plan_id}`);
+  const handleCreate = () =>
+    navigate("/employee/production/plans/daily/create");
 
-  const hasTodayPlan = plans.some((p) => toDateKey(new Date(p.planning_date)) === todayISO());
+  const hasTodayPlan = plans.some(
+    (p) => toDateKey(new Date(p.planning_date)) === todayISO(),
+  );
 
   return (
     <div className="min-h-screen bg-[#EFEFEF]">
@@ -147,7 +155,10 @@ const DailyPlanPage = () => {
       <div className="w-full border-b border-[#C6C6C6] bg-white">
         <div
           className="h-[2px] w-full"
-          style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
+          style={{
+            background:
+              "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)",
+          }}
         />
         <div className="flex h-[40px] w-full items-center justify-between gap-2 px-3">
           <div className="flex items-center gap-2">
@@ -158,11 +169,12 @@ const DailyPlanPage = () => {
             >
               <HiOutlineArrowLeft className="h-3.5 w-3.5" />
             </button>
-            <div className="border-l border-[#C6C6C6] pl-2.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F1D24]/60">
+            <div className={`h-5 w-px flex-shrink-0 bg-[#C6C6C6]`} />
+            <div className="hidden min-w-0 leading-tight sm:block">
+              <p className="text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
                 Production Planning
-              </span>
-              <h1 className="text-[13px] font-bold tracking-tight text-[#0F1D24] leading-tight">
+              </p>
+              <h1 className="truncate text-[12.5px] font-bold text-[#0F1D24]">
                 Daily Production Plans
               </h1>
             </div>
@@ -208,7 +220,12 @@ const DailyPlanPage = () => {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {plans.map((plan) => (
-              <DayPlanCard key={plan.daily_plan_id} plan={plan} onOpen={handleOpen} onDelete={handleDelete} />
+              <DayPlanCard
+                key={plan.daily_plan_id}
+                plan={plan}
+                onOpen={handleOpen}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         )}

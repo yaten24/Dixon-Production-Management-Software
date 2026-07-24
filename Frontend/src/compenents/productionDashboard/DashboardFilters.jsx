@@ -235,11 +235,6 @@ const DashboardFilters = ({
           <Divider />
         </>
       )}
-
-      {/* Identity */}
-      <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center border border-[#0F1D24] bg-[#0F1D24]">
-        <FaChartLine className="text-xs text-[#FDC94D]" />
-      </div>
       <div className="hidden min-w-0 leading-tight sm:block">
         <p className="text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">{eyebrow}</p>
         <h1 className="truncate text-[12.5px] font-bold text-[#0F1D24]">{title}</h1>

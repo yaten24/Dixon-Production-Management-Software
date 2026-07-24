@@ -147,11 +147,12 @@ const MonthlyPlanPage = () => {
             >
               <HiOutlineArrowLeft className="h-3.5 w-3.5" />
             </button>
-            <div className="border-l border-[#C6C6C6] pl-2.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F1D24]/60">
+            <div className={`h-5 w-px flex-shrink-0 bg-[#C6C6C6]`} />
+            <div className="hidden min-w-0 leading-tight sm:block">
+              <p className="text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
                 Production Planning
-              </span>
-              <h1 className="text-[13px] font-bold tracking-tight text-[#0F1D24] leading-tight">
+              </p>
+              <h1 className="truncate text-[12.5px] font-bold text-[#0F1D24]">
                 Monthly Production Plans
               </h1>
             </div>
