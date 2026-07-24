@@ -187,9 +187,9 @@ const DailyPlanPage = () => {
         </div>
       </div>
 
-      <main className="w-full px-3 pb-6 pt-3">
+      <main className="w-full">
         {!loading && !error && plans.length > 0 && !hasTodayPlan && (
-          <div className="mb-3 flex items-center gap-2 border border-red-300 bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700">
+          <div className="flex items-center gap-2 border border-red-300 bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700">
             <HiOutlineExclamationTriangle className="h-4 w-4 flex-shrink-0" />
             No plan exists for today — create one immediately.
           </div>
@@ -206,7 +206,7 @@ const DailyPlanPage = () => {
         ) : plans.length === 0 ? (
           <EmptyStateWarning onCreate={handleCreate} />
         ) : (
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {plans.map((plan) => (
               <DayPlanCard key={plan.daily_plan_id} plan={plan} onOpen={handleOpen} onDelete={handleDelete} />
             ))}

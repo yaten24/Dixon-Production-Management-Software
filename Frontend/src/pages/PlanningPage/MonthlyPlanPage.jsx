@@ -176,16 +176,16 @@ const MonthlyPlanPage = () => {
         </div>
       </div>
 
-      <main className="w-full px-3 pb-6 pt-3">
+      <main className="w-full">
         {/* Warnings — flat, bordered */}
         {!loading && !error && plans.length > 0 && !hasCurrentPlan && (
-          <div className="mb-3 flex items-center gap-2 border border-red-300 bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700">
+          <div className="flex items-center gap-2 border border-red-300 bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700">
             <HiOutlineExclamationTriangle className="h-4 w-4 flex-shrink-0" />
             No plan exists for {MONTH_NAMES[currentMonth - 1]} {currentYear} — create one immediately.
           </div>
         )}
         {!loading && !error && hasCurrentPlan && !hasNextPlan && (
-          <div className="mb-3 flex items-center gap-2 border border-[#FDC94D]/60 bg-[#FDC94D]/10 px-3 py-2 text-[12px] font-semibold text-[#0F1D24]">
+          <div className="flex items-center gap-2 border border-[#FDC94D]/60 bg-[#FDC94D]/10 px-3 py-2 text-[12px] font-semibold text-[#0F1D24]">
             <HiOutlineExclamationTriangle className="h-4 w-4 flex-shrink-0" />
             No plan has been created yet for {MONTH_NAMES[nextMonth - 1]} {nextYear}.
           </div>
@@ -203,7 +203,7 @@ const MonthlyPlanPage = () => {
         ) : plans.length === 0 ? (
           <EmptyStateWarning onCreate={handleCreate} />
         ) : (
-          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {plans.map((plan) => (
               <MonthPlanCard
                 key={plan.monthly_plan_id}

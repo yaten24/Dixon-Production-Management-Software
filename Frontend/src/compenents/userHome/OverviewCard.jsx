@@ -82,8 +82,6 @@ const OverviewCard = ({ item }) => {
 
   return (
     <div className="relative flex h-full border border-[#C6C6C6] bg-white hover:bg-[#FAFAFA] transition-colors duration-100">
-      {/* Left accent rail */}
-      {/* <div className={`w-[3px] flex-shrink-0 ${tone.accent}`} /> */}
 
       <div className={`relative flex flex-1 items-start justify-between ${s.pad} gap-2`}>
         <div className="flex min-w-0 flex-1 flex-col justify-center">

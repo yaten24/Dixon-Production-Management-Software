@@ -15,7 +15,7 @@ const UserHome = () => {
         className="w-full"
         style={{ paddingTop: HEADER_HEIGHT + 1 }}
       >
-        <div className="grid grid-cols-1 items-stretch gap-2 p-2 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-stretch lg:grid-cols-2">
           <OverviewSection />
           <QuickAccess />
         </div>

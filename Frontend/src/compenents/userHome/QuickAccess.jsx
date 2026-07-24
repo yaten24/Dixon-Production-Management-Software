@@ -15,9 +15,6 @@ const QuickAccess = () => {
   return (
     <section className="relative flex h-full flex-col border border-[#C6C6C6] bg-white">
       <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-2.5 py-1.5">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F1D24]/60">
-          Modules
-        </span>
         <h2 className="text-[13px] font-bold tracking-tight text-[#0F1D24] leading-tight">
           Quick Access
         </h2>
