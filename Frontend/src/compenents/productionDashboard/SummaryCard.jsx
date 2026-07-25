@@ -44,15 +44,15 @@ const SummaryCard = ({ hall, target, actual, rejection, color, hasData = true, o
       }`}
     >
       <div className="relative p-2">
-        {!hasData && (
+        {/* {!hasData && (
           <span className="absolute right-3 top-3 border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
             No Data
           </span>
-        )}
+        )} */}
 
         {/* Header */}
         <div className="mb-3 flex items-center gap-3">
-          <div
+          {/* <div
             className="flex h-10 w-10 flex-shrink-0 items-center justify-center border text-[17px]"
             style={{
               background: hasData ? color : "#C6C6C6",
@@ -61,7 +61,7 @@ const SummaryCard = ({ hall, target, actual, rejection, color, hasData = true, o
             }}
           >
             <FaIndustry />
-          </div>
+          </div> */}
           <div className="min-w-0">
             <h2 className="truncate text-[18px] font-bold leading-tight text-[#0F1D24]">{hall}</h2>
             <p className="text-[11px] font-bold uppercase tracking-wide text-[#9B9B9B]">

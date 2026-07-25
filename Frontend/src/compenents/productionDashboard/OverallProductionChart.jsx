@@ -59,9 +59,9 @@ const ChartCard = ({
         hasData ? "border-[#C6C6C6]" : "border-amber-300"
       } ${full ? "w-full" : ""}`}
     >
-      <div className="mb-2 flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-[#C6C6C6] pb-1.5">
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-[#C6C6C6] pb-1.5">
         <div className="flex flex-shrink-0 items-center gap-2">
-          <div
+          {/* <div
             className="flex h-7 w-7 flex-shrink-0 items-center justify-center border"
             style={{
               background: hasData ? iconBg : "#C6C6C6",
@@ -69,7 +69,7 @@ const ChartCard = ({
             }}
           >
             {icon}
-          </div>
+          </div> */}
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <h3 className="whitespace-nowrap text-[12.5px] font-bold text-[#0F1D24]">{title}</h3>
@@ -89,7 +89,7 @@ const ChartCard = ({
             View Details button. */}
         {headerExtra && <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">{headerExtra}</div>}
 
-        {onViewHall && (
+        {/* {onViewHall && (
           <button
             onClick={onViewHall}
             className="ml-auto flex flex-shrink-0 items-center gap-1 border border-[#C6C6C6] px-2 py-1 text-[10px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
@@ -97,7 +97,7 @@ const ChartCard = ({
             View Details
             <FaChevronRight className="text-[8px]" />
           </button>
-        )}
+        )} */}
       </div>
 
       {hasData ? (

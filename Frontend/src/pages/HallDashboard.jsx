@@ -1118,10 +1118,6 @@ const HallDashboard = () => {
                 {kpiCards.map((item) => <KpiCard key={item.id} item={item} />)}
               </div>
             )}
-            {/* This inner wrapper — not the outer column — is the only thing
-                allowed to scroll if Shift Summary + Top Rejects together can't
-                fit the space left after the KPI row. Keeps any overflow local
-                and small instead of growing the whole page. */}
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
               <ShiftSummaryPanel rows={shiftSummary} loading={loading} />
               <TopRejectsPanel rows={topRejects} loading={loading} />
