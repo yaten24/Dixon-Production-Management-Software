@@ -13,7 +13,7 @@ async function startServer() {
 
         console.log("MySQL Connected");
 
-        app.listen(PORT, () => {
+        app.listen(PORT, "0.0.0.0", () => {
 
             console.log(`Server Running On ${PORT}`);
 

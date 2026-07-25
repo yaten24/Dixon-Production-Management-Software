@@ -21,6 +21,10 @@ exports.getAll = async () => {
 
             pe.production_id,
 
+            pe.plan_id,
+
+            pe.plan_detail_id,
+
             pe.entry_date,
 
             pe.hall,
@@ -156,9 +160,25 @@ exports.findByProductionId = async (productionId) => {
 // Create Production Entry
 // =========================================
 
+// BUG FIX: `plan_id` and `plan_detail_id` were never destructured from
+// `data` or included in the INSERT column list here, even though the
+// controller was already correctly passing them in as
+// `plan_id: n(plan_id), plan_detail_id: n(plan_detail_id)`. Since those
+// two columns are NOT NULL in the schema (no default), omitting them
+// from the INSERT entirely made every single create fail at the
+// database layer with something like "Field 'plan_id' doesn't have a
+// default value" — surfacing to the client as a generic 500. They're
+// now included end-to-end. (This also requires the companion migration
+// making both columns nullable, since the app explicitly supports
+// manual/ad-hoc entries with no matched plan — see
+// migration_allow_manual_entries.sql.)
 exports.create = async (connection, data) => {
   const {
     production_id,
+
+    plan_id,
+
+    plan_detail_id,
 
     entry_date,
 
@@ -201,6 +221,10 @@ exports.create = async (connection, data) => {
 
             production_id,
 
+            plan_id,
+
+            plan_detail_id,
+
             entry_date,
 
             hall,
@@ -240,13 +264,17 @@ exports.create = async (connection, data) => {
         VALUES(
 
             ?,?,?,?,?,?,?,?,?,?,
-            ?,?,?,?,?,?,?,?
+            ?,?,?,?,?,?,?,?,?,?
 
         )
         `,
 
     [
       n(production_id),
+
+      n(plan_id),
+
+      n(plan_detail_id),
 
       n(entry_date),
 
@@ -291,9 +319,16 @@ exports.create = async (connection, data) => {
 // Update Production Entry
 // =========================================
 
+// Same fix as create() above — plan_id / plan_detail_id are now part of
+// the UPDATE too, so editing an entry doesn't silently ignore its plan
+// link.
 exports.update = async (connection, id, data) => {
   const {
     production_id,
+
+    plan_id,
+
+    plan_detail_id,
 
     entry_date,
 
@@ -335,6 +370,10 @@ exports.update = async (connection, id, data) => {
 
             production_id = ?,
 
+            plan_id = ?,
+
+            plan_detail_id = ?,
+
             entry_date = ?,
 
             hall = ?,
@@ -375,6 +414,10 @@ exports.update = async (connection, id, data) => {
 
     [
       n(production_id),
+
+      n(plan_id),
+
+      n(plan_detail_id),
 
       n(entry_date),
 

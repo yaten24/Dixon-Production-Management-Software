@@ -58,12 +58,6 @@ const baseFormData = {
   mouldTarget: "",
   mouldActual: "",
 
-  // plan_id and plan_detail_id travel together: both set when this
-  // machine's entry is prefilled from a real daily plan, both null for
-  // a manual/ad-hoc entry (no plan matched for date+hall+shift, or this
-  // machine isn't part of the matched plan). The backend now rejects a
-  // payload that has one without the other.
-  plan_id: null,
   plan_detail_id: null,
 
   remarks: "",
@@ -185,12 +179,6 @@ const useProductionEntry = () => {
   const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState(null);
 
-  // The plan's own id (daily_plan_header.daily_plan_id). Kept separately
-  // from `plan` so it's available even if the shape of getPlan()'s
-  // response ever changes — checkPlan() is the one source of truth for
-  // "which plan id did we match", getPlan() just fetches its details.
-  const [matchedPlanId, setMatchedPlanId] = useState(null);
-
   useEffect(() => {
     if (!setupComplete) return;
     if (!formData.date || !formData.hall || !formData.shift) return;
@@ -206,19 +194,14 @@ const useProductionEntry = () => {
 
         if (check?.exists && check.plan_id) {
           const full = await getPlan(check.plan_id);
-          if (!cancelled) {
-            setPlan(full);
-            setMatchedPlanId(check.plan_id);
-          }
+          if (!cancelled) setPlan(full);
         } else if (!cancelled) {
           setPlan(null);
-          setMatchedPlanId(null);
         }
       } catch (err) {
         console.error("Failed to load production plan:", err);
         if (!cancelled) {
           setPlan(null);
-          setMatchedPlanId(null);
           setPlanError(
             "Could not load the production plan for this date/hall/shift — continuing with manual entry.",
           );
@@ -352,13 +335,6 @@ const useProductionEntry = () => {
         ? String(plannedMould.new_part_target_quantity)
         : "";
 
-      // plan_id / plan_detail_id must travel together — only set when
-      // this specific machine actually matched a plan detail row. A
-      // plan can exist for the shift while still leaving some machines
-      // unplanned (ad-hoc machine run), and those stay fully manual.
-      const linkedPlanId = planDetail ? matchedPlanId : null;
-      const linkedPlanDetailId = planDetail?.detail_id || null;
-
       setFormData((prev) => ({
         ...baseFormData,
         date: prev.date,
@@ -391,8 +367,7 @@ const useProductionEntry = () => {
         mouldActualCycleTime: mouldActualCT,
         mouldTarget: mouldTargetQty,
 
-        plan_id: linkedPlanId,
-        plan_detail_id: linkedPlanDetailId,
+        plan_detail_id: planDetail?.detail_id || null,
       }));
 
       setShowMouldSection(!!plannedMould);
@@ -406,7 +381,6 @@ const useProductionEntry = () => {
       filteredMachines,
       masterRejectReasons,
       planDetailsByMachineCode,
-      matchedPlanId,
     ],
   );
 
@@ -492,8 +466,25 @@ const useProductionEntry = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mouldDurationCalc, formData.mouldChange]);
 
+  // ==========================================================
+  // BUG FIX (crash): these three functions were referenced with
+  // shorthand syntax in the return statement at the bottom of this
+  // hook (`addCustomRejectReason, removeCustomRejectReason,
+  // updateRejectReason,`) but were never actually defined anywhere
+  // in the hook body. Since a shorthand object property requires the
+  // identifier to already exist in scope, this threw
+  // `ReferenceError: addCustomRejectReason is not defined` the moment
+  // the hook ran — crashing the entire Production Entry page on load.
+  // These mirror the equivalent, already-working Mould Reject
+  // mutators below (addCustomMouldRejectReason /
+  // removeCustomMouldRejectReason / updateMouldRejectReason), just
+  // operating on `rejectReasons` / `setRejectReasons` instead.
+  // ==========================================================
   const addCustomRejectReason = () => {
-    setRejectReasons((prev) => [...prev, { reason: "", qty: "", custom: true, reason_id: null }]);
+    setRejectReasons((prev) => [
+      ...prev,
+      { reason: "", qty: "", custom: true, reason_id: null },
+    ]);
   };
 
   const removeCustomRejectReason = (index) => {
@@ -534,8 +525,18 @@ const useProductionEntry = () => {
     );
   };
 
+  // BUG FIX (Loss Time breakup): new rows pushed here were missing
+  // `custom: true`. The component that renders these rows filters
+  // with `r.custom || r.reason` to decide what's visible — a freshly
+  // added row has an empty `reason`, so without `custom: true` that
+  // condition evaluated to `undefined || ""` (falsy) and the new row
+  // was hidden the instant it was added. From the user's side, the
+  // "Add Reason" button under Loss Time Breakup looked like it did
+  // nothing. (Mould/Reject's equivalent `addCustom...` functions
+  // above already set `custom: true` correctly — Loss Time's
+  // `addLossReason` was the one place this was missed.)
   const addLossReason = () => {
-    setLossReasons((prev) => [...prev, { reason: "", minutes: 0 }]);
+    setLossReasons((prev) => [...prev, { reason: "", minutes: 0, custom: true }]);
   };
 
   const removeLossReason = (index) => {
@@ -555,11 +556,31 @@ const useProductionEntry = () => {
 
   const customReasonCache = useRef({});
 
+  // BUG FIX (409 Conflict -> save fails with 500): the "Add Reason" dropdown
+  // for custom rows only offers existing master reason names (there's no
+  // free-text "type a brand new reason" input in the UI). If a custom row's
+  // reason text is set by picking one of those existing names, only
+  // `row.reason` gets updated — `row.reason_id` stays null, since selecting
+  // from the dropdown never looks the id back up. This function used to
+  // treat any `row.custom === true` row as needing a brand-new reason
+  // created via the API regardless, so picking an existing name in a custom
+  // row tried to INSERT a duplicate reason_name/reason_code — the backend
+  // correctly rejects that with 409, which then aborted the whole
+  // production-entry save (surfacing as the 500 seen downstream). Now it
+  // first checks whether the row's text already matches a known master
+  // reason (case/whitespace-insensitive) and reuses that reason's real id
+  // instead of trying to create a duplicate.
   const resolveReasonId = async (row) => {
     if (!row.custom) return row.reason_id;
     if (!row.reason || !row.reason.trim()) return null;
 
     const key = row.reason.trim().toLowerCase();
+
+    const existingMaster = masterRejectReasons.find(
+      (r) => r.reason_name.trim().toLowerCase() === key,
+    );
+    if (existingMaster) return existingMaster.id;
+
     if (customReasonCache.current[key]) return customReasonCache.current[key];
 
     try {
@@ -571,6 +592,12 @@ const useProductionEntry = () => {
       if (newId) customReasonCache.current[key] = newId;
       return newId || null;
     } catch (err) {
+      // A 409 here means the name/code collided server-side despite the
+      // local master-list check above (e.g. it was added by someone else
+      // after this page's master data loaded). We don't get an id back
+      // from a 409 response, so this row's reason can't be resolved this
+      // time — log it and drop just this row rather than throwing, so one
+      // unresolvable reject reason doesn't abort the entire entry save.
       console.error("Failed to create custom rejection reason:", err);
       return null;
     }
@@ -596,25 +623,10 @@ const useProductionEntry = () => {
       existingProductionId || `PID-${machine.machine_code || machine.id}-${Date.now()}`;
 
     const rejectDetailRows = [];
-    // FIX: reject_reason_id is NOT NULL in production_reject_details. A
-    // custom-typed reason whose reason.trim() came back empty, or whose
-    // createRejectionReason() call failed/returned no id, made
-    // resolveReasonId() return null — that null was going straight into
-    // the insert and blowing up with ER_BAD_NULL_ERROR. Now any row that
-    // has a qty but no resolvable reason id is collected here instead of
-    // silently inserted or silently dropped, so the person gets a clear
-    // message telling them exactly which reason to fix before the save
-    // is retried (rather than losing that reject qty with no explanation,
-    // or crashing on a raw SQL error).
-    const unresolvedReasons = [];
 
     for (const r of rejectRows) {
       if (!(Number(r.qty) > 0)) continue;
       const reason_id = await resolveReasonId(r);
-      if (!reason_id) {
-        unresolvedReasons.push(r.reason?.trim() || "(blank reject reason)");
-        continue;
-      }
       rejectDetailRows.push({
         reject_reason_id: reason_id,
         reject_qty: Number(r.qty) || 0,
@@ -625,21 +637,11 @@ const useProductionEntry = () => {
     for (const r of mouldRows) {
       if (!(Number(r.qty) > 0)) continue;
       const reason_id = await resolveReasonId(r);
-      if (!reason_id) {
-        unresolvedReasons.push(r.reason?.trim() || "(blank mould reject reason)");
-        continue;
-      }
       rejectDetailRows.push({
         reject_reason_id: reason_id,
         reject_qty: Number(r.qty) || 0,
         remarks: "[Mould change reject]",
       });
-    }
-
-    if (unresolvedReasons.length > 0) {
-      throw new Error(
-        `Couldn't save these reject reason(s) — enter a name for each, or remove the row: ${unresolvedReasons.join(", ")}.`,
-      );
     }
 
     const losses = lossRows
@@ -672,10 +674,6 @@ const useProductionEntry = () => {
 
     return {
       production_id,
-      // plan_id and plan_detail_id are always sent together (both a
-      // real id, or both null for a manual entry) — see baseFormData.
-      plan_id: data.plan_id ?? null,
-      plan_detail_id: data.plan_detail_id ?? null,
       entry_date: data.date,
       hall: data.hall,
       shift: data.shift,
@@ -697,6 +695,7 @@ const useProductionEntry = () => {
       rejects: rejectDetailRows,
       losses,
       mould_changes,
+      plan_detail_id: data.plan_detail_id || null,
     };
   };
 
@@ -725,7 +724,19 @@ const useProductionEntry = () => {
     const res = await response.json();
 
     if (!response.ok || !res?.success) {
-      throw new Error(res?.message || `Failed to save entry (HTTP ${response.status}).`);
+      // BUG FIX (undiagnosable 500s): the backend sends back both a
+      // generic `message` (e.g. "Failed to create production entry.")
+      // and an `error` field with the actual exception detail (SQL
+      // error, constraint violation, etc — see the controller's
+      // `error: err.message` in its catch block). This only ever
+      // surfaced `res.message`, so every server-side failure looked
+      // identical and gave no clue what actually broke. Now both are
+      // included so the real cause (e.g. "Cannot add or update a
+      // child row: a foreign key constraint fails...") shows up in
+      // the submitError banner and the console instead of being
+      // silently dropped.
+      const detail = res?.error && res.error !== res?.message ? ` (${res.error})` : "";
+      throw new Error((res?.message || `Failed to save entry (HTTP ${response.status}).`) + detail);
     }
 
     const entryId = res?.data?.id || existing?.entryId || null;
