@@ -58,6 +58,7 @@ const baseFormData = {
   mouldTarget: "",
   mouldActual: "",
 
+  plan_id: null,
   plan_detail_id: null,
 
   remarks: "",
@@ -367,6 +368,13 @@ const useProductionEntry = () => {
         mouldActualCycleTime: mouldActualCT,
         mouldTarget: mouldTargetQty,
 
+        // NOTE: plan.header's primary key field name wasn't confirmed —
+        // trying both `plan_id` and `daily_plan_id` (the column name from
+        // the schema) so this works whichever the API actually returns.
+        // If neither matches, this'll stay null and saving will correctly
+        // be blocked by the "no plan loaded" guard below rather than
+        // silently sending a bad id.
+        plan_id: plan?.header?.plan_id ?? plan?.header?.daily_plan_id ?? null,
         plan_detail_id: planDetail?.detail_id || null,
       }));
 
@@ -668,6 +676,12 @@ const useProductionEntry = () => {
             duration_minutes: Number(data.mould_duration) || 0,
             remarks: data.mould_remarks || null,
             mould_actual_cycle_time: Number(data.mouldActualCycleTime) || 0,
+            // NEW: mould_changes table also tracks the new part's standard
+            // cycle time and target qty for this change — these were
+            // never sent before, which is part of why the mould-change
+            // insert didn't line up with the table's actual columns.
+            standard_cycle_time: Number(data.mouldStandardCycleTime) || null,
+            target_qty: Number(data.mouldTarget) || null,
           },
         ]
       : [];
@@ -695,6 +709,7 @@ const useProductionEntry = () => {
       rejects: rejectDetailRows,
       losses,
       mould_changes,
+      plan_id: data.plan_id || null,
       plan_detail_id: data.plan_detail_id || null,
     };
   };
@@ -764,10 +779,27 @@ const useProductionEntry = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
+  // production_entries.plan_id / plan_detail_id are NOT NULL in the
+  // database with no default — rather than altering the table to allow
+  // manual/no-plan entries, saving is blocked here whenever no plan is
+  // loaded for the current date+hall+shift, and the component shows a
+  // banner telling the user to upload/create the plan first. This keeps
+  // the schema's constraint intact and guarantees `formData.plan_id` /
+  // `formData.plan_detail_id` are always real values by the time
+  // buildPayload runs.
+  const hasPlan = !!plan?.header;
+
   const nextMachine = async () => {
     if (!currentMachine) return;
 
     setSubmitError(null);
+
+    if (!hasPlan) {
+      setSubmitError(
+        "No production plan found for this date/hall/shift. Please upload/create the plan before entering production data.",
+      );
+      return;
+    }
 
     if (!formData.operator_id || !formData.part_id) {
       setSubmitError(
@@ -804,6 +836,13 @@ const useProductionEntry = () => {
     if (!currentMachine) return null;
 
     setSubmitError(null);
+
+    if (!hasPlan) {
+      setSubmitError(
+        "No production plan found for this date/hall/shift. Please upload/create the plan before entering production data.",
+      );
+      return null;
+    }
 
     if (!formData.operator_id || !formData.part_id) {
       setSubmitError(
@@ -901,6 +940,7 @@ const useProductionEntry = () => {
     plan,
     planLoading,
     planError,
+    hasPlan,
   };
 };
 

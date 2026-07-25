@@ -9,14 +9,12 @@ const mouldChangeModel = require("../models/mouldChangeModel");
 // so the query never crashes because of a missing optional field.
 const n = (v) => (v === undefined ? null : v);
 
-// NEW: plan_id and plan_detail_id are optional together — either both
-// present (this entry traces back to a real daily plan) or both absent
-// (this is a manual/ad-hoc entry, which the frontend explicitly supports
-// as a fallback when no plan exists for date+hall+shift, or when the
-// machine being entered isn't part of the matched plan). One present
-// without the other is always a bug on the caller's side, not a valid
-// state, so it's rejected up front instead of silently inserting a
-// half-linked row.
+// plan_id and plan_detail_id are optional together — either both present
+// (this entry traces back to a real daily plan) or both absent (manual/
+// ad-hoc entry). NOTE: the frontend now REQUIRES a matched plan before it
+// will let the user save at all (see useProductionEntry's `hasPlan` guard),
+// so in practice both should always be present — this check stays as a
+// server-side backstop against any other caller of this API.
 const validatePlanLink = (plan_id, plan_detail_id) => {
   const hasPlanId = plan_id !== undefined && plan_id !== null && plan_id !== "";
   const hasDetailId = plan_detail_id !== undefined && plan_detail_id !== null && plan_detail_id !== "";
@@ -132,6 +130,89 @@ exports.deleteProductionEntry = async (req, res) => {
   }
 };
 
+// ==========================================================
+// BUG FIX (mould change): this used to INSERT into a table called
+// `mould_change_entries` with columns (production_entry_id, machine_id,
+// hall, shift, old_part_id, old_part_number, new_part_id,
+// new_part_number, duration_minutes, remarks, created_by) — but that
+// table/shape doesn't match the actual `mould_changes` table (see the
+// CREATE TABLE you shared): the real table uses `machine_code` (not
+// `machine_id`), `downtime_minutes` (not `duration_minutes`), has no
+// `production_entry_id`/`hall`/`shift` columns as such, and requires
+// `change_type` and `status` (both NOT NULL / ENUM). Every mould-change
+// save was therefore hitting either "table doesn't exist" or "unknown
+// column" at the database layer. This now inserts into the real table
+// with its real columns.
+//
+// `change_type` is set to "Unplanned" and `status` to "Completed" here
+// because this INSERT always represents a change that has already
+// happened (recorded live during production entry) — a change that
+// *was* pre-planned is separately marked Completed on its existing
+// "Planned" row by `mouldChangeModel.linkProductionToMouldChange` below.
+// NOTE: if that link succeeds, this can result in two mould_changes
+// rows for the same physical event (the original Planned→Completed row,
+// plus this new Unplanned/Completed row) — mouldChangeModel's source
+// wasn't available to confirm whether it already accounts for that; flag
+// this if it causes duplicate rows in practice and we can gate the
+// INSERT on the link's result instead.
+// ==========================================================
+const insertMouldChange = async (connection, {
+  plan_id,
+  plan_detail_id,
+  entry_date,
+  shift,
+  time_slot,
+  machine_code,
+  productionEntryId,
+  mould,
+  created_by,
+}) => {
+  await connection.query(
+    `
+    INSERT INTO mould_changes
+    (
+        change_type,
+        plan_id,
+        detail_id,
+        production_id,
+        machine_code,
+        old_part_id,
+        new_part_id,
+        planned_date,
+        planned_shift,
+        time_slot,
+        standard_cycle_time,
+        actual_cycle_time,
+        target_qty,
+        downtime_minutes,
+        remarks,
+        status,
+        created_by
+    )
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `,
+    [
+      "Unplanned",
+      n(plan_id),
+      n(plan_detail_id),
+      n(productionEntryId),
+      n(machine_code),
+      n(mould.old_part_id),
+      n(mould.new_part_id),
+      n(entry_date),
+      n(shift),
+      n(time_slot),
+      n(mould.standard_cycle_time),
+      n(mould.mould_actual_cycle_time),
+      n(mould.target_qty),
+      n(mould.duration_minutes),
+      n(mould.remarks),
+      "Completed",
+      created_by,
+    ],
+  );
+};
+
 exports.createProductionEntry = async (req, res) => {
   const connection = await db.getConnection();
 
@@ -142,13 +223,13 @@ exports.createProductionEntry = async (req, res) => {
 
     const {
       production_id,
-      plan_id, // NEW — links this entry back to daily_plan_header, null for manual entries
-      plan_detail_id, // NEW — links this entry back to daily_plan_details, null for manual entries
+      plan_id, // links this entry back to daily_plan_header
+      plan_detail_id, // links this entry back to daily_plan_details
       entry_date,
       hall,
       shift,
       time_slot,
-      machine_code, // used to link back to a Planned mould change
+      machine_code, // used for the mould_changes row + linking a Planned mould change
       machine_id,
       operator_id,
       part_id,
@@ -253,13 +334,9 @@ exports.createProductionEntry = async (req, res) => {
     // Reject Details
     // ==========================================
 
-    // FIX: production_reject_details.reject_reason_id is NOT NULL, so a
-    // row with a missing/unresolved reason id used to reach the DB and
-    // crash the whole transaction with a raw ER_BAD_NULL_ERROR (the
-    // frontend now prevents this from happening in the first place, but
-    // this loop stays defensive for any other caller of this API). Rows
-    // without a usable reject_reason_id are skipped and reported back
-    // instead of aborting the entire save.
+    // production_reject_details.reject_reason_id is NOT NULL, so a row
+    // with a missing/unresolved reason id is skipped and reported back
+    // instead of crashing the whole transaction.
     const skippedRejects = [];
 
     if (Array.isArray(rejects) && rejects.length > 0) {
@@ -321,43 +398,23 @@ exports.createProductionEntry = async (req, res) => {
     }
 
     // ==========================================
-    // Mould Change Details
+    // Mould Change Details (see insertMouldChange's comment above for
+    // why this changed from the previous mould_change_entries insert)
     // ==========================================
 
     if (Array.isArray(mould_changes) && mould_changes.length > 0) {
       for (const mould of mould_changes) {
-        await connection.query(
-          `
-          INSERT INTO mould_change_entries
-          (
-              production_entry_id,
-              machine_id,
-              hall,
-              shift,
-              old_part_id,
-              old_part_number,
-              new_part_id,
-              new_part_number,
-              duration_minutes,
-              remarks,
-              created_by
-          )
-          VALUES (?,?,?,?,?,?,?,?,?,?,?)
-          `,
-          [
-            productionEntryId,
-            n(machine_id),
-            n(hall),
-            n(shift),
-            n(mould.old_part_id),
-            n(mould.old_part_number),
-            n(mould.new_part_id),
-            n(mould.new_part_number),
-            n(mould.duration_minutes),
-            n(mould.remarks),
-            created_by,
-          ],
-        );
+        await insertMouldChange(connection, {
+          plan_id,
+          plan_detail_id,
+          entry_date,
+          shift,
+          time_slot,
+          machine_code,
+          productionEntryId,
+          mould,
+          created_by,
+        });
 
         // Keep the NEW part's actual_cycle_time in sync with what was
         // actually observed on the floor after the mould change.
@@ -483,13 +540,13 @@ exports.updateProductionEntry = async (req, res) => {
 
     const {
       production_id,
-      plan_id, // NEW
-      plan_detail_id, // NEW
+      plan_id,
+      plan_detail_id,
       entry_date,
       hall,
       shift,
       time_slot,
-      machine_code, // used to link back to a Planned mould change
+      machine_code, // used for the mould_changes row + linking a Planned mould change
       machine_id,
       operator_id,
       part_id,
@@ -620,9 +677,6 @@ exports.updateProductionEntry = async (req, res) => {
 
     await ProductionEntry.deleteRejectDetails(connection, id);
 
-    // Same guard as create — see comment there. reject_reason_id is
-    // NOT NULL, so a row missing it is skipped rather than crashing the
-    // whole update.
     const skippedRejects = [];
 
     if (Array.isArray(rejects) && rejects.length > 0) {
@@ -686,45 +740,25 @@ exports.updateProductionEntry = async (req, res) => {
     }
 
     // ==========================================
-    // Replace Mould Change Details
+    // Replace Mould Change Details (same fix as create — see
+    // insertMouldChange's comment above)
     // ==========================================
 
     await ProductionEntry.deleteMouldChanges(connection, id);
 
     if (Array.isArray(mould_changes) && mould_changes.length > 0) {
       for (const mould of mould_changes) {
-        await connection.query(
-          `
-          INSERT INTO mould_change_entries
-          (
-              production_entry_id,
-              machine_id,
-              hall,
-              shift,
-              old_part_id,
-              old_part_number,
-              new_part_id,
-              new_part_number,
-              duration_minutes,
-              remarks,
-              created_by
-          )
-          VALUES (?,?,?,?,?,?,?,?,?,?,?)
-          `,
-          [
-            id,
-            n(machine_id),
-            n(hall),
-            n(shift),
-            n(mould.old_part_id),
-            n(mould.old_part_number),
-            n(mould.new_part_id),
-            n(mould.new_part_number),
-            n(mould.duration_minutes),
-            n(mould.remarks),
-            updated_by,
-          ],
-        );
+        await insertMouldChange(connection, {
+          plan_id,
+          plan_detail_id,
+          entry_date,
+          shift,
+          time_slot,
+          machine_code,
+          productionEntryId: id,
+          mould,
+          created_by: updated_by,
+        });
 
         // Same sync as create — keep new part's actual_cycle_time current
         // whenever an entry is edited too.

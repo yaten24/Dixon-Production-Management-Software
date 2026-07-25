@@ -26,13 +26,13 @@ import {
   FaChartLine,
 } from "react-icons/fa";
 
-import Header, { HEADER_HEIGHT } from "../compenents/dashboard/Header";
 import {
   getProductionReport,
   getRejectionReasonsList,
   getLossReasonsList,
 } from "../api/reportApi";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import Sidebar from "../compenents/common/Sidebar";
 
 const HALLS = ["Hall-1", "Hall-2", "Hall-3", "Hall-4", "C8"];
 const SHIFTS = ["A", "B"];
@@ -297,7 +297,6 @@ const SummaryTile = ({ label, value, icon, tone = "slate" }) => {
   const t = TONE[tone] || TONE.slate;
   return (
     <div className="flex border border-[#C6C6C6] bg-white">
-      {/* <div className={`w-[3px] flex-shrink-0 ${t.accent}`} /> */}
       <div className="flex flex-1 items-center justify-between px-2.5 py-2">
         <div className="min-w-0">
           <p className="truncate text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
@@ -371,6 +370,60 @@ const BreakdownPanel = ({
   );
 };
 
+// ============================================================
+// CONTROL BOX — title + action buttons, replaces the old thin
+// toolbar strip. Matches the bordered control-box row used across
+// the plan pages / dashboard.
+// ============================================================
+function ControlBox({ onBack, onApply, onReset, onPrint, onExport, loading, exportDisabled }) {
+  return (
+    <div className="mx-3 mt-2 flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2 no-print">
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          onClick={onBack}
+          title="Back"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+        >
+          <HiOutlineArrowLeft className="h-3.5 w-3.5" />
+        </button>
+        <div className="min-w-0 leading-tight">
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9B9B9B]">Reports</p>
+          <h1 className="truncate text-[15px] font-extrabold tracking-tight text-[#0F1D24]">Daily Production Reports</h1>
+        </div>
+      </div>
+
+      <div className="flex flex-shrink-0 items-stretch gap-1.5">
+        <button
+          onClick={onApply}
+          className="flex items-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-2.5 text-[11px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90"
+        >
+          <HiOutlineFunnel className="h-3.5 w-3.5" /> Apply
+        </button>
+        <button
+          onClick={onReset}
+          className="flex items-center gap-1.5 border border-[#C6C6C6] bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+        >
+          <HiOutlineArrowPath className="h-3.5 w-3.5" /> Reset
+        </button>
+        <button
+          onClick={onPrint}
+          disabled={loading}
+          className="flex items-center gap-1.5 border border-[#C6C6C6] bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:opacity-40"
+        >
+          <HiOutlinePrinter className="h-3.5 w-3.5" /> Print
+        </button>
+        <button
+          onClick={onExport}
+          disabled={loading || exportDisabled}
+          className="flex items-center gap-1.5 border border-emerald-700 bg-white px-2.5 text-[11px] font-semibold text-emerald-700 transition-colors duration-100 hover:bg-emerald-700 hover:text-white disabled:opacity-40"
+        >
+          <HiOutlineArrowDownTray className="h-3.5 w-3.5" /> Export Excel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const ProductionHistoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -388,6 +441,8 @@ const ProductionHistoryPage = () => {
   const [draftFilters, setDraftFilters] = useState(DEFAULT_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState(DEFAULT_FILTERS);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -583,7 +638,7 @@ const ProductionHistoryPage = () => {
   const handlePrint = () => window.print();
 
   return (
-    <div className="min-h-screen bg-[#EFEFEF]">
+    <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
       <style>{`
         @media print {
           body * { visibility: hidden; }
@@ -593,62 +648,28 @@ const ProductionHistoryPage = () => {
         }
       `}</style>
 
-      <div>
-        {/* Toolbar strip */}
-        <div className="w-full border-b border-[#C6C6C6] bg-white no-print">
-          <div className="flex h-[38px] w-full flex-wrap items-center justify-between gap-2 px-3">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate(-1)}
-                title="Back"
-                className="flex h-6 w-6 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-colors duration-100"
-              >
-                <HiOutlineArrowLeft className="h-3.5 w-3.5" />
-              </button>
-              <div className={`h-5 w-px flex-shrink-0 bg-[#C6C6C6]`} />
-              <div className="hidden min-w-0 leading-tight sm:block">
-                <p className="text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
-                  Reports
-                </p>
-                <h1 className="truncate text-[12.5px] font-bold text-[#0F1D24]">
-                  Daily Production Reports
-                </h1>
-              </div>
-            </div>
-            <div className="flex items-stretch h-6 gap-px bg-[#C6C6C6]">
-              <button
-                onClick={applyFilters}
-                className="flex items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]"
-              >
-                <HiOutlineFunnel className="h-3 w-3" /> Apply
-              </button>
-              <button
-                onClick={resetFilters}
-                className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
-              >
-                <HiOutlineArrowPath className="h-3 w-3" /> Reset
-              </button>
-              <button
-                onClick={handlePrint}
-                disabled={loading}
-                className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:opacity-40"
-              >
-                <HiOutlinePrinter className="h-3 w-3" /> Print
-              </button>
-              <button
-                onClick={exportToExcel}
-                disabled={loading || (!entries.length && !hallBreakdown.length)}
-                className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-emerald-700 transition-colors duration-100 hover:bg-emerald-700 hover:text-white disabled:opacity-40"
-              >
-                <HiOutlineArrowDownTray className="h-3 w-3" /> Export Excel
-              </button>
-            </div>
-          </div>
-        </div>
+      <div className="no-print">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+          activePath={location.pathname}
+        />
+      </div>
 
-        <main className="w-full">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pb-3">
+          <ControlBox
+            onBack={() => navigate(-1)}
+            onApply={applyFilters}
+            onReset={resetFilters}
+            onPrint={handlePrint}
+            onExport={exportToExcel}
+            loading={loading}
+            exportDisabled={!entries.length && !hallBreakdown.length}
+          />
+
           {/* ================= FILTERS ================= */}
-          <div className="border border-[#C6C6C6] bg-white no-print">
+          <div className="mx-3 border border-[#C6C6C6] bg-white no-print">
             <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
               <div className="relative z-20">
                 <label className="mb-1 block text-[9.5px] font-mono uppercase tracking-wide text-[#9B9B9B]">
@@ -740,17 +761,17 @@ const ProductionHistoryPage = () => {
           </div>
 
           {error && (
-            <div className="border border-red-300 bg-red-50 px-3 py-2 text-[11.5px] font-semibold text-red-700 no-print">
+            <div className="mx-3 border border-red-300 bg-red-50 px-3 py-2 text-[11.5px] font-semibold text-red-700 no-print">
               {error}
             </div>
           )}
 
           {loading ? (
-            <div className="border border-[#C6C6C6] bg-white py-14 text-center text-[11.5px] text-[#9B9B9B] no-print">
+            <div className="mx-3 border border-[#C6C6C6] bg-white py-14 text-center text-[11.5px] text-[#9B9B9B] no-print">
               Loading report data...
             </div>
           ) : (
-            <div id="report-print-area">
+            <div id="report-print-area" className="mx-3">
               {/* Print-only header */}
               <div className="hidden print:block">
                 <h2 className="text-lg font-bold text-[#0F1D24]">

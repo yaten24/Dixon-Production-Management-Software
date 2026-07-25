@@ -21,10 +21,10 @@ export const QUICK_ACCESS_ITEMS = [
   { id: "hall-dashboard", title: "Hall Dashboard", icon: HiOfficeBuilding, color: "#2563EB", path: "/employee/dashboard" },
   { id: "daily-plan", title: "Daily Plan", icon: HiCalendar, color: "#2563EB", path: "/employee/production/plans/daily" },
   { id: "monthly-plan", title: "Monthly Plan", icon: HiCalendar, color: "#2563EB", path: "/employee/production/plans/monthly" },
-  { id: "machine-allocation", title: "Machine Allocation", icon: HiUserGroup, color: "#9333EA", path: "/employee/machine-allocation" },
+  { id: "machine-allocation", title: "Machine Allocation", icon: HiUserGroup, color: "#9333EA", path: "/employee/production/plans/daily/operator/allocation" },
   { id: "production-entry", title: "Production Entry", icon: HiDocumentAdd, color: "#16A34A", path: "/employee/production/entry" },
   { id: "production-history", title: "Production History", icon: HiClipboardList, color: "#EA580C", path: "/employee/production/history" },
-  { id: "reports", title: "Reports", icon: HiDocumentReport, color: "#16A34A", path: "/employee/reports" },
+  { id: "reports", title: "Reports", icon: HiDocumentReport, color: "#16A34A", path: "/employee/production/reports" },
 ];
 
 const NAV_ITEMS = [

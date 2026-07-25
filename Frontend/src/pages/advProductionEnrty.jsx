@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import {
   FaClipboardList,
   FaSearch,
@@ -28,6 +29,7 @@ import {
 import { getOperatorByCode, createOperator, searchOperators } from "../api/operatorApi";
 import { searchParts, addPartQuick } from "../api/partApi";
 import useProductionEntry from "../hooks/useProductionEntry";
+import Sidebar from "../compenents/common/Sidebar";
 // NOTE: MouldChangeSection is no longer used — the "Mould Change" tab is
 // now built inline in this file (see the `activeTab === "mould"` block
 // near the bottom) using only the formData field names that were already
@@ -431,7 +433,7 @@ function ReasonBreakup({ title, rows, reasonOptions, updateRow, addRow, removeRo
 function OeeCard({ label, value, formula, tone = "#0F1D24" }) {
   return (
     <div className="relative border border-[#C6C6C6] bg-white p-3">
-      {/* <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: tone }} /> */}
+      <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: tone }} />
       <p className="text-[9px] font-bold uppercase leading-none tracking-wider text-[#9B9B9B]">{label}</p>
       <p className="mt-1.5 font-mono text-[22px] font-extrabold leading-none tabular-nums text-[#0F1D24]">{value}%</p>
       <p className="mt-1.5 text-[9.5px] leading-snug text-[#9B9B9B]">{formula}</p>
@@ -443,6 +445,9 @@ function OeeCard({ label, value, formula, tone = "#0F1D24" }) {
 // Main page — fully wired to useProductionEntry + real APIs
 // ============================================================
 const AdvProductionEntry = () => {
+  const location = useLocation();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   const {
     formData, handleChange, handleHallChange, handleShiftChange,
     shiftATimes, shiftBTimes,
@@ -458,7 +463,8 @@ const AdvProductionEntry = () => {
     saveCurrentMachine, loadMachineData,
     previousMachine, nextMachine, finalSubmit,
     loadingMaster, masterError, submitting, submitError,
-    plan, planLoading, planError,
+    plan, planLoading, planError, hasPlan,
+    setSetupComplete,
   } = useProductionEntry();
 
   const [operatorDetails, setOperatorDetails] = useState(null);
@@ -491,6 +497,19 @@ const AdvProductionEntry = () => {
   const [showAddMouldPart, setShowAddMouldPart] = useState(false);
   const [newMouldPart, setNewMouldPart] = useState({ part_name: "", standard_cycle_time: "" });
   const [addMouldPartError, setAddMouldPartError] = useState(null);
+
+  // BUG FIX: useProductionEntry's plan-loading effect is gated on
+  // `if (!setupComplete) return;`, but this component never called
+  // `setSetupComplete(true)` anywhere — meaning the plan for
+  // date+hall+shift was NEVER fetched, `plan` stayed permanently null,
+  // and there was no way to tell "no plan exists for this selection"
+  // apart from "haven't looked yet". This marks setup complete as soon
+  // as the three fields the plan lookup needs are all filled in.
+  useEffect(() => {
+    if (formData.date && formData.hall && formData.shift) {
+      setSetupComplete(true);
+    }
+  }, [formData.date, formData.hall, formData.shift, setSetupComplete]);
 
   // Reason-name pools for the dropdown breakups — derived from the
   // hook's already-loaded master reason rows (rejectReasons/lossReasons
@@ -899,19 +918,33 @@ const AdvProductionEntry = () => {
 
   if (loadingMaster) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#EFEFEF]">
-        <div className="flex flex-col items-center gap-3 text-[#0F1D24]">
-          <div className="flex h-12 w-12 items-center justify-center border border-[#0F1D24] bg-[#0F1D24]">
-            <FaIndustry className="text-lg text-[#FDC94D]" />
+      <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+          activePath={location.pathname}
+        />
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-[#0F1D24]">
+            <div className="flex h-12 w-12 items-center justify-center border border-[#0F1D24] bg-[#0F1D24]">
+              <FaIndustry className="text-lg text-[#FDC94D]" />
+            </div>
+            <p className="text-sm font-medium text-[#9B9B9B]">Loading machines and reasons...</p>
           </div>
-          <p className="text-sm font-medium text-[#9B9B9B]">Loading machines and reasons...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#EFEFEF]">
+    <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        activePath={location.pathname}
+      />
+
+      <div className="flex h-screen min-h-0 flex-1 flex-col overflow-hidden">
       {/* ================= TOP BAR ================= */}
       <div className="w-full flex-shrink-0 border-b border-[#C6C6C6] bg-white">
         <div className="h-[2px] w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${BORDER} 50%, ${GOLD} 100%)` }} />
@@ -922,14 +955,13 @@ const AdvProductionEntry = () => {
           <button onClick={() => setSidebarOpen((o) => !o)} className="flex h-7 w-7 flex-shrink-0 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D] md:hidden" title="Toggle machine list">
             <FaIndustry className="text-[11px]" />
           </button>
-          <div className="flex items-center gap-2 border-l border-[#C6C6C6] pl-2.5">
+          {/* <div className="flex items-center gap-2 border-l border-[#C6C6C6] pl-2.5">
             <div className="hidden h-6 w-6 flex-shrink-0 items-center justify-center border border-[#0F1D24] bg-[#0F1D24] sm:flex">
               <FaClipboardList className="text-[11px] text-[#FDC94D]" />
             </div>
             <h1 className="text-[12.5px] font-bold leading-tight text-[#0F1D24]">Production Entry</h1>
-          </div>
+          </div> */}
 
-          {/* Inline banners moved into the top bar row to reclaim vertical space */}
           {(masterError || submitError || submitResult || planError) && (
             <div className="ml-2 min-w-0 flex-1 truncate text-[11px] font-semibold">
               {masterError && <span className="text-red-700">{masterError}</span>}
@@ -945,6 +977,20 @@ const AdvProductionEntry = () => {
             </span>
           )}
         </div>
+
+        {/* No-plan warning: production_entries requires a real plan_id /
+            plan_detail_id (NOT NULL, no default) — rather than altering
+            the table to allow manual entries, saving is blocked until a
+            plan is loaded for this date/hall/shift, and this banner tells
+            the user what to do about it. */}
+        {formData.date && formData.hall && formData.shift && !planLoading && !hasPlan && !planError && (
+          <div className="flex items-center gap-2 border-t border-amber-200 bg-amber-50 px-3 py-1.5">
+            <FaExclamationTriangle className="flex-shrink-0 text-[11px] text-amber-700" />
+            <span className="text-[11px] font-semibold text-amber-800">
+              No production plan found for Hall {formData.hall}, Shift {formData.shift} on {formData.date}. Please upload/create the plan first — entries can't be saved without one.
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ================= BODY — fills remaining screen height ================= */}
@@ -1111,6 +1157,10 @@ const AdvProductionEntry = () => {
             </div>
           </div>
 
+          {/* Availability / Performance / Quality / OEE — placed right below
+              the Selected Machine strip so it's always visible regardless of
+              which tab is active (see the formula comment above `oee` for
+              exactly what's used and why). */}
           <div className="flex-shrink-0 border border-[#C6C6C6] bg-white">
             <div className="flex items-center gap-2 border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
               <div className="flex h-6 w-6 items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
@@ -1444,7 +1494,8 @@ const AdvProductionEntry = () => {
         {!isLastMachine ? (
           <button
             onClick={nextMachine}
-            disabled={submitting}
+            disabled={submitting || !hasPlan}
+            title={!hasPlan ? "No production plan loaded for this date/hall/shift — upload the plan first." : undefined}
             className="flex h-8 items-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-3.5 text-[11.5px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Save & Next
@@ -1453,7 +1504,8 @@ const AdvProductionEntry = () => {
         ) : (
           <button
             onClick={handleFinalSubmit}
-            disabled={submitting}
+            disabled={submitting || !hasPlan}
+            title={!hasPlan ? "No production plan loaded for this date/hall/shift — upload the plan first." : undefined}
             className="flex h-8 items-center gap-1.5 border border-emerald-700 bg-emerald-600 px-3.5 text-[11.5px] font-bold text-white transition-colors duration-100 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <FaSave className="text-[10px]" />
@@ -1461,8 +1513,9 @@ const AdvProductionEntry = () => {
           </button>
         )}
       </div>
+      </div>
     </div>
   );
 };
 
-export default AdvProductionEntry; 
+export default AdvProductionEntry;

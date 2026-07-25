@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   FaFileAlt,
   FaCalendarAlt,
@@ -7,10 +8,19 @@ import {
   FaBuilding,
   FaDownload,
 } from "react-icons/fa";
-import Header from "../../compenents/dashboard/Header";
+import { HiOutlineSquares2X2 } from "react-icons/hi2";
+import Sidebar from "../../compenents/common/Sidebar";
 import ThemedDropdown from "../../compenents/common/ThemedDropdown";
 import useProductionReports, { useReportFilters } from "../../hooks/useProductionReports";
 import { exportReportToExcel } from "../../utils/exportReportToExcel";
+
+// ============================================================
+// THEME TOKENS — kept consistent with Sidebar.jsx / MonthlyPlanPage
+// ============================================================
+const NAVY = "#0F1D24";
+const GOLD = "#FDC94D";
+const SUCCESS = "#16A34A";
+const DANGER = "#DC2626";
 
 const TABS = [
   { id: "daily", label: "Daily Report", icon: FaFileAlt },
@@ -25,7 +35,32 @@ const getBusinessDateDefault = () => {
   return now.toISOString().slice(0, 10);
 };
 
+/* ---------------------------------------------------------
+   QUICK STAT — same compact bordered tile as MonthlyPlanPage's
+   QuickStat, so both pages read as one design system.
+--------------------------------------------------------- */
+const QuickStat = ({ label, value, icon: Icon, accent = NAVY, tone }) => (
+  <div className="flex flex-1 items-center gap-2.5 border border-[#C6C6C6] bg-white px-3 py-2" style={{ borderLeft: `3px solid ${accent}` }}>
+    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center border border-[#C6C6C6]" style={{ color: accent }}>
+      <Icon className="h-4 w-4" />
+    </div>
+    <div className="min-w-0 leading-tight">
+      <p className="truncate text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">{label}</p>
+      <p className={`font-mono text-[18px] font-extrabold leading-none ${tone || "text-[#0F1D24]"}`}>{value}</p>
+    </div>
+  </div>
+);
+
+// ============================================================
+// ReportsPage — desktop-app layout matching MonthlyPlanPage:
+// persistent sidebar, flat control-box header, flat tabs/filters,
+// flat grid-line tables instead of rounded/shadowed cards.
+// ============================================================
 const ReportsPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   const [activeTab, setActiveTab] = useState("daily");
   const [date, setDate] = useState(getBusinessDateDefault());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -74,31 +109,55 @@ const ReportsPage = () => {
     else if (activeTab === "monthly-summary") exportReportToExcel(data.dailyTrend, filenameBase);
   };
 
-  return (
-    <div className="min-h-screen bg-[#F5F5F5]">
-      <Header />
+  // quick summary stats shown under the header — mirrors totals already
+  // present in each report payload, when available.
+  const headerStats = data?.totals
+    ? [
+        { label: "Target", value: data.totals.target?.toLocaleString(), icon: FaCalendarAlt, accent: GOLD },
+        { label: "Actual", value: data.totals.actual?.toLocaleString(), icon: FaChartBar, accent: "#2563EB", tone: "text-emerald-600" },
+        { label: "Reject", value: data.totals.reject?.toLocaleString(), icon: FaChartLine, accent: DANGER, tone: "text-red-600" },
+        { label: "Achievement", value: `${data.totals.achievement}%`, icon: FaFileAlt, accent: SUCCESS },
+      ]
+    : null;
 
-      <div className="mx-auto mt-11 max-w-[1800px] space-y-2 px-2 py-2 sm:px-2 lg:px-4">
-        {/* Page header */}
-        <div className="rounded border border-[#C6C6C6]/50 bg-white p-2 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 rounded border border-[#0F1D24]/15 bg-gradient-to-r from-[#0F1D24]/5 via-white to-[#F5F5F5] px-3 py-1.5">
-              <span className="h-1.5 w-1.5 rounded bg-[#FDC94D]" />
-              <h1 className="text-sm font-bold text-[#0F1D24]">Production Reports</h1>
+  return (
+    <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        activePath={location.pathname}
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pb-3">
+          {/* control box header — same shape as MonthlyPlanPage's header */}
+          <div className="mx-3 mt-2 flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2">
+            <div className="min-w-0 leading-tight">
+              <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9B9B9B]">Reports &amp; Analytics</p>
+              <h1 className="truncate text-[15px] font-extrabold tracking-tight text-[#0F1D24]">Production Reports</h1>
             </div>
 
-            <button
-              onClick={handleExport}
-              disabled={!data}
-              className="flex h-8 items-center gap-1.5 rounded bg-[#0F1D24] px-3 text-xs font-semibold text-[#FDC94D] transition-all hover:bg-[#0F1D24]/90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <FaDownload className="text-[10px]" />
-              Export
-            </button>
+            <div className="flex flex-shrink-0 items-stretch gap-1.5">
+              <button
+                onClick={() => navigate("/employee/home")}
+                className="flex items-center gap-1.5 border border-[#C6C6C6] bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+              >
+                <HiOutlineSquares2X2 className="h-3.5 w-3.5" />
+                Dashboard
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={!data}
+                className="flex items-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-2.5 text-[11px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <FaDownload className="h-3 w-3" />
+                Export
+              </button>
+            </div>
           </div>
 
-          {/* Tabs */}
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          {/* tabs — flat, same active treatment as MonthlyPlanPage range tabs */}
+          <div className="mx-3 flex flex-shrink-0 items-stretch gap-px bg-[#C6C6C6]">
             {TABS.map((tab) => {
               const TabIcon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -106,32 +165,44 @@ const ReportsPage = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold transition-all ${
-                    isActive
-                      ? "bg-[#0F1D24] text-[#FDC94D] shadow-sm"
-                      : "border border-[#C6C6C6]/60 bg-white text-[#0F1D24] hover:border-[#0F1D24]"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold transition-colors duration-100 ${
+                    isActive ? "bg-[#0F1D24] text-[#FDC94D]" : "bg-white text-[#0F1D24] hover:bg-[#FAFAFA]"
                   }`}
                 >
-                  <TabIcon className="text-[10px]" />
+                  <TabIcon className="h-3 w-3" />
                   {tab.label}
                 </button>
               );
             })}
           </div>
 
-          {/* Filters */}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
+          {/* error banner — flat, bordered, matches MonthlyPlanPage warnings */}
+          {error && (
+            <div className="mx-3 flex flex-shrink-0 items-center gap-2 border border-red-300 bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700">
+              {error}
+            </div>
+          )}
+
+          {/* quick stats */}
+          {headerStats && (
+            <div className="mx-3 flex flex-shrink-0 flex-wrap gap-1.5">
+              {headerStats.map((s) => (
+                <QuickStat key={s.label} label={s.label} value={s.value} icon={s.icon} accent={s.accent} tone={s.tone} />
+              ))}
+            </div>
+          )}
+
+          {/* filters — same bordered control-row shape as MonthlyPlanPage search+filter bar */}
+          <div className="mx-3 flex flex-shrink-0 flex-wrap items-center gap-2 border border-[#C6C6C6] bg-white px-2.5 py-1.5">
             {isDailyTab ? (
-              <div className="relative min-w-[140px] flex-1 basis-[140px] md:w-[160px] md:flex-none md:basis-auto">
-                <div className="flex h-8 items-center gap-1.5 rounded border border-[#C6C6C6] bg-white px-2 transition-all hover:border-[#0F1D24]">
-                  <FaCalendarAlt className="shrink-0 text-[10px] text-[#0F1D24]" />
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full min-w-0 border-none bg-transparent text-xs font-medium text-[#0F1D24] outline-none"
-                  />
-                </div>
+              <div className="flex h-8 min-w-[150px] items-center gap-1.5 border border-[#C6C6C6] px-2">
+                <FaCalendarAlt className="h-3 w-3 flex-shrink-0 text-[#0F1D24]/70" />
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full min-w-0 border-none bg-transparent text-[11px] font-semibold text-[#0F1D24] outline-none"
+                />
               </div>
             ) : (
               <>
@@ -152,77 +223,74 @@ const ReportsPage = () => {
             <button
               onClick={refresh}
               disabled={loading}
-              className="ml-auto flex h-8 items-center gap-1.5 rounded border border-[#C6C6C6] bg-white px-3 text-xs font-semibold text-[#0F1D24] transition-all hover:border-[#0F1D24] disabled:opacity-60"
+              className="ml-auto flex h-8 items-center gap-1.5 border border-[#C6C6C6] bg-white px-3 text-[11px] font-bold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Loading..." : "Refresh"}
             </button>
           </div>
-        </div>
 
-        {/* ERROR */}
-        {error && (
-          <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">{error}</div>
-        )}
-
-        {/* REPORT BODY */}
-        {loading && !data ? (
-          <div className="flex h-40 items-center justify-center rounded border border-[#C6C6C6]/50 bg-white text-xs text-[#9B9B9B]">
-            Loading report...
+          {/* report body */}
+          <div className="mx-3">
+            {loading && !data ? (
+              <div className="flex h-40 items-center justify-center border border-[#C6C6C6] bg-white text-[11.5px] text-[#9B9B9B]">
+                Loading report...
+              </div>
+            ) : !data ? null : activeTab === "daily" ? (
+              <DailyReportTable entries={data.entries} />
+            ) : activeTab === "daily-summary" ? (
+              <DailySummaryView data={data} />
+            ) : activeTab === "monthly" ? (
+              <MonthlyReportTable dayWise={data.dayWise} />
+            ) : (
+              <MonthlySummaryView data={data} />
+            )}
           </div>
-        ) : !data ? null : activeTab === "daily" ? (
-          <DailyReportTable entries={data.entries} />
-        ) : activeTab === "daily-summary" ? (
-          <DailySummaryView data={data} />
-        ) : activeTab === "monthly" ? (
-          <MonthlyReportTable dayWise={data.dayWise} />
-        ) : (
-          <MonthlySummaryView data={data} />
-        )}
+        </main>
       </div>
     </div>
   );
 };
 
 // ==========================================================
-// Sub-views
+// Sub-views — flat, bordered, no rounded corners or shadows
 // ==========================================================
 
 const Th = ({ children, align = "left" }) => (
-  <th className={`whitespace-nowrap px-2 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#9B9B9B] text-${align}`}>
+  <th className={`whitespace-nowrap border-b border-[#C6C6C6] bg-[#FAFAFA] px-2.5 py-1.5 text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B] text-${align}`}>
     {children}
   </th>
 );
 const Td = ({ children, align = "left", className = "" }) => (
-  <td className={`whitespace-nowrap px-2 py-1.5 text-xs text-[#0F1D24] text-${align} ${className}`}>{children}</td>
+  <td className={`whitespace-nowrap px-2.5 py-1.5 text-[11.5px] text-[#0F1D24] text-${align} ${className}`}>{children}</td>
 );
 
 const TableShell = ({ children }) => (
-  <div className="overflow-x-auto rounded border border-[#C6C6C6]/50 bg-white shadow-sm">
+  <div className="overflow-x-auto border border-[#C6C6C6] bg-white">
     <table className="w-full border-collapse">{children}</table>
   </div>
 );
 
 const DailyReportTable = ({ entries = [] }) => {
   if (!entries.length) {
-    return <div className="flex h-32 items-center justify-center rounded border border-[#C6C6C6]/50 bg-white text-xs text-[#9B9B9B]">No entries for this date.</div>;
+    return <div className="flex h-32 items-center justify-center border border-[#C6C6C6] bg-white text-[11.5px] text-[#9B9B9B]">No entries for this date.</div>;
   }
   return (
     <TableShell>
-      <thead className="bg-[#F5F5F5]">
+      <thead>
         <tr>
           <Th>Hall</Th><Th>Shift</Th><Th>Slot</Th><Th>Machine</Th><Th>Operator</Th><Th>Part</Th>
           <Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Good</Th>
           <Th align="right">Reject</Th><Th align="right">Loss (min)</Th><Th align="right">Eff. %</Th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-[#C6C6C6]/30">
+      <tbody className="divide-y divide-[#C6C6C6]">
         {entries.map((e) => (
-          <tr key={e.production_id} className="hover:bg-[#F5F5F5]">
+          <tr key={e.production_id} className="hover:bg-[#FAFAFA]">
             <Td>{e.hall}</Td><Td>{e.shift}</Td><Td>{e.time_slot}</Td>
             <Td>{e.machine_code}</Td><Td>{e.operator_name}</Td><Td>{e.part_name}</Td>
             <Td align="right">{e.target_qty}</Td><Td align="right">{e.actual_qty}</Td>
-            <Td align="right" className="text-emerald-600 font-semibold">{e.good_qty}</Td>
-            <Td align="right" className="text-red-600 font-semibold">{e.reject_qty}</Td>
+            <Td align="right" className="font-semibold text-emerald-600">{e.good_qty}</Td>
+            <Td align="right" className="font-semibold text-red-600">{e.reject_qty}</Td>
             <Td align="right">{e.loss_minutes}</Td><Td align="right">{e.efficiency}%</Td>
           </tr>
         ))}
@@ -234,16 +302,23 @@ const DailyReportTable = ({ entries = [] }) => {
 const StatChip = ({ label, value, tone = "navy" }) => {
   const toneClass = tone === "navy" ? "text-[#0F1D24]" : tone === "red" ? "text-red-600" : "text-emerald-600";
   return (
-    <div className="rounded border border-[#C6C6C6]/50 bg-white px-3 py-2">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-[#9B9B9B]">{label}</p>
-      <p className={`mt-0.5 text-lg font-bold ${toneClass}`}>{value}</p>
+    <div className="border border-[#C6C6C6] bg-white px-3 py-2">
+      <p className="text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">{label}</p>
+      <p className={`mt-0.5 font-mono text-[17px] font-extrabold ${toneClass}`}>{value}</p>
     </div>
   );
 };
 
+const SubTable = ({ title, children }) => (
+  <div>
+    <p className="mb-1 text-[11px] font-bold text-[#0F1D24]">{title}</p>
+    <TableShell>{children}</TableShell>
+  </div>
+);
+
 const DailySummaryView = ({ data }) => (
   <div className="space-y-2">
-    <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
       <StatChip label="Target" value={data.totals.target?.toLocaleString()} />
       <StatChip label="Actual" value={data.totals.actual?.toLocaleString()} tone="green" />
       <StatChip label="Reject" value={data.totals.reject?.toLocaleString()} tone="red" />
@@ -251,81 +326,66 @@ const DailySummaryView = ({ data }) => (
     </div>
 
     <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
-      <div>
-        <p className="mb-1 text-xs font-bold text-[#0F1D24]">Hall-wise</p>
-        <TableShell>
-          <thead className="bg-[#F5F5F5]"><tr><Th>Hall</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
-          <tbody className="divide-y divide-[#C6C6C6]/30">
-            {data.hallWise.map((h) => (
-              <tr key={h.hall}><Td>{h.hall}</Td><Td align="right">{h.target}</Td><Td align="right">{h.actual}</Td><Td align="right" className="text-red-600">{h.reject}</Td><Td align="right">{h.achievement}%</Td></tr>
-            ))}
-          </tbody>
-        </TableShell>
-      </div>
-      <div>
-        <p className="mb-1 text-xs font-bold text-[#0F1D24]">Shift-wise</p>
-        <TableShell>
-          <thead className="bg-[#F5F5F5]"><tr><Th>Shift</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
-          <tbody className="divide-y divide-[#C6C6C6]/30">
-            {data.shiftWise.map((s) => (
-              <tr key={s.shift}><Td>{s.shift}</Td><Td align="right">{s.target}</Td><Td align="right">{s.actual}</Td><Td align="right" className="text-red-600">{s.reject}</Td><Td align="right">{s.achievement}%</Td></tr>
-            ))}
-          </tbody>
-        </TableShell>
-      </div>
-    </div>
-
-    <div>
-      <p className="mb-1 text-xs font-bold text-[#0F1D24]">Machine-wise</p>
-      <TableShell>
-        <thead className="bg-[#F5F5F5]"><tr><Th>Machine</Th><Th>Hall</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Eff. %</Th></tr></thead>
-        <tbody className="divide-y divide-[#C6C6C6]/30">
-          {data.machineWise.map((m) => (
-            <tr key={m.machine_code}><Td>{m.machine_code} — {m.machine_name}</Td><Td>{m.hall}</Td><Td align="right">{m.target}</Td><Td align="right">{m.actual}</Td><Td align="right" className="text-red-600">{m.reject}</Td><Td align="right">{m.efficiency}%</Td></tr>
+      <SubTable title="Hall-wise">
+        <thead><tr><Th>Hall</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
+        <tbody className="divide-y divide-[#C6C6C6]">
+          {data.hallWise.map((h) => (
+            <tr key={h.hall}><Td>{h.hall}</Td><Td align="right">{h.target}</Td><Td align="right">{h.actual}</Td><Td align="right" className="text-red-600">{h.reject}</Td><Td align="right">{h.achievement}%</Td></tr>
           ))}
         </tbody>
-      </TableShell>
+      </SubTable>
+      <SubTable title="Shift-wise">
+        <thead><tr><Th>Shift</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
+        <tbody className="divide-y divide-[#C6C6C6]">
+          {data.shiftWise.map((s) => (
+            <tr key={s.shift}><Td>{s.shift}</Td><Td align="right">{s.target}</Td><Td align="right">{s.actual}</Td><Td align="right" className="text-red-600">{s.reject}</Td><Td align="right">{s.achievement}%</Td></tr>
+          ))}
+        </tbody>
+      </SubTable>
     </div>
 
+    <SubTable title="Machine-wise">
+      <thead><tr><Th>Machine</Th><Th>Hall</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Eff. %</Th></tr></thead>
+      <tbody className="divide-y divide-[#C6C6C6]">
+        {data.machineWise.map((m) => (
+          <tr key={m.machine_code}><Td>{m.machine_code} — {m.machine_name}</Td><Td>{m.hall}</Td><Td align="right">{m.target}</Td><Td align="right">{m.actual}</Td><Td align="right" className="text-red-600">{m.reject}</Td><Td align="right">{m.efficiency}%</Td></tr>
+        ))}
+      </tbody>
+    </SubTable>
+
     <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
-      <div>
-        <p className="mb-1 text-xs font-bold text-[#0F1D24]">Top Reject Reasons</p>
-        <TableShell>
-          <thead className="bg-[#F5F5F5]"><tr><Th>Reason</Th><Th align="right">Qty</Th></tr></thead>
-          <tbody className="divide-y divide-[#C6C6C6]/30">
-            {data.topRejects.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="text-red-600 font-semibold">{r.qty}</Td></tr>))}
-          </tbody>
-        </TableShell>
-      </div>
-      <div>
-        <p className="mb-1 text-xs font-bold text-[#0F1D24]">Top Loss Reasons</p>
-        <TableShell>
-          <thead className="bg-[#F5F5F5]"><tr><Th>Reason</Th><Th align="right">Minutes</Th></tr></thead>
-          <tbody className="divide-y divide-[#C6C6C6]/30">
-            {data.topLossReasons.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="text-amber-600 font-semibold">{r.minutes}</Td></tr>))}
-          </tbody>
-        </TableShell>
-      </div>
+      <SubTable title="Top Reject Reasons">
+        <thead><tr><Th>Reason</Th><Th align="right">Qty</Th></tr></thead>
+        <tbody className="divide-y divide-[#C6C6C6]">
+          {data.topRejects.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="font-semibold text-red-600">{r.qty}</Td></tr>))}
+        </tbody>
+      </SubTable>
+      <SubTable title="Top Loss Reasons">
+        <thead><tr><Th>Reason</Th><Th align="right">Minutes</Th></tr></thead>
+        <tbody className="divide-y divide-[#C6C6C6]">
+          {data.topLossReasons.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="font-semibold text-amber-600">{r.minutes}</Td></tr>))}
+        </tbody>
+      </SubTable>
     </div>
   </div>
 );
 
 const MonthlyReportTable = ({ dayWise = [] }) => {
   if (!dayWise.length) {
-    return <div className="flex h-32 items-center justify-center rounded border border-[#C6C6C6]/50 bg-white text-xs text-[#9B9B9B]">No entries for this month.</div>;
+    return <div className="flex h-32 items-center justify-center border border-[#C6C6C6] bg-white text-[11.5px] text-[#9B9B9B]">No entries for this month.</div>;
   }
   return (
     <TableShell>
-      <thead className="bg-[#F5F5F5]">
+      <thead>
         <tr><Th>Date</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Good</Th><Th align="right">Reject</Th><Th align="right">Loss (min)</Th><Th align="right">Eff. %</Th><Th align="right">Ach. %</Th></tr>
       </thead>
-      <tbody className="divide-y divide-[#C6C6C6]/30">
+      <tbody className="divide-y divide-[#C6C6C6]">
         {dayWise.map((d) => (
-          <tr key={d.entry_date} className="hover:bg-[#F5F5F5]">
+          <tr key={d.entry_date} className="hover:bg-[#FAFAFA]">
             <Td>{new Date(d.entry_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</Td>
             <Td align="right">{d.target}</Td><Td align="right">{d.actual}</Td>
-            <Td align="right" className="text-emerald-600 font-semibold">{d.goodQty}</Td>
-            <Td align="right" className="text-red-600 font-semibold">{d.reject}</Td>
+            <Td align="right" className="font-semibold text-emerald-600">{d.goodQty}</Td>
+            <Td align="right" className="font-semibold text-red-600">{d.reject}</Td>
             <Td align="right">{d.lossMinutes}</Td><Td align="right">{d.avgEfficiency}%</Td><Td align="right">{d.achievement}%</Td>
           </tr>
         ))}
@@ -336,7 +396,7 @@ const MonthlyReportTable = ({ dayWise = [] }) => {
 
 const MonthlySummaryView = ({ data }) => (
   <div className="space-y-2">
-    <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
       <StatChip label="Target" value={data.totals.target?.toLocaleString()} />
       <StatChip label="Actual" value={data.totals.actual?.toLocaleString()} tone="green" />
       <StatChip label="Reject" value={data.totals.reject?.toLocaleString()} tone="red" />
@@ -344,58 +404,43 @@ const MonthlySummaryView = ({ data }) => (
     </div>
 
     <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
-      <div>
-        <p className="mb-1 text-xs font-bold text-[#0F1D24]">Hall-wise</p>
-        <TableShell>
-          <thead className="bg-[#F5F5F5]"><tr><Th>Hall</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
-          <tbody className="divide-y divide-[#C6C6C6]/30">
-            {data.hallWise.map((h) => (<tr key={h.hall}><Td>{h.hall}</Td><Td align="right">{h.target}</Td><Td align="right">{h.actual}</Td><Td align="right" className="text-red-600">{h.reject}</Td><Td align="right">{h.achievement}%</Td></tr>))}
-          </tbody>
-        </TableShell>
-      </div>
-      <div>
-        <p className="mb-1 text-xs font-bold text-[#0F1D24]">Shift-wise</p>
-        <TableShell>
-          <thead className="bg-[#F5F5F5]"><tr><Th>Shift</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
-          <tbody className="divide-y divide-[#C6C6C6]/30">
-            {data.shiftWise.map((s) => (<tr key={s.shift}><Td>{s.shift}</Td><Td align="right">{s.target}</Td><Td align="right">{s.actual}</Td><Td align="right" className="text-red-600">{s.reject}</Td><Td align="right">{s.achievement}%</Td></tr>))}
-          </tbody>
-        </TableShell>
-      </div>
+      <SubTable title="Hall-wise">
+        <thead><tr><Th>Hall</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
+        <tbody className="divide-y divide-[#C6C6C6]">
+          {data.hallWise.map((h) => (<tr key={h.hall}><Td>{h.hall}</Td><Td align="right">{h.target}</Td><Td align="right">{h.actual}</Td><Td align="right" className="text-red-600">{h.reject}</Td><Td align="right">{h.achievement}%</Td></tr>))}
+        </tbody>
+      </SubTable>
+      <SubTable title="Shift-wise">
+        <thead><tr><Th>Shift</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
+        <tbody className="divide-y divide-[#C6C6C6]">
+          {data.shiftWise.map((s) => (<tr key={s.shift}><Td>{s.shift}</Td><Td align="right">{s.target}</Td><Td align="right">{s.actual}</Td><Td align="right" className="text-red-600">{s.reject}</Td><Td align="right">{s.achievement}%</Td></tr>))}
+        </tbody>
+      </SubTable>
     </div>
 
     <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
-      <div>
-        <p className="mb-1 text-xs font-bold text-[#0F1D24]">Top Reject Reasons</p>
-        <TableShell>
-          <thead className="bg-[#F5F5F5]"><tr><Th>Reason</Th><Th align="right">Qty</Th></tr></thead>
-          <tbody className="divide-y divide-[#C6C6C6]/30">
-            {data.topRejects.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="text-red-600 font-semibold">{r.qty}</Td></tr>))}
-          </tbody>
-        </TableShell>
-      </div>
-      <div>
-        <p className="mb-1 text-xs font-bold text-[#0F1D24]">Top Loss Reasons</p>
-        <TableShell>
-          <thead className="bg-[#F5F5F5]"><tr><Th>Reason</Th><Th align="right">Minutes</Th></tr></thead>
-          <tbody className="divide-y divide-[#C6C6C6]/30">
-            {data.topLossReasons.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="text-amber-600 font-semibold">{r.minutes}</Td></tr>))}
-          </tbody>
-        </TableShell>
-      </div>
+      <SubTable title="Top Reject Reasons">
+        <thead><tr><Th>Reason</Th><Th align="right">Qty</Th></tr></thead>
+        <tbody className="divide-y divide-[#C6C6C6]">
+          {data.topRejects.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="font-semibold text-red-600">{r.qty}</Td></tr>))}
+        </tbody>
+      </SubTable>
+      <SubTable title="Top Loss Reasons">
+        <thead><tr><Th>Reason</Th><Th align="right">Minutes</Th></tr></thead>
+        <tbody className="divide-y divide-[#C6C6C6]">
+          {data.topLossReasons.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="font-semibold text-amber-600">{r.minutes}</Td></tr>))}
+        </tbody>
+      </SubTable>
     </div>
 
-    <div>
-      <p className="mb-1 text-xs font-bold text-[#0F1D24]">Daily Trend</p>
-      <TableShell>
-        <thead className="bg-[#F5F5F5]"><tr><Th>Date</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Ach. %</Th></tr></thead>
-        <tbody className="divide-y divide-[#C6C6C6]/30">
-          {data.dailyTrend.map((d) => (
-            <tr key={d.entry_date}><Td>{new Date(d.entry_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</Td><Td align="right">{d.target}</Td><Td align="right">{d.actual}</Td><Td align="right">{d.achievement}%</Td></tr>
-          ))}
-        </tbody>
-      </TableShell>
-    </div>
+    <SubTable title="Daily Trend">
+      <thead><tr><Th>Date</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Ach. %</Th></tr></thead>
+      <tbody className="divide-y divide-[#C6C6C6]">
+        {data.dailyTrend.map((d) => (
+          <tr key={d.entry_date}><Td>{new Date(d.entry_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</Td><Td align="right">{d.target}</Td><Td align="right">{d.actual}</Td><Td align="right">{d.achievement}%</Td></tr>
+        ))}
+      </tbody>
+    </SubTable>
   </div>
 );
 
