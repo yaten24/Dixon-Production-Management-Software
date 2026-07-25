@@ -7,7 +7,7 @@ import React, {
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
-import { useParams, useNavigate, Navigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import {
   Calendar,
   RefreshCw,
@@ -38,6 +38,7 @@ import {
 } from "../api/hallDashboardApi";
 import { getHallCodeFromId } from "../data/dashboardData";
 import { exportHallDashboardToExcel } from "../utils/exportHallDashboard";
+import Sidebar from "../compenents/common/Sidebar";
 
 // ==========================================================
 // Constants
@@ -961,7 +962,10 @@ const HourlyChartCard = ({ chartData, loading }) => {
 const HallDashboard = () => {
   const { hallId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const hallCode = getHallCodeFromId(hallId);
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const [filters, setFilters] = useState(defaultFilters);
   const [draftFilters, setDraftFilters] = useState(defaultFilters);
@@ -1076,62 +1080,70 @@ const HallDashboard = () => {
   if (!hallCode) return <Navigate to="/production/dashboard" replace />;
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#EFEFEF]">
+    <div className="flex h-screen overflow-hidden bg-[#EFEFEF]">
       <style>{`
         @keyframes hdCardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes hdValuePop { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
       `}</style>
 
-      <DashboardHeader
-        hallCode={hallCode}
-        dateLabel={formatDisplay(filters.date)}
-        onBack={handleBack}
-        onHeatmap={handleHeatmap}
-        onExport={handleExport}
-        draft={draftFilters}
-        setDraft={setDraftFilters}
-        onApply={handleApplyFilters}
-        onRefresh={fetchAll}
-        onReset={handleReset}
-        loading={loading}
-        machineList={machines}
-        message={
-          error
-            ? error
-            : showNoDataWarning
-              ? "No data available for the selected date/filters. Try a different date, machine, or shift."
-              : null
-        }
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        activePath={location.pathname}
       />
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-        {/* Row 1: KPI cards + Shift summary + Top rejects (left) / Machine-wise breakdown (right). */}
-        <div className="grid min-h-0 flex-1 grid-cols-1 lg:flex-[0_0_44%] lg:grid-cols-2">
-          <div className="flex min-h-0 flex-col overflow-hidden lg:h-full">
-            {loading && !stats ? (
-              <div className="flex-shrink-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-[92px] animate-pulse border border-[#C6C6C6] bg-[#C6C6C6]/20" />
-                ))}
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <DashboardHeader
+          hallCode={hallCode}
+          dateLabel={formatDisplay(filters.date)}
+          onBack={handleBack}
+          onHeatmap={handleHeatmap}
+          onExport={handleExport}
+          draft={draftFilters}
+          setDraft={setDraftFilters}
+          onApply={handleApplyFilters}
+          onRefresh={fetchAll}
+          onReset={handleReset}
+          loading={loading}
+          machineList={machines}
+          message={
+            error
+              ? error
+              : showNoDataWarning
+                ? "No data available for the selected date/filters. Try a different date, machine, or shift."
+                : null
+          }
+        />
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+          {/* Row 1: KPI cards + Shift summary + Top rejects (left) / Machine-wise breakdown (right). */}
+          <div className="grid min-h-0 flex-1 grid-cols-1 lg:flex-[0_0_44%] lg:grid-cols-2">
+            <div className="flex min-h-0 flex-col overflow-hidden lg:h-full">
+              {loading && !stats ? (
+                <div className="flex-shrink-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="h-[92px] animate-pulse border border-[#C6C6C6] bg-[#C6C6C6]/20" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex-shrink-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+                  {kpiCards.map((item) => <KpiCard key={item.id} item={item} />)}
+                </div>
+              )}
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                <ShiftSummaryPanel rows={shiftSummary} loading={loading} />
+                <TopRejectsPanel rows={topRejects} loading={loading} />
               </div>
-            ) : (
-              <div className="flex-shrink-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-                {kpiCards.map((item) => <KpiCard key={item.id} item={item} />)}
-              </div>
-            )}
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-              <ShiftSummaryPanel rows={shiftSummary} loading={loading} />
-              <TopRejectsPanel rows={topRejects} loading={loading} />
+            </div>
+
+            <div className="min-h-0 lg:h-full">
+              <MachineWiseTable rows={machineWise} loading={loading} />
             </div>
           </div>
 
-          <div className="min-h-0 lg:h-full">
-            <MachineWiseTable rows={machineWise} loading={loading} />
+          {/* Row 2: Hourly chart fills all remaining space. */}
+          <div className="flex min-h-0 flex-1 flex-col">
+            <HourlyChartCard chartData={chartData} loading={loading} />
           </div>
-        </div>
-
-        {/* Row 2: Hourly chart fills all remaining space. */}
-        <div className="flex min-h-0 flex-1 flex-col">
-          <HourlyChartCard chartData={chartData} loading={loading} />
         </div>
       </div>
     </div>

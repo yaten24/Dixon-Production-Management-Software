@@ -41,7 +41,7 @@ import MonthlyProductionPlans from "../pages/PlanningPage/MonthlyPlanPage";
 import DailyPlanPage from "../pages/PlanningPage/DailyPlanPage";
 import DailyProductionPlan from "../pages/PlanningPage/CreateDailyPlan";
 import MonthlyPlanView from "../pages/PlanningPage/MonthlyPlanView";
-import ViewDailyPlanPage from "../pages/PlanningPage/DailyPlanDetail";
+import ViewDailyPlanPage from "../pages/PlanningPage/DailyPlanView";
 import DailyPlanOperatorAssignment from "../pages/PlanningPage/DailyPlanOperatorAssignment";
 import DailyPlanPageForOperatorAllocation from "../pages/PlanningPage/DailyPlanPageForOperatorAllocation";
 import HourlyMachineTracking from "../pages/HourlyMachineTracking";
