@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FaTachometerAlt,
-  FaIndustry,
   FaChartBar,
   FaClock,
   FaExchangeAlt,
@@ -18,12 +17,12 @@ import {
 } from "react-icons/md";
 
 import {
+  HiOutlineChevronDown,
   HiOutlineChevronDoubleLeft,
   HiOutlineChevronDoubleRight,
 } from "react-icons/hi2";
 
 import { useAuth } from "../../context/AuthContext";
-import dixonLogo from "../../../public/Dixon_Technologies_Logo.png";
 
 /* ==========================================================
                         THEME
@@ -48,26 +47,28 @@ const FONT_IMPORT = `
 const EXPANDED_WIDTH = 172;
 const COLLAPSED_WIDTH = 52;
 
+// Same colored-icon convention as the reference sidebar: each item
+// carries its own accent color instead of toggling gray/navy on active.
 const menuSections = [
   {
     label: "Overview",
     items: [
-      { id: 1, title: "Dashboard", path: "/management/overall/dashboard", icon: <FaTachometerAlt size={13} /> },
+      { id: 1, title: "Dashboard", path: "/management/overall/dashboard", icon: FaTachometerAlt, color: THEME.highlight },
     ],
   },
   {
     label: "Operations",
     items: [
-      { id: 2, title: "Production", path: "/management/dashboard", icon: <MdOutlineProductionQuantityLimits size={13} /> },
-      { id: 3, title: "Rejection", path: "/management/rejection", icon: <MdOutlineReportProblem size={13} /> },
-      { id: 4, title: "Loss Time", path: "/management/loss-time", icon: <FaClock size={13} /> },
-      { id: 5, title: "Mould Change", path: "/management/mould-change", icon: <FaExchangeAlt size={13} /> },
+      { id: 2, title: "Production", path: "/management/dashboard", icon: MdOutlineProductionQuantityLimits, color: "#2563EB" },
+      { id: 3, title: "Rejection", path: "/management/rejection", icon: MdOutlineReportProblem, color: "#DC2626" },
+      { id: 4, title: "Loss Time", path: "/management/loss-time", icon: FaClock, color: "#EA580C" },
+      { id: 5, title: "Mould Change", path: "/management/mould-change", icon: FaExchangeAlt, color: "#9333EA" },
     ],
   },
   {
     label: "Insights",
     items: [
-      { id: 9, title: "Reports", path: "/management/reports", icon: <FaChartBar size={13} /> },
+      { id: 9, title: "Reports", path: "/management/reports", icon: FaChartBar, color: "#16A34A" },
     ],
   },
 ];
@@ -115,6 +116,16 @@ const Sidebar = () => {
     return user.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
   }, [user]);
 
+  /* ---------------- PROFILE DROPDOWN ---------------- */
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    const h = (e) => { if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
   const handleLogout = async () => {
     await logout();
     navigate("/");
@@ -141,14 +152,16 @@ const Sidebar = () => {
         className="h-[2px] w-full flex-shrink-0"
       />
 
-      {/* LOGO */}
-      <div className="flex flex-shrink-0 items-center justify-center border-b border-[#C6C6C6]/50 px-2 py-1.5">
-        {collapsed ? (
-          <div className="flex h-7 w-7 items-center justify-center bg-[#0F1D24]">
-            <span className="font-mono text-[9px] font-extrabold text-[#FDC94D]">DT</span>
+      {/* brand block — text logo only, no image */}
+      <div className="flex flex-shrink-0 items-center justify-center gap-2 border-b border-[#C6C6C6]/50 px-2 py-1.5">
+        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center bg-[#0F1D24]">
+          <span className="font-mono text-[9px] font-extrabold text-[#FDC94D]">DT</span>
+        </div>
+        {!collapsed && (
+          <div className="min-w-0 flex-1 leading-none">
+            <p className="truncate text-[11px] font-bold tracking-tight text-[#0F1D24]">PMS-Dehradun</p>
+            <p className="truncate text-[8px] font-medium text-[#9B9B9B]">Production Management System</p>
           </div>
-        ) : (
-          <img src={dixonLogo} alt="Dixon" className="h-7 w-auto object-contain" />
         )}
       </div>
 
@@ -192,101 +205,108 @@ const Sidebar = () => {
             )}
 
             <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-0.5">
-              {section.items.map((item) => (
-                <motion.div key={item.id} variants={itemVariants}>
-                  <NavLink
-                    to={item.path}
-                    end
-                    title={collapsed ? item.title : undefined}
-                    className={({ isActive }) =>
-                      `block relative overflow-hidden rounded transition-colors duration-150 ${
-                        isActive ? "bg-[#0F1D24]/[0.06]" : "hover:bg-[#F5F5F5]"
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <div
-                        className={`relative flex cursor-pointer select-none items-center gap-2 px-2 py-1.5 ${
-                          collapsed ? "justify-center px-0" : ""
-                        }`}
-                      >
-                        {isActive && (
-                          <motion.div
-                            layoutId="sidebarIndicator"
-                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                            className="absolute left-0 top-0 h-full w-[2px] rounded"
-                            style={{ background: THEME.accent }}
-                          />
-                        )}
-
-                        <span
-                          className={`relative z-10 flex min-w-[14px] items-center justify-center transition-colors duration-150 ${
-                            isActive ? "text-[#0F1D24]" : "text-[#9B9B9B]"
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <motion.div key={item.id} variants={itemVariants}>
+                    <NavLink
+                      to={item.path}
+                      end
+                      title={collapsed ? item.title : undefined}
+                      className={({ isActive }) =>
+                        `block relative overflow-hidden rounded transition-colors duration-150 ${
+                          isActive ? "bg-[#0F1D24]/[0.06]" : "hover:bg-[#F5F5F5]"
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <div
+                          className={`relative flex cursor-pointer select-none items-center gap-2 px-2 py-1.5 ${
+                            collapsed ? "justify-center px-0" : ""
                           }`}
                         >
-                          {item.icon}
-                        </span>
+                          {isActive && (
+                            <motion.div
+                              layoutId="sidebarIndicator"
+                              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                              className="absolute left-0 top-0 h-full w-[2px] rounded"
+                              style={{ background: THEME.accent }}
+                            />
+                          )}
 
-                        {!collapsed && (
                           <span
-                            className={`relative z-10 flex-1 truncate text-[11px] font-medium tracking-wide transition-colors duration-150 ${
-                              isActive ? "text-[#0F1D24]" : "text-[#0F1D24]/70"
-                            }`}
+                            className="relative z-10 flex min-w-[14px] items-center justify-center transition-colors duration-150"
+                            style={{ color: item.color }}
                           >
-                            {item.title}
+                            <Icon className="h-3.5 w-3.5" />
                           </span>
-                        )}
 
-                        {isActive && !collapsed && (
-                          <span className="relative z-10 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: THEME.accent }} />
-                        )}
-                      </div>
-                    )}
-                  </NavLink>
-                </motion.div>
-              ))}
+                          {!collapsed && (
+                            <span
+                              className={`relative z-10 flex-1 truncate text-left text-[11px] font-medium tracking-wide transition-colors duration-150 ${
+                                isActive ? "text-[#0F1D24]" : "text-[#0F1D24]/70"
+                              }`}
+                            >
+                              {item.title}
+                            </span>
+                          )}
+
+                          {isActive && !collapsed && (
+                            <span className="relative z-10 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: THEME.accent }} />
+                          )}
+                        </div>
+                      )}
+                    </NavLink>
+                  </motion.div>
+                );
+              })}
             </motion.div>
           </div>
         ))}
       </div>
 
-      {/* USER PROFILE + LOGOUT */}
-      <div className="flex-shrink-0 space-y-1 border-t border-[#C6C6C6]/50 px-1.5 py-1.5">
-        <div
-          className={`flex items-center gap-2 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] px-2 py-1 ${
-            collapsed ? "justify-center px-0" : ""
-          }`}
-          title={collapsed ? user?.name || "Account" : undefined}
-        >
-          {initials ? (
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0F1D24] text-[9px] font-bold text-[#FDC94D]">
-              {initials}
-            </span>
-          ) : (
-            <FaUserCircle className="shrink-0 text-lg text-[#9B9B9B]" />
-          )}
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="truncate text-[10px] font-bold leading-none text-[#0F1D24]">
-                {user?.name || "—"}
-              </p>
-              <p className="mt-0.5 truncate text-[8.5px] font-semibold leading-none text-[#FDC94D]">
-                {user?.role || ""}
-              </p>
+      {/* user account panel — click avatar row to open a popup with Sign out */}
+      <div ref={profileRef} className="relative flex-shrink-0 border-t border-[#C6C6C6]/50 px-1.5 py-1.5">
+        {profileOpen && (
+          <div
+            className={`absolute bottom-full z-30 mb-1.5 w-44 rounded border border-[#C6C6C6]/60 bg-white shadow-[0_-4px_10px_rgba(15,29,36,0.12)] ${
+              collapsed ? "left-full ml-1.5" : "left-1.5"
+            }`}
+          >
+            <div className="rounded-t border-b border-[#C6C6C6]/60 bg-[#FAFAFA] px-2.5 py-1.5">
+              <p className="text-[10px] font-bold leading-none text-[#0F1D24]">{user?.name || "—"}</p>
+              <p className="mt-0.5 text-[8.5px] leading-none text-[#9B9B9B]">{user?.employee_id || ""}</p>
             </div>
-          )}
-        </div>
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-1.5 rounded-b px-2.5 py-1.5 text-[10px] font-semibold text-red-600 transition-colors duration-150 hover:bg-red-50"
+            >
+              <FaSignOutAlt size={9} />
+              Sign out
+            </button>
+          </div>
+        )}
 
         <button
           type="button"
-          onClick={handleLogout}
-          title={collapsed ? "Logout" : undefined}
-          className={`flex h-7 w-full items-center justify-center gap-1.5 rounded border border-red-200 bg-red-50 text-[10px] font-semibold text-red-600 transition-colors hover:bg-red-500 hover:text-white ${
-            collapsed ? "px-0" : ""
+          onClick={() => setProfileOpen((v) => !v)}
+          title={collapsed ? user?.name || "Account" : undefined}
+          className={`flex w-full items-center gap-2 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] px-2 py-1 text-left transition-colors duration-150 hover:bg-[#F0F0F0] ${
+            collapsed ? "justify-center px-0" : ""
           }`}
         >
-          <FaSignOutAlt size={10} />
-          {!collapsed && "Logout"}
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0F1D24] text-[9px] font-bold text-[#FDC94D]">
+            {initials || <FaUserCircle className="text-sm" />}
+          </span>
+          {!collapsed && (
+            <>
+              <div className="min-w-0 flex-1 leading-none">
+                <p className="truncate text-[10px] font-bold leading-none text-[#0F1D24]">{user?.name || "—"}</p>
+                <p className="mt-0.5 truncate text-[8.5px] font-semibold leading-none text-[#FDC94D]">{user?.role || ""}</p>
+              </div>
+              <HiOutlineChevronDown className={`h-3 w-3 flex-shrink-0 text-[#9B9B9B] transition-transform ${profileOpen ? "rotate-180" : ""}`} />
+            </>
+          )}
         </button>
       </div>
 
