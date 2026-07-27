@@ -134,20 +134,12 @@ const NotFound = () => {
           className="mt-9 flex flex-wrap items-center justify-center gap-4"
         >
           <Link
-            to="/dashboard"
+            to="/"
             className="flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition-transform hover:scale-[1.03] active:scale-95"
           >
             <FaHome size={13} />
             Back to Dashboard
           </Link>
-
-          <button
-            onClick={() => window.history.back()}
-            className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-200 backdrop-blur-sm transition-colors hover:bg-white/10"
-          >
-            <FaArrowLeft size={13} />
-            Go Back
-          </button>
         </motion.div>
 
         {/* Divider */}

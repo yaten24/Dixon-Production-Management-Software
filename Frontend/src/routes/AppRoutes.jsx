@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 // Route Guards
 import AdminRoute from "./AdminRoute";
@@ -47,14 +47,17 @@ import ViewDailyPlanPage from "../pages/PlanningPage/DailyPlanView";
 import DailyPlanOperatorAssignment from "../pages/PlanningPage/DailyPlanOperatorAssignment";
 import DailyPlanPageForOperatorAllocation from "../pages/PlanningPage/DailyPlanPageForOperatorAllocation";
 import PublicRoute from "./PublicRoute";
+import Unauthorized from "../pages/CommanPages/Unauthorized";
 
 const AppRoutes = () => {
   return (
     <Routes>
       {/* ================= PUBLIC ================= */}
 
+      <Route path="/" element={<Navigate to="/login" replace />} />
+
       <Route
-        path="/"
+        path="/login"
         element={
           <PublicRoute>
             <Login />
@@ -367,6 +370,7 @@ const AppRoutes = () => {
 
       {/* ================= 404 ================= */}
 
+      <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
