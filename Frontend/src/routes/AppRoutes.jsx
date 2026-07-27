@@ -1,33 +1,25 @@
 import { Routes, Route } from "react-router-dom";
 
 // Public
-import Home from "../pages/Home";
-import Login from "../pages/Login";
-import NotFound from "../pages/NotFound";
+import Home from "../pages/TeamMemberPages/Home";
+import NotFound from "../pages/CommanPages/NotFound";
 
 // Admin
-import Dashboard from "../pages/AdminPages/Dashboard";
-import Employees from "../pages/admin/Employees";
-import Users from "../pages/admin/Users";
-import Machines from "../pages/admin/Machines";
-import PartsPage from "../pages/admin/PartsPage";
-import Reports from "../pages/AdminPages/Reports";
-import ActivityLogs from "../pages/admin/Activitylogs";
+import Dashboard from "../pages/ManagerPages/Dashboard";
+import Employees from "../pages/AdminPages/Employees";
+import Users from "../pages/AdminPages/Users";
+import Machines from "../pages/AdminPages/Machines";
+import PartsPage from "../pages/AdminPages/PartsPage";
+import Reports from "../pages/ManagerPages/Reports";
+import ActivityLogs from "../pages/AdminPages/Activitylogs";
 
-import ProductionDashboard from "../pages/AdminPages/ProductionDashboard";
-import HallDashboard from "../pages/HallDashboard";
-import MouldChangeDashboard from "../pages/AdminPages/MouldChangeDashboard";
-import AllRejectionReasons from "../pages/AdminPages/RejectionReasons";
-import LossAnalysisDashboard from "../pages/AdminPages/LossTimeDashboard";
+import ProductionDashboard from "../pages/ManagerPages/ProductionDashboard";
+import MouldChangeDashboard from "../pages/ManagerPages/MouldChangeDashboard";
+import AllRejectionReasons from "../pages/ManagerPages/RejectionReasons";
+import LossAnalysisDashboard from "../pages/ManagerPages/LossTimeDashboard";
 
-// Employee
-import UserHome from "../pages/UserHome";
-import UserDashboard from "../pages/UserDashboard";
-import UserProfile from "../pages/UserProfile";
-
-import AdvProductionEntry from "../pages/advProductionEnrty";
-import ProductionHistoryPage from "../pages/ProductionHistoryPage";
-import ReportsPage from "../pages/AdminPages/ReportsPage";
+import AdvProductionEntry from "../pages/TeamMemberPages/advProductionEnrty";
+import ReportsPage from "../pages/ManagerPages/ReportsPage";
 
 import PlanSelectionPage from "../pages/PlanningPage/PlanSelectionPage";
 import MonthlyPlanPage from "../pages/PlanningPage/MonthlyPlanPage";
@@ -36,7 +28,7 @@ import CreateMonthlyPlan from "../pages/PlanningPage/CreateMonthlyPlan";
 import MachineOverviewDashboard from "../pages/MachineOverview";
 // import MachineOperatorManagement from "../pages/MachineOperatorManagement";
 // import AllocateMachineOperator from "../pages/AllocateMachineOperator";
-import UpdateMachineOperator from "../pages/UpdateMachineOperator";
+import UpdateMachineOperator from "../pages/TeamMemberPages/UpdateMachineOperator";
 import MonthlyProductionPlans from "../pages/PlanningPage/MonthlyPlanPage";
 import DailyPlanPage from "../pages/PlanningPage/DailyPlanPage";
 import DailyProductionPlan from "../pages/PlanningPage/CreateDailyPlan";
@@ -44,8 +36,13 @@ import MonthlyPlanView from "../pages/PlanningPage/MonthlyPlanView";
 import ViewDailyPlanPage from "../pages/PlanningPage/DailyPlanView";
 import DailyPlanOperatorAssignment from "../pages/PlanningPage/DailyPlanOperatorAssignment";
 import DailyPlanPageForOperatorAllocation from "../pages/PlanningPage/DailyPlanPageForOperatorAllocation";
-import HourlyMachineTracking from "../pages/HourlyMachineTracking";
-import AdminDashboard from "../pages/admin/AdminDashboard";
+import HourlyMachineTracking from "../pages/CommanPages/HourlyMachineTracking";
+import AdminDashboard from "../pages/AdminPages/AdminDashboard";
+import Login from "../pages/CommanPages/Login";
+import UserHome from "../pages/TeamMemberPages/UserHome";
+import UserDashboard from "../pages/TeamMemberPages/UserDashboard";
+import ProductionHistoryPage from "../pages/TeamMemberPages/ProductionHistoryPage";
+import HallDashboard from "../pages/TeamMemberPages/HallDashboard";
 
 const AppRoutes = () => {
   return (
@@ -60,9 +57,10 @@ const AppRoutes = () => {
       <Route path="/production/dashboard" element={<ProductionDashboard />} />
       <Route path="/production/hourly" element={<HourlyMachineTracking />} />
       <Route path="/production/halls/:hallId" element={<HallDashboard />} />
-      <Route path="/production/halls/:hallId/heatmap" element={<HourlyMachineTracking />} />
-
-
+      <Route
+        path="/production/halls/:hallId/heatmap"
+        element={<HourlyMachineTracking />}
+      />
       {/* ---------- ADMIN PRODUCTION ---------- */}
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin/logs" element={<ActivityLogs />} />
@@ -83,7 +81,6 @@ const AppRoutes = () => {
       {/* ---------------- EMPLOYEE ---------------- */}
       <Route path="/employee/home" element={<UserHome />} />
       <Route path="/employee/dashboard" element={<UserDashboard />} />
-      <Route path="/employee/profile" element={<UserProfile />} />
       {/* ---------- EMPLOYEE PRODUCTION ---------- */}
       <Route
         path="/employee/production/entry"

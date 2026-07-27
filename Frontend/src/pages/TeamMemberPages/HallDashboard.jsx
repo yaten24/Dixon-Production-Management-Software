@@ -35,10 +35,10 @@ import {
   getHallShiftSummary,
   getHallTopRejects,
   getHallMachines,
-} from "../api/hallDashboardApi";
-import { getHallCodeFromId } from "../data/dashboardData";
-import { exportHallDashboardToExcel } from "../utils/exportHallDashboard";
-import Sidebar from "../compenents/common/Sidebar";
+} from "../../api/hallDashboardApi";
+import { getHallCodeFromId } from "../../data/dashboardData";
+import { exportHallDashboardToExcel } from "../../utils/exportHallDashboard";
+import Sidebar from "../../compenents/common/Sidebar";
 
 // ==========================================================
 // Constants

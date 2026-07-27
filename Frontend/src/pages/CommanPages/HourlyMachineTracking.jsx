@@ -9,10 +9,10 @@ import {
   HiOutlineMagnifyingGlass,
   HiOutlineXMark,
 } from "react-icons/hi2";
-import { useHourlyProductionHeatmap } from "../hooks/useHourlyProductionHeatmap";
-import { HALL_ID_TO_CODE } from "../config/hallMapping";
+import { useHourlyProductionHeatmap } from "../../hooks/useHourlyProductionHeatmap";
+import { HALL_ID_TO_CODE } from "../../config/hallMapping";
 // NOTE: adjust this import to wherever PageTitleStrip actually lives relative to this file.
-import PageTitleStrip from "./PlanningPage/PageTitleStrip";
+import PageTitleStrip from "../PlanningPage/PageTitleStrip";
 
 const SHIFT_COLORS = {
   A: { row: "bg-[#FDC94D]/10", label: "bg-[#FDC94D] text-[#0F1D24]" },

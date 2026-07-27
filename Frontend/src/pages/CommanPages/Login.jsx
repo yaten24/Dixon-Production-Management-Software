@@ -4,8 +4,8 @@ import { FaUserShield, FaLock, FaEye, FaEyeSlash, FaIndustry } from "react-icons
 import { useNavigate } from "react-router-dom";
 import { HiOutlineArrowLeft } from "react-icons/hi2";
 
-import { loginUser } from "../api/authApi";
-import { useAuth } from "../context/AuthContext";
+import { loginUser } from "../../api/authApi";
+import { useAuth } from "../../context/AuthContext";
 
 // ============================================================
 // THEME TOKENS — same values as AdvProductionEntry.jsx, so the

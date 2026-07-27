@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Calendar,
   Building2,
   Factory,
   Search,
   Clock,
+  ChevronDown,
   RefreshCw,
   X,
   CheckCircle2,
@@ -18,21 +20,14 @@ import {
   getPlan,
   updateDetail as updateDetailApi,
   publishPlan as publishPlanApi,
-} from "../api/productionPlanApi";
-import { searchOperators } from "../api/operatorApi";
-import { getMachines } from "../api/machineApi";
-import CustomSelect from "../compenents/common/CustomSelect";
-import CustomDatePicker from "../compenents/common/CustomDatePicker";
-
-// Brand palette (matches QuickAccessCard):
-// highlight #0F1D24 (deep navy)  — primary: icons, titles, active states, CTA fills
-// gray      #9B9B9B              — secondary text
-// accent    #FDC94D (warm gold)  — sparing highlight: top bars, CTA text-on-navy
-// darken    #C6C6C6              — borders, dividers, neutral surfaces
+} from "../../api/productionPlanApi";
+import { searchOperators } from "../../api/operatorApi";
+import { getMachines } from "../../api/machineApi";
 
 const halls = ["Hall 1", "Hall 2", "Hall 3", "Hall 4", "C-8"];
-const shifts = ["A", "B"];
+const shifts = ["A", "B", "C", "General"];
 
+// field-name fallbacks — backend may return snake_case or camelCase
 const mCode = (m) => m.machine_code || m.machineCode;
 const mName = (m) => m.machine_name || m.machineName;
 const opCode = (o) => o.operator_code || o.operatorCode || o.employeeId;
@@ -48,35 +43,29 @@ const useDebounce = (value, delay = 300) => {
   return debounced;
 };
 
-const listContainer = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.035 } },
-};
-const listItem = {
-  hidden: { opacity: 0, y: 6 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.2 } },
-};
-
-const UpdateMachineOperator = () => {
+const AllocateMachineOperator = () => {
   const [allocationDate, setAllocationDate] = useState(
     new Date().toISOString().substring(0, 10),
   );
   const [hall, setHall] = useState("Hall 1");
   const [shift, setShift] = useState("A");
 
+  // ---- plan state ----
   const [planLoading, setPlanLoading] = useState(false);
   const [planId, setPlanId] = useState(null);
   const [planHeader, setPlanHeader] = useState(null);
   const [planDetails, setPlanDetails] = useState([]);
   const [planError, setPlanError] = useState("");
 
+  // ---- new-plan machine picker (shown only when no plan exists yet) ----
   const [availableMachines, setAvailableMachines] = useState([]);
   const [machinesLoading, setMachinesLoading] = useState(false);
   const [machineSearch, setMachineSearch] = useState("");
   const [selectedCodes, setSelectedCodes] = useState(new Set());
   const [creatingPlan, setCreatingPlan] = useState(false);
 
-  const [opModalDetail, setOpModalDetail] = useState(null);
+  // ---- change operator modal ----
+  const [opModalDetail, setOpModalDetail] = useState(null); // detail row being edited
   const [opSearch, setOpSearch] = useState("");
   const [opResults, setOpResults] = useState([]);
   const [opLoading, setOpLoading] = useState(false);
@@ -86,6 +75,9 @@ const UpdateMachineOperator = () => {
 
   const [publishing, setPublishing] = useState(false);
 
+  // -------------------------------------------------------------
+  // Load / detect plan whenever date + hall + shift changes
+  // -------------------------------------------------------------
   useEffect(() => {
     let cancelled = false;
 
@@ -108,6 +100,7 @@ const UpdateMachineOperator = () => {
           setPlanHeader(plan.header);
           setPlanDetails(plan.details || []);
         } else {
+          // no plan yet -> fetch machines for this hall so user can create one
           setMachinesLoading(true);
           const machinesRes = await getMachines({ hall });
           if (cancelled) return;
@@ -175,6 +168,9 @@ const UpdateMachineOperator = () => {
     }
   };
 
+  // -------------------------------------------------------------
+  // Change Operator modal
+  // -------------------------------------------------------------
   const openChangeOperator = (detail) => {
     setOpModalDetail(detail);
     setOpSearch("");
@@ -257,326 +253,361 @@ const UpdateMachineOperator = () => {
   const isPublished = planHeader?.status === "Published";
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] p-1">
-      <div className="max-w-full mx-auto space-y-1">
+    <div className="min-h-screen bg-[#F7F8FA] p-5">
+      <div className="max-w-6xl mx-auto space-y-4">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-          className="bg-white rounded border border-[#C6C6C6]/50 px-4 py-3 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-2.5">
-            <motion.div
-              whileHover={{ rotate: -6, scale: 1.06 }}
-              className="h-8 w-8 rounded bg-[#0F1D24] flex items-center justify-center ring-[3px] ring-[#0F1D24]/5"
-            >
-              <Factory className="text-[#FDC94D]" size={15} />
-            </motion.div>
-            <div>
-              <h1 className="text-[13px] font-bold tracking-tight text-[#0F1D24]">
-                Machine &amp; Operator Allocation
-              </h1>
-              <p className="text-[10px] font-medium text-[#9B9B9B]">
-                Select date, hall and shift to view or create a production plan.
+        <div className="bg-white rounded-sm border border-[#E2E4E9] px-5 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-sm bg-[#2563EB] flex items-center justify-center">
+              <Factory className="text-white" size={18} />
+            </div>
+            <div className={`h-5 w-px flex-shrink-0 bg-[#C6C6C6]`} />
+            <div className="hidden min-w-0 leading-tight sm:block">
+              <p className="text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+                Operator Allocation
               </p>
+              <h1 className="truncate text-[12.5px] font-bold text-[#0F1D24]">
+                Select date, hall and shift to view or create a production
+                plan.
+              </h1>
             </div>
           </div>
 
           {planHeader && (
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[11px] text-[#9B9B9B]">
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-xs text-slate-500">
                 {planHeader.plan_number}
               </span>
               <span
-                className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                className={`px-2 py-0.5 rounded-sm text-[11px] font-semibold ${
                   isPublished
-                    ? "bg-green-50 text-green-700 border-green-200"
-                    : "bg-[#FDC94D]/15 text-[#0F1D24] border-[#FDC94D]/40"
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-amber-50 text-amber-700 border border-amber-200"
                 }`}
               >
                 {planHeader.status || "Draft"}
               </span>
               {!isPublished && (
-                <motion.button
-                  whileTap={{ scale: 0.96 }}
+                <button
                   onClick={handlePublish}
                   disabled={publishing}
-                  className="h-7 px-2.5 rounded bg-[#0F1D24] hover:opacity-90 disabled:opacity-50 text-[#FDC94D] text-[10px] font-semibold flex items-center gap-1.5 transition"
+                  className="h-7 px-3 rounded-sm bg-[#2563EB] hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition"
                 >
                   {publishing ? (
-                    <Loader2 size={12} className="animate-spin" />
+                    <Loader2 size={13} className="animate-spin" />
                   ) : (
-                    <Send size={12} />
+                    <Send size={13} />
                   )}
                   Publish
-                </motion.button>
+                </button>
               )}
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Filters */}
-        <div className="bg-white rounded border border-[#C6C6C6]/50 p-3">
-          <div className="grid sm:grid-cols-3 gap-3">
-            <CustomDatePicker
-              label="Allocation Date"
-              value={allocationDate}
-              onChange={setAllocationDate}
-            />
+        <div className="bg-white rounded-sm border border-[#E2E4E9] p-4">
+          <div className="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-[11px] font-medium text-slate-500 mb-1 block">
+                Allocation Date
+              </label>
+              <div className="relative">
+                <Calendar
+                  className="absolute left-3 top-2 text-slate-400"
+                  size={14}
+                />
+                <input
+                  type="date"
+                  value={allocationDate}
+                  onChange={(e) => setAllocationDate(e.target.value)}
+                  className="w-full h-8 border border-[#E2E4E9] rounded-sm pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-[#2563EB]"
+                />
+              </div>
+            </div>
 
-            <CustomSelect
-              label="Hall"
-              icon={Building2}
-              value={hall}
-              onChange={setHall}
-              options={halls}
-            />
+            <div>
+              <label className="text-[11px] font-medium text-slate-500 mb-1 block">
+                Hall
+              </label>
+              <div className="relative">
+                <Building2
+                  className="absolute left-3 top-2 text-slate-400"
+                  size={14}
+                />
+                <select
+                  value={hall}
+                  onChange={(e) => setHall(e.target.value)}
+                  className="w-full h-8 border border-[#E2E4E9] rounded-sm pl-8 pr-8 text-xs appearance-none outline-none focus:ring-1 focus:ring-[#2563EB]"
+                >
+                  {halls.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="absolute right-3 top-2 text-slate-400"
+                  size={14}
+                />
+              </div>
+            </div>
 
-            <CustomSelect
-              label="Shift"
-              icon={Clock}
-              value={shift}
-              onChange={setShift}
-              options={shifts}
-            />
+            <div>
+              <label className="text-[11px] font-medium text-slate-500 mb-1 block">
+                Shift
+              </label>
+              <div className="relative">
+                <Clock
+                  className="absolute left-3 top-2 text-slate-400"
+                  size={14}
+                />
+                <select
+                  value={shift}
+                  onChange={(e) => setShift(e.target.value)}
+                  className="w-full h-8 border border-[#E2E4E9] rounded-sm pl-8 pr-8 text-xs appearance-none outline-none focus:ring-1 focus:ring-[#2563EB]"
+                >
+                  {shifts.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="absolute right-3 top-2 text-slate-400"
+                  size={14}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         {planError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-[11px] rounded px-3 py-2">
+          <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-sm px-4 py-2.5">
             {planError}
           </div>
         )}
 
+        {/* Loading */}
         {planLoading && (
-          <div className="bg-white rounded border border-[#C6C6C6]/50 py-12 flex flex-col items-center justify-center gap-2">
-            <Loader2 className="animate-spin text-[#0F1D24]" size={18} />
-            <p className="text-[11px] text-[#9B9B9B]">Checking for plan...</p>
+          <div className="bg-white rounded-sm border border-[#E2E4E9] py-14 flex flex-col items-center justify-center gap-2">
+            <Loader2 className="animate-spin text-[#2563EB]" size={22} />
+            <p className="text-xs text-slate-500">Checking for plan...</p>
           </div>
         )}
 
-        {/* No plan yet -> machine picker */}
+        {/* ------------------------------------------------------
+            No plan yet -> machine picker to create one
+        ------------------------------------------------------- */}
         {!planLoading && !planId && (
-          <div className="bg-white rounded border border-[#C6C6C6]/50 p-3">
-            <div className="flex items-center justify-between mb-2.5">
+          <div className="bg-white rounded-sm border border-[#E2E4E9] p-4">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-[12px] font-bold text-[#0F1D24]">
+                <h2 className="text-sm font-semibold text-slate-800">
                   No plan found for {hall} / Shift {shift} / {allocationDate}
                 </h2>
-                <p className="text-[10px] text-[#9B9B9B] mt-0.5">
+                <p className="text-[11px] text-slate-500 mt-0.5">
                   Select machines to create a new production plan.
                 </p>
               </div>
-              <span className="font-mono text-[10px] text-[#9B9B9B]">
+              <span className="font-mono text-[11px] text-slate-500">
                 {selectedCodes.size} selected
               </span>
             </div>
 
-            <div className="relative mb-2.5">
+            <div className="relative mb-3">
               <Search
-                className="absolute left-2.5 top-2 text-[#9B9B9B]"
-                size={12}
+                className="absolute left-3 top-2.5 text-slate-400"
+                size={14}
               />
               <input
                 type="text"
                 placeholder="Search machine code or name..."
                 value={machineSearch}
                 onChange={(e) => setMachineSearch(e.target.value)}
-                className="w-full h-7 border border-[#C6C6C6]/60 rounded pl-7 pr-2 text-[11px] outline-none focus:ring-1 focus:ring-[#0F1D24]"
+                className="w-full h-8 border border-[#E2E4E9] rounded-sm pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-[#2563EB]"
               />
             </div>
 
             {machinesLoading ? (
-              <div className="py-8 flex justify-center">
-                <Loader2 className="animate-spin text-[#0F1D24]" size={16} />
+              <div className="py-10 flex justify-center">
+                <Loader2 className="animate-spin text-[#2563EB]" size={18} />
               </div>
             ) : filteredMachines.length > 0 ? (
-              <motion.div
-                variants={listContainer}
-                initial="hidden"
-                animate="show"
-                className="grid sm:grid-cols-4 gap-2 max-h-[300px] overflow-y-auto"
-              >
+              <div className="grid sm:grid-cols-3 gap-2 max-h-[340px] overflow-y-auto">
                 {filteredMachines.map((m) => {
                   const code = mCode(m);
                   const isSelected = selectedCodes.has(code);
                   return (
-                    <motion.div
+                    <div
                       key={code}
-                      variants={listItem}
-                      whileHover={{ y: -2 }}
                       onClick={() => toggleMachine(code)}
-                      className={`relative cursor-pointer overflow-hidden rounded border p-2.5 transition-colors ${
+                      className={`cursor-pointer rounded-sm border p-3 transition ${
                         isSelected
-                          ? "border-[#0F1D24] bg-[#0F1D24]/[0.03]"
-                          : "border-[#C6C6C6]/50 hover:border-[#0F1D24]/40"
+                          ? "border-[#2563EB] bg-blue-50"
+                          : "border-[#E2E4E9] hover:border-blue-300"
                       }`}
                     >
-                      <span
-                        className={`absolute inset-x-0 top-0 h-[2px] bg-[#FDC94D] origin-left transition-transform duration-300 ${
-                          isSelected ? "scale-x-100" : "scale-x-0"
-                        }`}
-                      />
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-[11px] font-semibold text-[#0F1D24]">
+                        <span className="font-mono text-xs font-semibold text-slate-800">
                           {code}
                         </span>
                         {isSelected && (
-                          <CheckCircle2 size={12} className="text-[#0F1D24]" />
+                          <CheckCircle2 size={14} className="text-[#2563EB]" />
                         )}
                       </div>
-                      <p className="text-[10px] text-[#9B9B9B] mt-1">
+                      <p className="text-[11px] text-slate-500 mt-1">
                         {mName(m)}
                       </p>
-                    </motion.div>
+                    </div>
                   );
                 })}
-              </motion.div>
+              </div>
             ) : (
-              <div className="border border-dashed border-[#C6C6C6]/60 rounded py-8 text-center text-[11px] text-[#9B9B9B]">
+              <div className="border border-dashed border-[#E2E4E9] rounded-sm py-10 text-center text-xs text-slate-400">
                 No machines found for {hall}.
               </div>
             )}
 
-            <div className="flex justify-end mt-3">
-              <motion.button
-                whileTap={{ scale: 0.96 }}
+            <div className="flex justify-end mt-4">
+              <button
                 onClick={handleCreatePlan}
                 disabled={creatingPlan || selectedCodes.size === 0}
-                className="h-7 px-3 rounded bg-[#0F1D24] hover:opacity-90 disabled:opacity-40 text-[#FDC94D] text-[11px] font-semibold flex items-center gap-1.5 transition"
+                className="h-8 px-4 rounded-sm bg-[#2563EB] hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition"
               >
-                {creatingPlan && <Loader2 size={12} className="animate-spin" />}
+                {creatingPlan && <Loader2 size={13} className="animate-spin" />}
                 Create Plan
-              </motion.button>
+              </button>
             </div>
           </div>
         )}
 
-        {/* Plan exists -> compact table */}
+        {/* ------------------------------------------------------
+            Plan exists -> compact details table
+        ------------------------------------------------------- */}
         {!planLoading && planId && (
-          <div className="bg-white rounded border border-[#C6C6C6]/50 overflow-hidden">
-            <table className="w-full text-[11px]">
+          <div className="bg-white rounded-sm border border-[#E2E4E9] overflow-hidden">
+            <table className="w-full text-xs">
               <thead>
-                <tr className="bg-[#FAFAF9] border-b border-[#C6C6C6]/50 text-[10px] text-[#9B9B9B] uppercase tracking-wide">
-                  <th className="text-left px-3 py-2 font-semibold">Machine</th>
-                  <th className="text-left px-3 py-2 font-semibold">Operator</th>
-                  <th className="text-left px-3 py-2 font-semibold">Part</th>
-                  <th className="text-left px-3 py-2 font-semibold">Cycle</th>
-                  <th className="text-left px-3 py-2 font-semibold">Target</th>
-                  <th className="text-left px-3 py-2 font-semibold">Status</th>
-                  <th className="text-right px-3 py-2 font-semibold"></th>
+                <tr className="bg-[#F7F8FA] border-b border-[#E2E4E9] text-[11px] text-slate-500 uppercase tracking-wide">
+                  <th className="text-left px-4 py-2 font-medium">Machine</th>
+                  <th className="text-left px-4 py-2 font-medium">Operator</th>
+                  <th className="text-left px-4 py-2 font-medium">Part</th>
+                  <th className="text-left px-4 py-2 font-medium">
+                    Cycle Time
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium">
+                    Target Qty
+                  </th>
+                  <th className="text-left px-4 py-2 font-medium">Status</th>
+                  <th className="text-right px-4 py-2 font-medium"></th>
                 </tr>
               </thead>
-              <motion.tbody variants={listContainer} initial="hidden" animate="show">
+              <tbody>
                 {planDetails.map((d) => (
-                  <motion.tr
-                    variants={listItem}
+                  <tr
                     key={d.detail_id}
-                    className="border-b border-[#C6C6C6]/40 last:border-0 hover:bg-[#FAFAF9]"
+                    className="border-b border-[#E2E4E9] last:border-0 hover:bg-[#F7F8FA]"
                   >
-                    <td className="px-3 py-2">
-                      <div className="font-mono font-semibold text-[#0F1D24]">
+                    <td className="px-4 py-2.5">
+                      <div className="font-mono font-semibold text-slate-800">
                         {d.machine_code}
                       </div>
-                      <div className="text-[10px] text-[#9B9B9B]">
+                      <div className="text-[11px] text-slate-400">
                         {d.machine_name}
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-[#0F1D24]">
+                    <td className="px-4 py-2.5 text-slate-700">
                       {d.operator_name || (
-                        <span className="text-[#9B9B9B]">Unassigned</span>
+                        <span className="text-slate-400">Unassigned</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-[#0F1D24]">
+                    <td className="px-4 py-2.5 text-slate-700">
                       {d.part_number ? (
                         <>
                           <div className="font-mono">{d.part_number}</div>
-                          <div className="text-[10px] text-[#9B9B9B]">
+                          <div className="text-[11px] text-slate-400">
                             {d.part_name}
                           </div>
                         </>
                       ) : (
-                        <span className="text-[#9B9B9B]">—</span>
+                        <span className="text-slate-400">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 font-mono text-[#0F1D24]/80">
+                    <td className="px-4 py-2.5 font-mono text-slate-600">
                       {d.actual_cycle_time ?? d.cycle_time ?? "—"}
                     </td>
-                    <td className="px-3 py-2 font-mono text-[#0F1D24]/80">
+                    <td className="px-4 py-2.5 font-mono text-slate-600">
                       {d.target_qty || 0}
                     </td>
-                    <td className="px-3 py-2">
-                      <span className="px-1.5 py-0.5 rounded bg-[#C6C6C6]/20 text-[#0F1D24]/70 text-[10px]">
+                    <td className="px-4 py-2.5">
+                      <span className="px-2 py-0.5 rounded-sm bg-slate-100 text-slate-600 text-[11px]">
                         {d.machine_status || "Pending"}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-right">
-                      <motion.button
-                        whileTap={{ scale: 0.96 }}
+                    <td className="px-4 py-2.5 text-right">
+                      <button
                         onClick={() => openChangeOperator(d)}
                         disabled={isPublished}
-                        className="h-7 px-2 rounded border border-[#C6C6C6]/60 hover:border-transparent hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:opacity-30 text-[#0F1D24] text-[10px] font-semibold flex items-center gap-1 transition ml-auto"
+                        className="h-7 px-2.5 rounded-sm border border-[#E2E4E9] hover:border-[#2563EB] hover:text-[#2563EB] disabled:opacity-40 text-slate-600 text-[11px] font-medium flex items-center gap-1 transition ml-auto"
                       >
-                        <RefreshCw size={11} />
+                        <RefreshCw size={12} />
                         Change
-                      </motion.button>
+                      </button>
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))}
-              </motion.tbody>
+              </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Change Operator modal */}
+      {/* ------------------------------------------------------
+          Change Operator modal
+      ------------------------------------------------------- */}
       <AnimatePresence>
         {opModalDetail && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#0F1D24]/50 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50"
           >
             <motion.div
               initial={{ opacity: 0, y: 8, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.98 }}
               transition={{ duration: 0.15 }}
-              className="bg-white rounded border border-[#C6C6C6]/50 w-full max-w-sm max-h-[78vh] flex flex-col"
+              className="bg-white rounded-sm border border-[#E2E4E9] w-full max-w-md max-h-[80vh] flex flex-col"
             >
-              <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#C6C6C6]/50">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#E2E4E9]">
                 <div>
-                  <h3 className="text-[12px] font-bold text-[#0F1D24]">
+                  <h3 className="text-sm font-semibold text-slate-800">
                     Change Operator
                   </h3>
-                  <p className="text-[10px] text-[#9B9B9B] font-mono mt-0.5">
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">
                     {opModalDetail.machine_code}
                   </p>
                 </div>
                 <button
                   onClick={closeChangeOperator}
-                  className="h-6 w-6 rounded hover:bg-[#FAFAF9] flex items-center justify-center text-[#9B9B9B]"
+                  className="h-7 w-7 rounded-sm hover:bg-slate-100 flex items-center justify-center text-slate-500"
                 >
-                  <X size={13} />
+                  <X size={15} />
                 </button>
               </div>
 
-              <div className="px-3 pt-2.5">
-                <div className="bg-[#FAFAF9] border border-[#C6C6C6]/50 rounded px-2.5 py-1.5 flex items-center justify-between text-[11px]">
-                  <span className="text-[#9B9B9B]">Current Operator</span>
-                  <span className="font-semibold text-[#0F1D24]">
+              <div className="px-4 pt-3">
+                <div className="bg-[#F7F8FA] border border-[#E2E4E9] rounded-sm px-3 py-2 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Current Operator</span>
+                  <span className="font-semibold text-slate-800">
                     {opModalDetail.operator_name || "Unassigned"}
                   </span>
                 </div>
               </div>
 
-              <div className="p-3 flex-1 overflow-hidden flex flex-col">
-                <div className="relative mb-2.5">
+              <div className="p-4 flex-1 overflow-hidden flex flex-col">
+                <div className="relative mb-3">
                   <Search
-                    className="absolute left-2.5 top-2 text-[#9B9B9B]"
-                    size={12}
+                    className="absolute left-3 top-2.5 text-slate-400"
+                    size={14}
                   />
                   <input
                     type="text"
@@ -584,16 +615,16 @@ const UpdateMachineOperator = () => {
                     placeholder="Search Employee ID or Name..."
                     value={opSearch}
                     onChange={(e) => setOpSearch(e.target.value)}
-                    className="w-full h-7 border border-[#C6C6C6]/60 rounded pl-7 pr-2 text-[11px] outline-none focus:ring-1 focus:ring-[#0F1D24]"
+                    className="w-full h-8 border border-[#E2E4E9] rounded-sm pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-[#2563EB]"
                   />
                 </div>
 
-                <div className="space-y-1.5 overflow-y-auto">
+                <div className="space-y-2 overflow-y-auto">
                   {opLoading ? (
-                    <div className="py-6 flex justify-center">
+                    <div className="py-8 flex justify-center">
                       <Loader2
-                        className="animate-spin text-[#0F1D24]"
-                        size={14}
+                        className="animate-spin text-[#2563EB]"
+                        size={16}
                       />
                     </div>
                   ) : opResults.length > 0 ? (
@@ -606,28 +637,28 @@ const UpdateMachineOperator = () => {
                         <div
                           key={opCode(operator)}
                           onClick={() => setOpSelected(operator)}
-                          className={`cursor-pointer rounded border px-2.5 py-1.5 transition ${
+                          className={`cursor-pointer rounded-sm border px-3 py-2 transition ${
                             isChosen
-                              ? "border-[#0F1D24] bg-[#0F1D24]/[0.03]"
-                              : "border-[#C6C6C6]/50 hover:border-[#0F1D24]/40"
+                              ? "border-[#2563EB] bg-blue-50"
+                              : "border-[#E2E4E9] hover:border-blue-300"
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <span className="text-[11px] font-semibold text-[#0F1D24]">
+                              <span className="text-xs font-semibold text-slate-800">
                                 {opName(operator)}
                               </span>
                               {isCurrent && (
-                                <span className="text-[10px] text-[#9B9B9B] ml-1">
+                                <span className="text-[11px] text-slate-400 ml-1">
                                   (Current)
                                 </span>
                               )}
-                              <p className="text-[10px] text-[#9B9B9B] font-mono">
+                              <p className="text-[11px] text-slate-500 font-mono">
                                 {opCode(operator)}
                               </p>
                             </div>
                             <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                              className={`px-2 py-0.5 rounded-sm text-[11px] font-semibold ${
                                 opStatus(operator) === "Available"
                                   ? "bg-green-50 text-green-700"
                                   : "bg-red-50 text-red-700"
@@ -640,33 +671,32 @@ const UpdateMachineOperator = () => {
                       );
                     })
                   ) : (
-                    <div className="border border-dashed border-[#C6C6C6]/60 rounded py-6 text-center text-[11px] text-[#9B9B9B]">
+                    <div className="border border-dashed border-[#E2E4E9] rounded-sm py-8 text-center text-xs text-slate-400">
                       No operators found.
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="border-t border-[#C6C6C6]/50 p-3 flex justify-end gap-2">
+              <div className="border-t border-[#E2E4E9] p-4 flex justify-end gap-2">
                 <button
                   onClick={closeChangeOperator}
-                  className="h-7 px-2.5 rounded border border-[#C6C6C6]/60 hover:bg-[#FAFAF9] text-[11px] font-medium transition"
+                  className="h-8 px-3 rounded-sm border border-[#E2E4E9] hover:bg-slate-50 text-xs font-medium transition"
                 >
                   Cancel
                 </button>
-                <motion.button
-                  whileTap={{ scale: 0.96 }}
+                <button
                   onClick={confirmChangeOperator}
                   disabled={!opSelected || opSaving}
-                  className="h-7 px-3 rounded bg-[#0F1D24] hover:opacity-90 disabled:opacity-40 text-[#FDC94D] text-[11px] font-semibold flex items-center gap-1.5 transition"
+                  className="h-8 px-4 rounded-sm bg-[#2563EB] hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition"
                 >
                   {opSaving ? (
-                    <Loader2 size={12} className="animate-spin" />
+                    <Loader2 size={13} className="animate-spin" />
                   ) : (
-                    <RefreshCw size={12} />
+                    <RefreshCw size={13} />
                   )}
                   Update Operator
-                </motion.button>
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -676,4 +706,4 @@ const UpdateMachineOperator = () => {
   );
 };
 
-export default UpdateMachineOperator;
+export default AllocateMachineOperator;
