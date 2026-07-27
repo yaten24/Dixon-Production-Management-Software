@@ -1,6 +1,5 @@
 // pages/ActivityLogs.jsx
 import { useEffect, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   FaHistory,
   FaFileExport,
@@ -28,6 +27,14 @@ import Sidebar from "./Sidebar";
 // Set this to your API base URL (or read from an env var in your build setup)
 const API_BASE = "http://localhost:5000/api";
 
+// ============================================================
+// THEME TOKENS — kept consistent with AdminDashboard / Sidebar / Users / Machines / Parts / Employees
+// ============================================================
+const NAVY = "#0F1D24";
+const GOLD = "#FDC94D";
+const BORDER = "#C6C6C6";
+const MUTED = "#9B9B9B";
+
 const ACTIONS = [
   "CREATE",
   "UPDATE",
@@ -49,36 +56,16 @@ const EMPTY_FILTERS = {
   date_to: "",
 };
 
-// Tailwind classes + icon per action
+// Flat bordered chip + dot + icon per action
 const ACTION_STYLES = {
-  CREATE: {
-    badge: "bg-emerald-600",
-    border: "border-l-emerald-600",
-    icon: FaPlus,
-  },
-  UPDATE: { badge: "bg-amber-600", border: "border-l-amber-600", icon: FaPen },
-  DELETE: { badge: "bg-red-600", border: "border-l-red-600", icon: FaTrash },
-  VIEW: { badge: "bg-blue-600", border: "border-l-blue-600", icon: FaEye },
-  LOGIN: {
-    badge: "bg-cyan-600",
-    border: "border-l-cyan-600",
-    icon: FaSignInAlt,
-  },
-  LOGOUT: {
-    badge: "bg-slate-500",
-    border: "border-l-slate-500",
-    icon: FaSignOutAlt,
-  },
-  EXPORT: {
-    badge: "bg-violet-600",
-    border: "border-l-violet-600",
-    icon: FaFileExport,
-  },
-  IMPORT: {
-    badge: "bg-teal-600",
-    border: "border-l-teal-600",
-    icon: FaFileImport,
-  },
+  CREATE: { color: "text-green-700", dot: "bg-green-500", icon: FaPlus },
+  UPDATE: { color: "text-amber-700", dot: "bg-amber-500", icon: FaPen },
+  DELETE: { color: "text-red-700", dot: "bg-red-500", icon: FaTrash },
+  VIEW: { color: "text-blue-700", dot: "bg-blue-500", icon: FaEye },
+  LOGIN: { color: "text-cyan-700", dot: "bg-cyan-500", icon: FaSignInAlt },
+  LOGOUT: { color: "text-[#0F1D24]/70", dot: "bg-gray-500", icon: FaSignOutAlt },
+  EXPORT: { color: "text-violet-700", dot: "bg-violet-500", icon: FaFileExport },
+  IMPORT: { color: "text-teal-700", dot: "bg-teal-500", icon: FaFileImport },
 };
 
 function formatDate(value) {
@@ -95,27 +82,30 @@ function formatDate(value) {
 }
 
 const inputClass =
-  "w-full rounded pl-8 pr-2.5 py-1.5 text-xs text-slate-900 bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow duration-200";
+  "h-8 w-full border border-[#C6C6C6] pl-8 pr-2 text-[11px] font-medium text-[#0F1D24] outline-none focus:border-[#0F1D24]";
 
-const labelClass =
-  "text-[10px] font-semibold uppercase tracking-wide text-slate-500";
-
-const cardClass = "bg-white rounded border border-slate-200 shadow-sm p-3";
-
-const btnMotion = {
-  whileHover: { scale: 1.03 },
-  whileTap: { scale: 0.96 },
-  transition: { type: "spring", stiffness: 400, damping: 20 },
-};
+const labelClass = "text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]";
 
 function FieldIcon({ Icon }) {
   return (
     <Icon
       size={11}
-      className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+      className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#9B9B9B]"
     />
   );
 }
+
+const ActionBadge = ({ action }) => {
+  const style = ACTION_STYLES[action] || ACTION_STYLES.VIEW;
+  const Icon = style.icon;
+  return (
+    <span className={`inline-flex items-center gap-1.5 border border-[#C6C6C6] px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide ${style.color}`}>
+      <span className={`h-1.5 w-1.5 flex-shrink-0 ${style.dot}`} />
+      <Icon size={9} />
+      {action}
+    </span>
+  );
+};
 
 export default function ActivityLogs() {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
@@ -136,7 +126,6 @@ export default function ActivityLogs() {
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
 
-  // Fetch distinct modules once, for the filter dropdown
   useEffect(() => {
     fetch(`${API_BASE}/activity-logs/meta/modules`)
       .then((r) => r.json())
@@ -220,8 +209,6 @@ export default function ActivityLogs() {
     return str;
   };
 
-  // Exports all records matching the currently applied filters (not just
-  // the current page) as a downloadable CSV.
   const handleExport = async () => {
     setExporting(true);
     setError(null);
@@ -231,7 +218,7 @@ export default function ActivityLogs() {
         if (value) params.append(key, value);
       });
       params.append("page", 1);
-      params.append("limit", 5000); // export cap — raise via backend if needed
+      params.append("limit", 5000);
       params.append("sort_by", sort.sort_by);
       params.append("sort_order", sort.sort_order);
 
@@ -278,294 +265,221 @@ export default function ActivityLogs() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white">
-      {/* Sidebar */}
+    <div className="flex h-screen overflow-hidden bg-[#F5F5F5]">
       <Sidebar />
 
-      {/* Main */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <main className="flex-1 overflow-y-auto bg-white">
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-            className="p-2 space-y-2.5"
-          >
-            {/* TOP BAR: title, record count, export */}
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
-            >
-              <h1 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <div className="w-7 h-7 rounded bg-blue-600 text-white flex items-center justify-center shadow-sm">
-                  <FaHistory size={12} />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2">
+          {/* TOP BAR: title, record count, export */}
+          <div className="flex flex-shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="flex items-center gap-2 text-[13px] font-extrabold text-[#0F1D24]">
+              <div className="flex h-7 w-7 items-center justify-center border" style={{ background: GOLD, borderColor: GOLD }}>
+                <FaHistory size={12} className="text-[#0F1D24]" />
+              </div>
+              Activity Log
+            </h1>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 border border-[#C6C6C6] bg-white px-3 py-1 font-mono text-[10.5px] font-bold text-[#0F1D24]">
+                <FaLayerGroup size={9} className="text-[#9B9B9B]" />
+                {pagination.total.toLocaleString("en-IN")} records
+              </div>
+
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={exporting}
+                className="flex items-center gap-1.5 border border-green-600 bg-white px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-wide text-green-700 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <FaFileExport size={11} />
+                {exporting ? "Exporting…" : "Export Report"}
+              </button>
+            </div>
+          </div>
+
+          {/* FILTERS */}
+          <form onSubmit={applyFilters} className="flex-shrink-0 border border-[#C6C6C6] bg-white px-3 py-2.5">
+            <div className="mb-2 flex items-center gap-1.5 text-[#9B9B9B]">
+              <FaFilter size={10} />
+              <span className="text-[9.5px] font-bold uppercase tracking-wide">Filters</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="flex flex-col gap-0.5">
+                <label htmlFor="f-search" className={labelClass}>Search</label>
+                <div className="relative">
+                  <FieldIcon Icon={FaSearch} />
+                  <input
+                    id="f-search"
+                    type="text"
+                    placeholder="Description, IP, device…"
+                    value={filters.search}
+                    onChange={(e) => handleFilterChange("search", e.target.value)}
+                    className={inputClass}
+                  />
                 </div>
-                Activity Log
-              </h1>
+              </div>
 
-              <div className="flex items-center gap-2">
-                <motion.div
-                  key={pagination.total}
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.25 }}
-                  className="flex items-center gap-1.5 bg-white border border-slate-200 rounded shadow-sm px-3 py-1 text-[11px] font-semibold text-slate-600"
+              <div className="flex flex-col gap-0.5">
+                <label htmlFor="f-module" className={labelClass}>Module</label>
+                <div className="relative">
+                  <FieldIcon Icon={FaLayerGroup} />
+                  <select
+                    id="f-module"
+                    value={filters.module}
+                    onChange={(e) => handleFilterChange("module", e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">All modules</option>
+                    {modules.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label htmlFor="f-action" className={labelClass}>Action</label>
+                <div className="relative">
+                  <FieldIcon Icon={FaBolt} />
+                  <select
+                    id="f-action"
+                    value={filters.action}
+                    onChange={(e) => handleFilterChange("action", e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">All actions</option>
+                    {ACTIONS.map((a) => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label htmlFor="f-user" className={labelClass}>User ID</label>
+                <div className="relative">
+                  <FieldIcon Icon={FaUser} />
+                  <input
+                    id="f-user"
+                    type="number"
+                    placeholder="e.g. 12"
+                    value={filters.user_id}
+                    onChange={(e) => handleFilterChange("user_id", e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label htmlFor="f-record" className={labelClass}>Record ID</label>
+                <div className="relative">
+                  <FieldIcon Icon={FaHashtag} />
+                  <input
+                    id="f-record"
+                    type="number"
+                    placeholder="e.g. 4531"
+                    value={filters.record_id}
+                    onChange={(e) => handleFilterChange("record_id", e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label htmlFor="f-from" className={labelClass}>From</label>
+                <div className="relative">
+                  <FieldIcon Icon={FaCalendarAlt} />
+                  <input
+                    id="f-from"
+                    type="date"
+                    value={filters.date_from}
+                    onChange={(e) => handleFilterChange("date_from", e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <label htmlFor="f-to" className={labelClass}>To</label>
+                <div className="relative">
+                  <FieldIcon Icon={FaCalendarAlt} />
+                  <input
+                    id="f-to"
+                    type="date"
+                    value={filters.date_to}
+                    onChange={(e) => handleFilterChange("date_to", e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-end gap-1.5">
+                <button
+                  type="submit"
+                  className="flex h-8 items-center gap-1.5 border px-3 text-[10.5px] font-bold uppercase tracking-wide text-[#0F1D24] hover:opacity-90"
+                  style={{ background: GOLD, borderColor: GOLD }}
                 >
-                  <FaLayerGroup size={9} className="text-slate-400" />
-                  {pagination.total.toLocaleString("en-IN")} records
-                </motion.div>
-
-                <motion.button
-                  {...btnMotion}
+                  <FaFilter size={10} />
+                  Apply
+                </button>
+                <button
                   type="button"
-                  onClick={handleExport}
-                  disabled={exporting}
-                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 border border-emerald-600 text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={clearFilters}
+                  className="flex h-8 items-center gap-1.5 border border-[#C6C6C6] px-3 text-[10.5px] font-bold uppercase tracking-wide text-[#0F1D24] hover:bg-[#F5F5F5]"
                 >
-                  <FaFileExport size={11} />
-                  {exporting ? "Exporting…" : "Export report"}
-                </motion.button>
+                  <FaTimes size={10} />
+                  Clear
+                </button>
               </div>
-            </motion.div>
+            </div>
+          </form>
 
-            {/* FILTERS */}
-            <motion.form
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.05 }}
-              onSubmit={applyFilters}
-              className={cardClass}
-            >
-              <div className="flex items-center gap-1.5 mb-2 text-slate-500">
-                <FaFilter size={10} />
-                <span className="text-[10px] font-semibold uppercase tracking-wide">
-                  Filters
-                </span>
-              </div>
+          {error && (
+            <div className="flex-shrink-0 border border-red-200 bg-red-50 px-3 py-1.5 text-[10.5px] font-bold text-red-600">
+              {error}
+            </div>
+          )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="flex flex-col gap-0.5">
-                  <label htmlFor="f-search" className={labelClass}>
-                    Search
-                  </label>
-                  <div className="relative">
-                    <FieldIcon Icon={FaSearch} />
-                    <input
-                      id="f-search"
-                      type="text"
-                      placeholder="Description, IP, device…"
-                      value={filters.search}
-                      onChange={(e) =>
-                        handleFilterChange("search", e.target.value)
-                      }
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-0.5">
-                  <label htmlFor="f-module" className={labelClass}>
-                    Module
-                  </label>
-                  <div className="relative">
-                    <FieldIcon Icon={FaLayerGroup} />
-                    <select
-                      id="f-module"
-                      value={filters.module}
-                      onChange={(e) =>
-                        handleFilterChange("module", e.target.value)
-                      }
-                      className={inputClass}
-                    >
-                      <option value="">All modules</option>
-                      {modules.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-0.5">
-                  <label htmlFor="f-action" className={labelClass}>
-                    Action
-                  </label>
-                  <div className="relative">
-                    <FieldIcon Icon={FaBolt} />
-                    <select
-                      id="f-action"
-                      value={filters.action}
-                      onChange={(e) =>
-                        handleFilterChange("action", e.target.value)
-                      }
-                      className={inputClass}
-                    >
-                      <option value="">All actions</option>
-                      {ACTIONS.map((a) => (
-                        <option key={a} value={a}>
-                          {a}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-0.5">
-                  <label htmlFor="f-user" className={labelClass}>
-                    User ID
-                  </label>
-                  <div className="relative">
-                    <FieldIcon Icon={FaUser} />
-                    <input
-                      id="f-user"
-                      type="number"
-                      placeholder="e.g. 12"
-                      value={filters.user_id}
-                      onChange={(e) =>
-                        handleFilterChange("user_id", e.target.value)
-                      }
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-0.5">
-                  <label htmlFor="f-record" className={labelClass}>
-                    Record ID
-                  </label>
-                  <div className="relative">
-                    <FieldIcon Icon={FaHashtag} />
-                    <input
-                      id="f-record"
-                      type="number"
-                      placeholder="e.g. 4531"
-                      value={filters.record_id}
-                      onChange={(e) =>
-                        handleFilterChange("record_id", e.target.value)
-                      }
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-0.5">
-                  <label htmlFor="f-from" className={labelClass}>
-                    From
-                  </label>
-                  <div className="relative">
-                    <FieldIcon Icon={FaCalendarAlt} />
-                    <input
-                      id="f-from"
-                      type="date"
-                      value={filters.date_from}
-                      onChange={(e) =>
-                        handleFilterChange("date_from", e.target.value)
-                      }
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-0.5">
-                  <label htmlFor="f-to" className={labelClass}>
-                    To
-                  </label>
-                  <div className="relative">
-                    <FieldIcon Icon={FaCalendarAlt} />
-                    <input
-                      id="f-to"
-                      type="date"
-                      value={filters.date_to}
-                      onChange={(e) =>
-                        handleFilterChange("date_to", e.target.value)
-                      }
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-end gap-1.5">
-                  <motion.button
-                    {...btnMotion}
-                    type="submit"
-                    className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 border border-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors duration-200"
-                  >
-                    <FaFilter size={10} />
-                    Apply
-                  </motion.button>
-                  <motion.button
-                    {...btnMotion}
-                    type="button"
-                    onClick={clearFilters}
-                    className="flex items-center gap-1.5 bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 text-xs font-semibold px-3 py-1.5 rounded transition-colors duration-200"
-                  >
-                    <FaTimes size={10} />
-                    Clear
-                  </motion.button>
-                </div>
-              </div>
-            </motion.form>
-
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className="bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg px-3 py-2 overflow-hidden"
-                >
-                  {error}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* TABLE */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: 0.1 }}
-              className="bg-white rounded border border-slate-200 shadow-sm overflow-hidden overflow-x-auto"
-            >
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
+          {/* TABLE — scrolls internally, page itself never scrolls */}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden border border-[#C6C6C6] bg-white">
+            <div className="min-h-0 flex-1 overflow-auto">
+              <table className="min-w-full text-[11px]">
+                <thead className="sticky top-0 z-10 border-b border-[#C6C6C6] bg-[#F5F5F5]">
+                  <tr>
                     <th
                       onClick={() => toggleSort("created_at")}
-                      className="text-left px-2.5 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 cursor-pointer whitespace-nowrap select-none hover:text-slate-800 transition-colors duration-150"
+                      className="cursor-pointer select-none whitespace-nowrap px-2 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-wide text-[#0F1D24] hover:bg-[#EFEFEF]"
                     >
                       Time{sortArrow("created_at")}
                     </th>
                     <th
                       onClick={() => toggleSort("user_id")}
-                      className="text-left px-2.5 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 cursor-pointer whitespace-nowrap select-none hover:text-slate-800 transition-colors duration-150"
+                      className="cursor-pointer select-none whitespace-nowrap px-2 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-wide text-[#0F1D24] hover:bg-[#EFEFEF]"
                     >
                       User{sortArrow("user_id")}
                     </th>
                     <th
                       onClick={() => toggleSort("module")}
-                      className="text-left px-2.5 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 cursor-pointer whitespace-nowrap select-none hover:text-slate-800 transition-colors duration-150"
+                      className="cursor-pointer select-none whitespace-nowrap px-2 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-wide text-[#0F1D24] hover:bg-[#EFEFEF]"
                     >
                       Module{sortArrow("module")}
                     </th>
                     <th
                       onClick={() => toggleSort("action")}
-                      className="text-left px-2.5 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 cursor-pointer whitespace-nowrap select-none hover:text-slate-800 transition-colors duration-150"
+                      className="cursor-pointer select-none whitespace-nowrap px-2 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-wide text-[#0F1D24] hover:bg-[#EFEFEF]"
                     >
                       Action{sortArrow("action")}
                     </th>
-                    <th className="text-left px-2.5 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 whitespace-nowrap">
+                    <th className="whitespace-nowrap px-2 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-wide text-[#0F1D24]">
                       Record
                     </th>
-                    <th className="text-left px-2.5 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 whitespace-nowrap">
+                    <th className="whitespace-nowrap px-2 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-wide text-[#0F1D24]">
                       Description
                     </th>
-                    <th className="text-left px-2.5 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 whitespace-nowrap">
+                    <th className="whitespace-nowrap px-2 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-wide text-[#0F1D24]">
                       <span className="inline-flex items-center gap-1">
-                        <FaGlobe size={9} /> IP address
+                        <FaGlobe size={9} /> IP Address
                       </span>
                     </th>
                   </tr>
@@ -573,115 +487,86 @@ export default function ActivityLogs() {
                 <tbody>
                   {loading && (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="text-center py-6 text-slate-500"
-                      >
+                      <td colSpan={7} className="py-8 text-center text-[10.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
                         Loading…
                       </td>
                     </tr>
                   )}
                   {!loading && logs.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="text-center py-6 text-slate-500"
-                      >
+                      <td colSpan={7} className="py-8 text-center text-[10.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
                         No activity found for these filters.
                       </td>
                     </tr>
                   )}
-                  <AnimatePresence>
-                    {!loading &&
-                      logs.map((log, i) => {
-                        const style =
-                          ACTION_STYLES[log.action] || ACTION_STYLES.VIEW;
-                        const ActionIcon = style.icon;
-                        return (
-                          <motion.tr
-                            key={log.id}
-                            initial={{ opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0 }}
-                            transition={{
-                              duration: 0.2,
-                              delay: Math.min(i * 0.02, 0.3),
-                            }}
-                            className={`border-l-[3px] ${style.border} border-b border-slate-100 hover:bg-slate-50 transition-colors duration-150`}
-                          >
-                            <td className="px-2.5 py-1.5 align-top font-mono text-[11px] text-slate-500 whitespace-nowrap">
-                              {formatDate(log.created_at)}
-                            </td>
-                            <td className="px-2.5 py-1.5 align-top">
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-5 h-5 rounded bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
-                                  <FaUser size={8} />
-                                </div>
-                                <div>
-                                  <div className="font-semibold text-slate-800 text-xs">
-                                    {log.user_name || `User #${log.user_id}`}
-                                  </div>
-                                  {log.user_email && (
-                                    <div className="text-[10px] text-slate-500">
-                                      {log.user_email}
-                                    </div>
-                                  )}
-                                </div>
+                  {!loading &&
+                    logs.map((log, i) => (
+                      <tr
+                        key={log.id}
+                        className={`border-b border-[#C6C6C6]/60 transition-colors hover:bg-[#FDF6E3] ${
+                          i % 2 === 1 ? "bg-[#FAFAFA]" : "bg-white"
+                        }`}
+                      >
+                        <td className="whitespace-nowrap px-2 py-1.5 align-top font-mono text-[10.5px] text-[#9B9B9B]">
+                          {formatDate(log.created_at)}
+                        </td>
+                        <td className="px-2 py-1.5 align-top">
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center border border-[#C6C6C6] bg-[#F9F9F9] text-[#9B9B9B]">
+                              <FaUser size={9} />
+                            </div>
+                            <div className="leading-tight">
+                              <div className="text-[11px] font-semibold text-[#0F1D24]">
+                                {log.user_name || `User #${log.user_id}`}
                               </div>
-                            </td>
-                            <td className="px-2.5 py-1.5 align-top text-slate-700">
-                              {log.module}
-                            </td>
-                            <td className="px-2.5 py-1.5 align-top">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white ${style.badge}`}
-                              >
-                                <ActionIcon size={8} />
-                                {log.action}
-                              </span>
-                            </td>
-                            <td className="px-2.5 py-1.5 align-top font-mono text-[11px] text-slate-500">
-                              {log.record_id ?? "—"}
-                            </td>
-                            <td className="px-2.5 py-1.5 align-top max-w-xs text-slate-700">
-                              {log.description || "—"}
-                            </td>
-                            <td className="px-2.5 py-1.5 align-top font-mono text-[11px] text-slate-500">
-                              {log.ip_address || "—"}
-                            </td>
-                          </motion.tr>
-                        );
-                      })}
-                  </AnimatePresence>
+                              {log.user_email && (
+                                <div className="text-[9.5px] text-[#9B9B9B]">{log.user_email}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-2 py-1.5 align-top text-[#0F1D24]/75">{log.module}</td>
+                        <td className="px-2 py-1.5 align-top">
+                          <ActionBadge action={log.action} />
+                        </td>
+                        <td className="px-2 py-1.5 align-top font-mono text-[10.5px] text-[#9B9B9B]">
+                          {log.record_id ?? "—"}
+                        </td>
+                        <td className="max-w-xs px-2 py-1.5 align-top text-[#0F1D24]/75">
+                          {log.description || "—"}
+                        </td>
+                        <td className="px-2 py-1.5 align-top font-mono text-[10.5px] text-[#9B9B9B]">
+                          {log.ip_address || "—"}
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
-            </motion.div>
-
-            {/* PAGINATION */}
-            <div className="flex items-center justify-center gap-3 text-xs text-slate-500">
-              <motion.button
-                {...btnMotion}
-                disabled={pagination.page <= 1}
-                onClick={() => goToPage(pagination.page - 1)}
-                className="flex items-center gap-1.5 bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-1 font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-slate-50 transition-colors duration-150"
-              >
-                <FaChevronLeft size={9} />
-                Prev
-              </motion.button>
-              <span>
-                Page {pagination.page} of {pagination.total_pages || 1}
-              </span>
-              <motion.button
-                {...btnMotion}
-                disabled={pagination.page >= pagination.total_pages}
-                onClick={() => goToPage(pagination.page + 1)}
-                className="flex items-center gap-1.5 bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-1 font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-slate-50 transition-colors duration-150"
-              >
-                Next
-                <FaChevronRight size={9} />
-              </motion.button>
             </div>
-          </motion.div>
+          </div>
+
+          {/* PAGINATION */}
+          <div className="flex flex-shrink-0 items-center justify-center gap-3 border border-[#C6C6C6] bg-white px-3 py-2">
+            <button
+              disabled={pagination.page <= 1}
+              onClick={() => goToPage(pagination.page - 1)}
+              className="flex items-center gap-1.5 border border-[#C6C6C6] px-3 py-1 text-[10.5px] font-bold uppercase tracking-wide text-[#0F1D24] hover:bg-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <FaChevronLeft size={9} />
+              Prev
+            </button>
+            <span className="font-mono text-[10.5px] font-bold text-[#0F1D24]">
+              Page {pagination.page} of {pagination.total_pages || 1}
+            </span>
+            <button
+              disabled={pagination.page >= pagination.total_pages}
+              onClick={() => goToPage(pagination.page + 1)}
+              className="flex items-center gap-1.5 border border-[#C6C6C6] px-3 py-1 text-[10.5px] font-bold uppercase tracking-wide text-[#0F1D24] hover:bg-[#F5F5F5] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next
+              <FaChevronRight size={9} />
+            </button>
+          </div>
         </main>
       </div>
     </div>
