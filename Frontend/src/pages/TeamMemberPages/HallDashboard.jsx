@@ -1,4 +1,9 @@
 // HallDashboard.jsx — advanced compact desktop redesign, self-contained
+//
+// Spacing/surface system matches ProductionDashboard.jsx: one shared
+// outer gutter (p-4) + vertical rhythm (gap-4), and every panel uses the
+// same SURFACE token (rounded-xl border + soft shadow) instead of flat
+// sharp-cornered borders, so both pages read as one consistent app.
 import React, {
   useState,
   useEffect,
@@ -57,6 +62,10 @@ const SHIFT_COLORS = {
 };
 const BAR_COLORS = { target: "#0F1D24", actual: "#FDC94D" };
 const MIN_CHART_HEIGHT = 120;
+
+// shared surface tokens — same system as ProductionDashboard.jsx
+const BORDER = "border border-[#E1E4E9]";
+const SURFACE = `bg-white ${BORDER} rounded-xl shadow-[0_1px_2px_rgba(15,29,36,0.06)]`;
 
 // ==========================================================
 // Array-safety helper
@@ -148,7 +157,7 @@ const IconBarChart = (p) => (
 );
 
 // ==========================================================
-// Themed date picker — sharp corners, matches the desktop
+// Themed date picker — rounded corners, matches the desktop
 // design tokens used across the plan pages.
 // ==========================================================
 const CustomDatePicker = ({ value, onChange }) => {
@@ -187,7 +196,7 @@ const CustomDatePicker = ({ value, onChange }) => {
     let left = rect.left;
     if (left + panelWidth > window.innerWidth - 8) left = window.innerWidth - panelWidth - 8;
     if (left < 8) left = 8;
-    setCoords({ top: rect.bottom + 4, left });
+    setCoords({ top: rect.bottom + 6, left });
   }, []);
 
   useEffect(() => {
@@ -223,8 +232,8 @@ const CustomDatePicker = ({ value, onChange }) => {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-8 flex-shrink-0 items-center gap-1.5 border px-2.5 text-[11.5px] font-medium outline-none transition-colors duration-100
-          ${open ? "border-[#0F1D24]" : "border-[#C6C6C6] bg-white hover:border-[#0F1D24]"} bg-white text-[#0F1D24]`}
+        className={`flex h-9 flex-shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[11.5px] font-medium outline-none transition-colors duration-100
+          ${open ? "border-[#0F1D24]" : "border-[#E1E4E9] bg-white hover:border-[#0F1D24]"} bg-white text-[#0F1D24]`}
       >
         <Calendar size={13} className="text-[#9B9B9B]" />
         <span className="whitespace-nowrap">{formatDisplay(selectedKey)}</span>
@@ -234,21 +243,21 @@ const CustomDatePicker = ({ value, onChange }) => {
         <div
           ref={panelRef}
           style={{ position: "fixed", top: coords.top, left: coords.left }}
-          className="z-[9999] w-60 border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.15)]"
+          className="z-[9999] w-60 overflow-hidden rounded-lg border border-[#E1E4E9] bg-white shadow-[0_10px_24px_rgba(15,29,36,0.16)]"
         >
-          <div className="flex items-center justify-between bg-[#0F1D24] px-2 py-1.5">
-            <button type="button" onClick={() => changeMonth(-1)} className="flex h-5 w-5 items-center justify-center text-[#FDC94D] transition-colors duration-100 hover:bg-white/10">
+          <div className="flex items-center justify-between bg-[#0F1D24] px-2.5 py-2">
+            <button type="button" onClick={() => changeMonth(-1)} className="flex h-5 w-5 items-center justify-center rounded text-[#FDC94D] transition-colors duration-100 hover:bg-white/10">
               <ChevronLeft size={12} />
             </button>
             <span className="text-[11px] font-bold text-white">{MONTH_NAMES[viewDate.getMonth()]} {viewDate.getFullYear()}</span>
-            <button type="button" onClick={() => changeMonth(1)} className="flex h-5 w-5 items-center justify-center text-[#FDC94D] transition-colors duration-100 hover:bg-white/10">
+            <button type="button" onClick={() => changeMonth(1)} className="flex h-5 w-5 items-center justify-center rounded text-[#FDC94D] transition-colors duration-100 hover:bg-white/10">
               <ChevronRight size={12} />
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-px bg-[#C6C6C6] p-px">
+          <div className="grid grid-cols-7 gap-px bg-[#E1E4E9] p-px">
             {WEEKDAYS.map((w, i) => (
-              <div key={`${w}-${i}`} className="flex h-5 items-center justify-center bg-[#FAFAFA] text-[9px] font-bold uppercase text-[#9B9B9B]">
+              <div key={`${w}-${i}`} className="flex h-5 items-center justify-center bg-[#FAFAFB] text-[9px] font-bold uppercase text-[#9B9B9B]">
                 {w}
               </div>
             ))}
@@ -271,7 +280,7 @@ const CustomDatePicker = ({ value, onChange }) => {
             })}
           </div>
 
-          <div className="flex items-center justify-between border-t border-[#C6C6C6] px-2 py-1.5">
+          <div className="flex items-center justify-between border-t border-[#E1E4E9] px-2.5 py-2">
             <button type="button" onClick={() => handleSelect(new Date())} className="text-[10.5px] font-semibold text-[#0F1D24] hover:underline">
               Today
             </button>
@@ -287,7 +296,7 @@ const CustomDatePicker = ({ value, onChange }) => {
 };
 
 // ==========================================================
-// Themed select — sharp corners, matches ThemedSelect elsewhere.
+// Themed select — rounded corners, matches ThemedSelect elsewhere.
 // ==========================================================
 const CustomSelect = ({ value, onChange, options = [], icon: Icon, maxWidth = 190 }) => {
   const [open, setOpen] = useState(false);
@@ -318,7 +327,7 @@ const CustomSelect = ({ value, onChange, options = [], icon: Icon, maxWidth = 19
     let left = rect.left;
     if (left + panelWidth > window.innerWidth - 8) left = window.innerWidth - panelWidth - 8;
     if (left < 8) left = 8;
-    setCoords({ top: rect.bottom + 4, left, minWidth: rect.width });
+    setCoords({ top: rect.bottom + 6, left, minWidth: rect.width });
   }, []);
 
   useEffect(() => {
@@ -344,8 +353,8 @@ const CustomSelect = ({ value, onChange, options = [], icon: Icon, maxWidth = 19
         type="button"
         onClick={() => setOpen((o) => !o)}
         style={{ maxWidth }}
-        className={`flex h-8 min-w-[110px] flex-shrink-0 items-center gap-1.5 border px-2.5 text-[11.5px] font-medium outline-none transition-colors duration-100
-          ${open ? "border-[#0F1D24]" : "border-[#C6C6C6] hover:border-[#0F1D24]"} bg-white text-[#0F1D24]`}
+        className={`flex h-9 min-w-[110px] flex-shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[11.5px] font-medium outline-none transition-colors duration-100
+          ${open ? "border-[#0F1D24]" : "border-[#E1E4E9] hover:border-[#0F1D24]"} bg-white text-[#0F1D24]`}
       >
         {Icon && <Icon size={12} className="shrink-0 text-[#9B9B9B]" />}
         <span className="min-w-0 flex-1 truncate text-left">{displayLabel}</span>
@@ -356,21 +365,21 @@ const CustomSelect = ({ value, onChange, options = [], icon: Icon, maxWidth = 19
         <div
           ref={panelRef}
           style={{ position: "fixed", top: coords.top, left: coords.left, minWidth: coords.minWidth }}
-          className="z-[9999] max-h-56 w-64 overflow-y-auto border border-[#C6C6C6] bg-white py-1 shadow-[0_4px_10px_rgba(15,29,36,0.15)]"
+          className="z-[9999] max-h-56 w-64 overflow-y-auto rounded-lg border border-[#E1E4E9] bg-white py-1 shadow-[0_10px_24px_rgba(15,29,36,0.16)]"
         >
           {safeOptions.map((opt) => (
             <button
               type="button"
               key={opt.value}
               onClick={() => handleSelect(opt)}
-              className={`flex w-full items-center justify-between px-2.5 py-1.5 text-left text-[11px] font-medium transition-colors duration-100
-                ${value === opt.value ? "bg-[#FDC94D]/20 text-[#0F1D24]" : "text-[#0F1D24] hover:bg-[#F5F5F5]"}`}
+              className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-[11px] font-medium transition-colors duration-100
+                ${value === opt.value ? "bg-[#FDC94D]/20 text-[#0F1D24]" : "text-[#0F1D24] hover:bg-[#FAFAFB]"}`}
             >
               <span className="truncate">{opt.label}</span>
               {value === opt.value && <Check size={9} className="shrink-0 text-[#0F1D24]" />}
             </button>
           ))}
-          {safeOptions.length === 0 && <p className="px-2.5 py-1.5 text-[10px] text-[#9B9B9B]">No options available</p>}
+          {safeOptions.length === 0 && <p className="px-3 py-1.5 text-[10px] text-[#9B9B9B]">No options available</p>}
         </div>,
         document.body,
       )}
@@ -408,47 +417,47 @@ const DashboardHeader = ({
   ];
 
   return (
-    <header className="w-full flex-shrink-0 border-b border-[#C6C6C6] bg-white">
+    <header className={`w-full flex-shrink-0 overflow-hidden ${SURFACE}`}>
       <div className="h-[2px] w-full" style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }} />
-      <div className="flex h-12 w-full flex-nowrap items-center gap-2 overflow-x-auto px-3 py-1.5">
+      <div className="flex h-14 w-full flex-nowrap items-center gap-2.5 overflow-x-auto px-4 py-2">
         <button
           onClick={onBack}
           title="Back"
-          className="flex h-7 w-7 shrink-0 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E1E4E9] bg-white text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
         >
           <ArrowLeft size={14} />
         </button>
 
-        <div className="flex min-w-0 shrink-0 flex-col justify-center gap-0.5 border-l border-[#C6C6C6] pl-2.5 pr-1">
+        <div className="flex min-w-0 shrink-0 flex-col justify-center gap-0.5 border-l border-[#E1E4E9] pl-3 pr-1.5">
           <div className="flex items-baseline gap-2">
             <span className="shrink-0 text-[9px] font-bold uppercase leading-none tracking-wider text-[#0F1D24]/60">{hallCode} Dashboard</span>
           </div>
           <p className="truncate font-mono text-[10px] leading-none text-[#9B9B9B]">{dateLabel}</p>
         </div>
 
-        <div className="h-7 w-px shrink-0 bg-[#C6C6C6]" />
+        <div className="h-8 w-px shrink-0 bg-[#E1E4E9]" />
 
         <CustomDatePicker value={draft.date} onChange={(date) => setDraft((p) => ({ ...p, date }))} />
         <CustomSelect value={draft.machine} onChange={(machine) => setDraft((p) => ({ ...p, machine }))} options={machineOptions} maxWidth={190} />
         <CustomSelect value={draft.shift} onChange={(shift) => setDraft((p) => ({ ...p, shift }))} options={shiftOptions} />
 
-        <div className="flex shrink-0 items-center gap-px bg-[#C6C6C6]">
-          <button onClick={onApply} title="Apply selected filters" className="flex h-8 items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90">
+        <div className="flex shrink-0 items-center gap-px overflow-hidden rounded-lg border border-[#E1E4E9]">
+          <button onClick={onApply} title="Apply selected filters" className="flex h-9 items-center gap-1.5 bg-[#0F1D24] px-3 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90">
             <Filter size={13} />
             <span className="hidden md:inline">Apply</span>
           </button>
-          <button onClick={onRefresh} disabled={loading} title="Refresh data" className="flex h-8 items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#F5F5F5] disabled:opacity-60">
+          <button onClick={onRefresh} disabled={loading} title="Refresh data" className="flex h-9 items-center gap-1.5 bg-white px-3 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FAFAFB] disabled:opacity-60">
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
             <span className="hidden md:inline">Refresh</span>
           </button>
-          <button onClick={onReset} title="Reset filters" className="flex h-8 items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-red-600 transition-colors duration-100 hover:bg-red-50">
+          <button onClick={onReset} title="Reset filters" className="flex h-9 items-center gap-1.5 bg-white px-3 text-[11px] font-semibold text-red-600 transition-colors duration-100 hover:bg-red-50">
             <RotateCcw size={13} />
             <span className="hidden md:inline">Reset</span>
           </button>
         </div>
 
         {message ? (
-          <div className="flex h-8 min-w-0 flex-1 shrink items-center gap-1.5 border border-amber-200 bg-amber-50 px-2.5 text-[10.5px] font-semibold text-amber-700">
+          <div className="flex h-9 min-w-0 flex-1 shrink items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 text-[10.5px] font-semibold text-amber-700">
             <AlertTriangle size={12} className="shrink-0" />
             <span className="truncate">{message}</span>
           </div>
@@ -456,12 +465,12 @@ const DashboardHeader = ({
           <div className="min-w-[8px] flex-1" />
         )}
 
-        <div className="flex h-7 shrink-0 items-stretch gap-px bg-[#C6C6C6] [&>*]:flex [&>*]:items-center [&>*]:whitespace-nowrap">
-          <button onClick={onHeatmap} className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/20">
+        <div className="flex h-9 shrink-0 items-stretch gap-px overflow-hidden rounded-lg border border-[#E1E4E9] [&>*]:flex [&>*]:items-center [&>*]:whitespace-nowrap">
+          <button onClick={onHeatmap} className="flex items-center gap-1.5 bg-white px-3 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/20">
             <LayoutGrid size={13} />
             <span className="hidden sm:inline">Heatmap</span>
           </button>
-          <button onClick={onExport} className="flex items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]">
+          <button onClick={onExport} className="flex items-center gap-1.5 bg-[#0F1D24] px-3 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]">
             <Download size={13} />
             <span className="hidden sm:inline">Export</span>
           </button>
@@ -505,7 +514,7 @@ const useCountUp = (value, duration = 700) => {
 };
 
 // ==========================================================
-// KPI card — flat, sharp-cornered, tone accent rail on top.
+// KPI card — rounded surface, tone accent rail on top.
 // ==========================================================
 const KPI_TONE = {
   green: { value: "text-emerald-600", accent: "#10b981", chip: "bg-emerald-50 text-emerald-600" },
@@ -516,16 +525,15 @@ const KPI_TONE = {
 
 const KpiCard = ({ item }) => {
   const tone = KPI_TONE[item.tone] || KPI_TONE.blue;
-  const isAlert = item.tone === "red";
   const Icon = item.icon;
   const display = useCountUp(item.value);
 
   return (
-    <div className="relative flex flex-col justify-between border border-[#C6C6C6] bg-white p-2">
+    <div className={`relative flex flex-col justify-between ${SURFACE} p-3`}>
       <div>
         <p className="truncate text-[9px] font-bold uppercase leading-none tracking-wider text-[#9B9B9B]">{item.title}</p>
-        <h2 className={`mt-1.5 font-mono text-[22px] font-extrabold leading-none tabular-nums ${tone.value}`}>{display}</h2>
-        <p className="mt-1 truncate text-[9.5px] font-semibold leading-none text-[#9B9B9B]">{item.subtitle}</p>
+        <h2 className={`mt-2 font-mono text-[22px] font-extrabold leading-none tabular-nums ${tone.value}`}>{display}</h2>
+        <p className="mt-1.5 truncate text-[9.5px] font-semibold leading-none text-[#9B9B9B]">{item.subtitle}</p>
       </div>
     </div>
   );
@@ -537,23 +545,23 @@ const KpiCard = ({ item }) => {
 const MachineWiseTable = ({ rows, loading }) => {
   const safeRows = toArray(rows);
   return (
-    <div className="flex min-h-0 h-full flex-1 flex-col border border-[#C6C6C6] bg-white">
-      <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
-        <div className="flex h-6 w-6 items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
+    <div className={`flex min-h-0 h-full flex-1 flex-col overflow-hidden ${SURFACE}`}>
+      <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#E1E4E9] bg-[#FAFAFB] px-3.5 py-2.5">
+        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#0F1D24] text-[#FDC94D]">
           <Boxes className="h-3.5 w-3.5" />
         </div>
         <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Machine-wise Breakdown</h2>
-        <span className="border border-[#C6C6C6] bg-white px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">{safeRows.length}</span>
+        <span className="rounded-md border border-[#E1E4E9] bg-white px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">{safeRows.length}</span>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full text-left text-[11.5px]">
           <thead className="sticky top-0 z-10 bg-[#0F1D24] text-white">
             <tr>
-              <th className="px-2.5 py-1.5 font-semibold">Machine</th>
-              <th className="px-2.5 py-1.5 text-right font-semibold font-mono">Target</th>
-              <th className="px-2.5 py-1.5 text-right font-semibold font-mono">Actual</th>
-              <th className="px-2.5 py-1.5 text-right font-semibold font-mono">Reject</th>
-              <th className="px-2.5 py-1.5 text-right font-semibold font-mono">Achv %</th>
+              <th className="px-3 py-2 font-semibold">Machine</th>
+              <th className="px-3 py-2 text-right font-semibold font-mono">Target</th>
+              <th className="px-3 py-2 text-right font-semibold font-mono">Actual</th>
+              <th className="px-3 py-2 text-right font-semibold font-mono">Reject</th>
+              <th className="px-3 py-2 text-right font-semibold font-mono">Achv %</th>
             </tr>
           </thead>
           <tbody>
@@ -570,16 +578,16 @@ const MachineWiseTable = ({ rows, loading }) => {
                 return (
                   <tr
                     key={row.machine_code || row.id || idx}
-                    className={`border-t border-[#C6C6C6] transition-colors duration-100 hover:bg-[#FDC94D]/10 ${idx % 2 === 1 ? "bg-[#FAFAFA]/60" : "bg-white"}`}
+                    className={`border-t border-[#E1E4E9] transition-colors duration-100 hover:bg-[#FDC94D]/10 ${idx % 2 === 1 ? "bg-[#FAFAFB]/60" : "bg-white"}`}
                   >
-                    <td className="px-2.5 py-1.5">
+                    <td className="px-3 py-2">
                       <p className="font-mono font-semibold text-[#0F1D24]">{row.machine_code}</p>
                       {row.machine_name && <p className="text-[10px] text-[#9B9B9B]">{row.machine_name}</p>}
                     </td>
-                    <td className="px-2.5 py-1.5 text-right font-mono text-[#9B9B9B]">{target.toLocaleString()}</td>
-                    <td className="px-2.5 py-1.5 text-right font-mono font-semibold text-[#0F1D24]">{actual.toLocaleString()}</td>
-                    <td className={`px-2.5 py-1.5 text-right font-mono ${reject > 0 ? "text-red-600" : "text-[#9B9B9B]"}`}>{reject.toLocaleString()}</td>
-                    <td className="px-2.5 py-1.5 text-right font-mono font-semibold text-[#0F1D24]">{achievement}%</td>
+                    <td className="px-3 py-2 text-right font-mono text-[#9B9B9B]">{target.toLocaleString()}</td>
+                    <td className="px-3 py-2 text-right font-mono font-semibold text-[#0F1D24]">{actual.toLocaleString()}</td>
+                    <td className={`px-3 py-2 text-right font-mono ${reject > 0 ? "text-red-600" : "text-[#9B9B9B]"}`}>{reject.toLocaleString()}</td>
+                    <td className="px-3 py-2 text-right font-mono font-semibold text-[#0F1D24]">{achievement}%</td>
                   </tr>
                 );
               })
@@ -597,12 +605,12 @@ const MachineWiseTable = ({ rows, loading }) => {
 const ShiftSummaryPanel = ({ rows, loading }) => {
   const safeRows = toArray(rows);
   return (
-    <div className="flex min-h-0 flex-shrink-0 flex-col border border-[#C6C6C6] bg-white">
-      <div className="grid grid-cols-1 gap-px bg-[#C6C6C6] sm:grid-cols-2">
+    <div className={`flex min-h-0 flex-shrink-0 flex-col overflow-hidden ${SURFACE}`}>
+      <div className="grid grid-cols-1 gap-px bg-[#E1E4E9] sm:grid-cols-2">
         {loading ? (
-          <div className="col-span-2 bg-white px-3 py-6 text-center text-[11.5px] text-[#9B9B9B]">Loading…</div>
+          <div className="col-span-2 bg-white px-3.5 py-6 text-center text-[11.5px] text-[#9B9B9B]">Loading…</div>
         ) : safeRows.length === 0 ? (
-          <div className="col-span-2 bg-white px-3 py-6 text-center text-[11.5px] text-[#9B9B9B]">No shift data for this selection.</div>
+          <div className="col-span-2 bg-white px-3.5 py-6 text-center text-[11.5px] text-[#9B9B9B]">No shift data for this selection.</div>
         ) : (
           safeRows.map((row, idx) => {
             const target = Number(row.target) || 0;
@@ -611,17 +619,17 @@ const ShiftSummaryPanel = ({ rows, loading }) => {
             const shiftKey = row.shift === "B" ? "B" : "A";
             const colors = SHIFT_COLORS[shiftKey];
             return (
-              <div key={row.shift ?? idx} className="bg-white p-3">
+              <div key={row.shift ?? idx} className="bg-white p-3.5">
                 <div className="flex items-center gap-2">
                   <span
-                    className="flex h-5 w-5 flex-shrink-0 items-center justify-center text-[9.5px] font-bold"
+                    className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-[9.5px] font-bold"
                     style={{ background: colors.swatch, color: shiftKey === "A" ? "#0F1D24" : "#FDC94D" }}
                   >
                     {shiftKey}
                   </span>
                   <p className="text-[11px] font-bold uppercase tracking-wide text-[#0F1D24]">Shift {shiftKey}</p>
                 </div>
-                <div className="mt-2 flex items-end justify-between font-mono">
+                <div className="mt-2.5 flex items-end justify-between font-mono">
                   <div>
                     <p className="text-[9px] font-bold uppercase text-[#9B9B9B]">Target / Actual</p>
                     <p className="text-[13px] font-bold text-[#0F1D24]">{target.toLocaleString()} / {actual.toLocaleString()}</p>
@@ -644,31 +652,31 @@ const TopRejectsPanel = ({ rows, loading }) => {
   const safeRows = toArray(rows);
   const total = safeRows.reduce((s, r) => s + (Number(r.qty ?? r.reject_qty ?? r.count) || 0), 0);
   return (
-    <div className="flex min-h-0 flex-1 flex-col border border-[#C6C6C6] bg-white">
-      <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
-        <div className="flex h-6 w-6 items-center justify-center bg-red-500 text-white">
+    <div className={`flex min-h-0 flex-1 flex-col overflow-hidden ${SURFACE}`}>
+      <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#E1E4E9] bg-[#FAFAFB] px-3.5 py-2.5">
+        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-red-500 text-white">
           <AlertOctagon className="h-3.5 w-3.5" />
         </div>
         <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Top Rejects</h2>
       </div>
-      <div className="min-h-0 flex-1 divide-y divide-[#C6C6C6] overflow-auto">
+      <div className="min-h-0 flex-1 divide-y divide-[#E1E4E9] overflow-auto">
         {loading ? (
-          <p className="px-3 py-6 text-center text-[11.5px] text-[#9B9B9B]">Loading…</p>
+          <p className="px-3.5 py-6 text-center text-[11.5px] text-[#9B9B9B]">Loading…</p>
         ) : safeRows.length === 0 ? (
-          <p className="px-3 py-6 text-center text-[11.5px] text-[#9B9B9B]">No rejects recorded for this selection.</p>
+          <p className="px-3.5 py-6 text-center text-[11.5px] text-[#9B9B9B]">No rejects recorded for this selection.</p>
         ) : (
           safeRows.map((row, idx) => {
             const qty = Number(row.qty ?? row.reject_qty ?? row.count) || 0;
             const share = pct(qty, total);
             const label = row.reason || row.part_name || row.part_number || "Unspecified";
             return (
-              <div key={idx} className="px-3 py-2">
+              <div key={idx} className="px-3.5 py-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-[11.5px] font-semibold text-[#0F1D24]">{label}</span>
                   <span className="flex-shrink-0 font-mono text-[11.5px] font-bold text-red-600">{qty.toLocaleString()}</span>
                 </div>
-                <div className="mt-1 h-1 w-full bg-[#F5F5F5]">
-                  <div className="h-full bg-red-500" style={{ width: `${share}%` }} />
+                <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[#F0F0F0]">
+                  <div className="h-full rounded-full bg-red-500" style={{ width: `${share}%` }} />
                 </div>
               </div>
             );
@@ -812,12 +820,12 @@ const Chart = ({ chartData }) => {
 
       {hovered && (
         <div
-          className="pointer-events-none absolute z-10 border border-[#C6C6C6] bg-white px-2 py-1.5 text-[10px] shadow-[0_4px_10px_rgba(15,29,36,0.15)]"
+          className="pointer-events-none absolute z-10 rounded-lg border border-[#E1E4E9] bg-white px-2.5 py-2 text-[10px] shadow-[0_10px_24px_rgba(15,29,36,0.16)]"
           style={{ left: `${Math.min(Math.max(((hovered.groupX + hovered.groupW / 2) / width) * 100, 10), 90)}%`, top: 4, transform: "translateX(-50%)" }}
         >
           <div className="mb-1 flex items-center justify-between gap-3">
             <span className="font-semibold text-[#0F1D24]">{hovered.label}</span>
-            <span className="px-1.5 py-0.5 text-[9px] font-semibold" style={{ background: SHIFT_COLORS[hovered.shift].swatch, color: hovered.shift === "A" ? "#0F1D24" : "#FDC94D" }}>
+            <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold" style={{ background: SHIFT_COLORS[hovered.shift].swatch, color: hovered.shift === "A" ? "#0F1D24" : "#FDC94D" }}>
               Shift {hovered.shift}
             </span>
           </div>
@@ -852,11 +860,11 @@ const HourlyChartCard = ({ chartData, loading }) => {
     <>
       <style>{`@keyframes hdGrowBar { from { transform: scaleY(0); } to { transform: scaleY(1); } }`}</style>
 
-      <div className="flex min-h-0 h-full flex-1 flex-col border border-[#C6C6C6] bg-white p-2.5">
-        <div className="mb-1 flex flex-shrink-0 flex-wrap items-center justify-between gap-2 pr-1">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center bg-[#0F1D24]">
-              <IconBarChart className="h-3 w-3 text-[#FDC94D]" />
+      <div className={`flex min-h-0 h-full flex-1 flex-col ${SURFACE} p-3.5`}>
+        <div className="mb-2 flex flex-shrink-0 flex-wrap items-center justify-between gap-2 pr-1">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0F1D24]">
+              <IconBarChart className="h-3.5 w-3.5 text-[#FDC94D]" />
             </div>
             <div>
               <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Hourly Target vs Actual</h2>
@@ -866,12 +874,12 @@ const HourlyChartCard = ({ chartData, loading }) => {
 
           <div className="flex items-center gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-2 py-0.5">
-                <span className="h-2 w-2" style={{ background: BAR_COLORS.target }} />
+              <div className="flex items-center gap-1.5 rounded-md border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-2 py-1">
+                <span className="h-2 w-2 rounded-sm" style={{ background: BAR_COLORS.target }} />
                 <span className="text-[10px] font-semibold text-[#0F1D24]">Target</span>
               </div>
-              <div className="flex items-center gap-1.5 border border-[#FDC94D]/50 bg-[#FDC94D]/10 px-2 py-0.5">
-                <span className="h-2 w-2" style={{ background: BAR_COLORS.actual }} />
+              <div className="flex items-center gap-1.5 rounded-md border border-[#FDC94D]/50 bg-[#FDC94D]/10 px-2 py-1">
+                <span className="h-2 w-2 rounded-sm" style={{ background: BAR_COLORS.actual }} />
                 <span className="text-[10px] font-semibold text-[#0F1D24]">Actual</span>
               </div>
             </div>
@@ -882,7 +890,7 @@ const HourlyChartCard = ({ chartData, loading }) => {
                 <span className="ml-1 text-[9px] font-semibold text-[#9B9B9B]">({peak.value})</span>
               </p>
             </div>
-            <button onClick={() => setIsZoomed(true)} className="flex h-6 items-center gap-1 bg-[#0F1D24] px-2 text-[9px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#1a2e38]">
+            <button onClick={() => setIsZoomed(true)} className="flex h-7 items-center gap-1 rounded-md bg-[#0F1D24] px-2.5 text-[9px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#1a2e38]">
               <Expand size={11} /> Zoom
             </button>
           </div>
@@ -893,12 +901,12 @@ const HourlyChartCard = ({ chartData, loading }) => {
         ) : (
           <div className="flex h-full min-h-0 flex-col">
             {!hasData && (
-              <div className="mb-1 flex-shrink-0 border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-700">
+              <div className="mb-2 flex-shrink-0 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[10px] text-amber-700">
                 No production recorded for this date — showing 0 for every hour.
               </div>
             )}
             <div className="min-h-0 flex-1"><Chart chartData={safeChartData} /></div>
-            <div className="mt-1 flex flex-shrink-0 items-center justify-end border-t border-[#C6C6C6] pt-1">
+            <div className="mt-2 flex flex-shrink-0 items-center justify-end border-t border-[#E1E4E9] pt-2">
               <span className="text-[9px] font-semibold text-[#9B9B9B]">
                 Target: <span className="text-[#0F1D24]">{totalTarget}</span> · Actual: <span className="text-[#0F1D24]">{totalActual}</span>
               </span>
@@ -909,9 +917,9 @@ const HourlyChartCard = ({ chartData, loading }) => {
 
       {isZoomed && (
         <div className="fixed inset-0 z-50 flex flex-col bg-white">
-          <div className="flex flex-shrink-0 items-center justify-between border-b border-[#C6C6C6] px-5 py-3">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center bg-[#0F1D24]">
+          <div className="flex flex-shrink-0 items-center justify-between border-b border-[#E1E4E9] px-6 py-3.5">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0F1D24]">
                 <IconBarChart className="h-3.5 w-3.5 text-[#FDC94D]" />
               </div>
               <div>
@@ -927,21 +935,21 @@ const HourlyChartCard = ({ chartData, loading }) => {
                   <span className="ml-1 text-[10px] font-semibold text-[#9B9B9B]">({peak.value})</span>
                 </p>
               </div>
-              <button onClick={() => setIsZoomed(false)} className="flex h-8 w-8 items-center justify-center text-[#9B9B9B] transition-colors duration-100 hover:bg-[#0F1D24]/5">
+              <button onClick={() => setIsZoomed(false)} className="flex h-9 w-9 items-center justify-center rounded-lg text-[#9B9B9B] transition-colors duration-100 hover:bg-[#0F1D24]/5">
                 <X size={16} />
               </button>
             </div>
           </div>
 
           {!hasData && (
-            <div className="flex-shrink-0 border-b border-amber-100 bg-amber-50 px-5 py-1.5 text-[10px] font-medium text-amber-700">
+            <div className="flex-shrink-0 border-b border-amber-100 bg-amber-50 px-6 py-2 text-[10px] font-medium text-amber-700">
               No production recorded for this date — showing 0 for every hour.
             </div>
           )}
 
           <div className="min-h-0 flex-1 px-6 py-4"><Chart chartData={safeChartData} /></div>
 
-          <div className="flex flex-shrink-0 items-center justify-between border-t border-[#C6C6C6] bg-[#0F1D24]/[0.02] px-5 py-2">
+          <div className="flex flex-shrink-0 items-center justify-between border-t border-[#E1E4E9] bg-[#0F1D24]/[0.02] px-6 py-2.5">
             <div className="flex items-center gap-3 text-[10px]">
               <span className="flex items-center gap-1 text-[#9B9B9B]"><span className="h-2 w-2" style={{ background: BAR_COLORS.target }} /> Target</span>
               <span className="flex items-center gap-1 text-[#9B9B9B]"><span className="h-2 w-2" style={{ background: BAR_COLORS.actual }} /> Actual</span>
@@ -1080,7 +1088,7 @@ const HallDashboard = () => {
   if (!hallCode) return <Navigate to="/production/dashboard" replace />;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#EFEFEF]">
+    <div className="flex h-screen overflow-hidden bg-[#F1F2F4]">
       <style>{`
         @keyframes hdCardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes hdValuePop { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
@@ -1093,58 +1101,61 @@ const HallDashboard = () => {
       />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <DashboardHeader
-          hallCode={hallCode}
-          dateLabel={formatDisplay(filters.date)}
-          onBack={handleBack}
-          onHeatmap={handleHeatmap}
-          onExport={handleExport}
-          draft={draftFilters}
-          setDraft={setDraftFilters}
-          onApply={handleApplyFilters}
-          onRefresh={fetchAll}
-          onReset={handleReset}
-          loading={loading}
-          machineList={machines}
-          message={
-            error
-              ? error
-              : showNoDataWarning
-                ? "No data available for the selected date/filters. Try a different date, machine, or shift."
-                : null
-          }
-        />
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-          {/* Row 1: KPI cards + Shift summary + Top rejects (left) / Machine-wise breakdown (right). */}
-          <div className="grid min-h-0 flex-1 grid-cols-1 lg:flex-[0_0_44%] lg:grid-cols-2">
-            <div className="flex min-h-0 flex-col overflow-hidden lg:h-full">
-              {loading && !stats ? (
-                <div className="flex-shrink-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="h-[92px] animate-pulse border border-[#C6C6C6] bg-[#C6C6C6]/20" />
-                  ))}
+        <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4">
+          <DashboardHeader
+            hallCode={hallCode}
+            dateLabel={formatDisplay(filters.date)}
+            onBack={handleBack}
+            onHeatmap={handleHeatmap}
+            onExport={handleExport}
+            draft={draftFilters}
+            setDraft={setDraftFilters}
+            onApply={handleApplyFilters}
+            onRefresh={fetchAll}
+            onReset={handleReset}
+            loading={loading}
+            machineList={machines}
+            message={
+              error
+                ? error
+                : showNoDataWarning
+                  ? "No data available for the selected date/filters. Try a different date, machine, or shift."
+                  : null
+            }
+          />
+
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+            {/* Row 1: KPI cards + Shift summary + Top rejects (left) / Machine-wise breakdown (right). */}
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:flex-[0_0_44%] lg:grid-cols-2">
+              <div className="flex min-h-0 flex-col gap-3 overflow-hidden lg:h-full">
+                {loading && !stats ? (
+                  <div className="flex-shrink-0 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="h-[92px] animate-pulse rounded-xl border border-[#E1E4E9] bg-[#E1E4E9]/30" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex-shrink-0 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                    {kpiCards.map((item) => <KpiCard key={item.id} item={item} />)}
+                  </div>
+                )}
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+                  <ShiftSummaryPanel rows={shiftSummary} loading={loading} />
+                  <TopRejectsPanel rows={topRejects} loading={loading} />
                 </div>
-              ) : (
-                <div className="flex-shrink-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-                  {kpiCards.map((item) => <KpiCard key={item.id} item={item} />)}
-                </div>
-              )}
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-                <ShiftSummaryPanel rows={shiftSummary} loading={loading} />
-                <TopRejectsPanel rows={topRejects} loading={loading} />
+              </div>
+
+              <div className="min-h-0 lg:h-full">
+                <MachineWiseTable rows={machineWise} loading={loading} />
               </div>
             </div>
 
-            <div className="min-h-0 lg:h-full">
-              <MachineWiseTable rows={machineWise} loading={loading} />
+            {/* Row 2: Hourly chart fills all remaining space. */}
+            <div className="flex min-h-0 flex-1 flex-col">
+              <HourlyChartCard chartData={chartData} loading={loading} />
             </div>
           </div>
-
-          {/* Row 2: Hourly chart fills all remaining space. */}
-          <div className="flex min-h-0 flex-1 flex-col">
-            <HourlyChartCard chartData={chartData} loading={loading} />
-          </div>
-        </div>
+        </main>
       </div>
     </div>
   );

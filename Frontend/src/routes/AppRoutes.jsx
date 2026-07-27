@@ -22,8 +22,6 @@ import AdvProductionEntry from "../pages/TeamMemberPages/advProductionEnrty";
 import PlanSelectionPage from "../pages/PlanningPage/PlanSelectionPage";
 import MonthlyPlanPage from "../pages/PlanningPage/MonthlyPlanPage";
 import CreateMonthlyPlan from "../pages/PlanningPage/CreateMonthlyPlan";
-
-import MachineOverviewDashboard from "../pages/MachineOverview";
 // import MachineOperatorManagement from "../pages/MachineOperatorManagement";
 // import AllocateMachineOperator from "../pages/AllocateMachineOperator";
 import UpdateMachineOperator from "../pages/TeamMemberPages/UpdateMachineOperator";
@@ -131,10 +129,6 @@ const AppRoutes = () => {
         element={<MonthlyPlanView />}
       />
       ` `{/* ---------- MACHINE MANAGEMENT ---------- */}
-      <Route
-        path="/employee/machines/overview"
-        element={<MachineOverviewDashboard />}
-      />
       {/* <Route
         path="/employee/machines/allocation"
         element={<MachineOperatorManagement />}
