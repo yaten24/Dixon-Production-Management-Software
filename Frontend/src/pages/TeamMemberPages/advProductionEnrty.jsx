@@ -29,7 +29,7 @@ import {
 import { getOperatorByCode, createOperator, searchOperators } from "../../api/operatorApi";
 import { searchParts, addPartQuick } from "../../api/partApi";
 import useProductionEntry from "../../hooks/useProductionEntry";
-import Sidebar from "../../compenents/common/Sidebar";
+import Sidebar from "./Sidebar";
 // NOTE: MouldChangeSection is no longer used — the "Mould Change" tab is
 // now built inline in this file (see the `activeTab === "mould"` block
 // near the bottom) using only the formData field names that were already

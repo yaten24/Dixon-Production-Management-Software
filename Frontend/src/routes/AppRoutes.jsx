@@ -18,8 +18,6 @@ import AllRejectionReasons from "../pages/ManagementPages/RejectionReasons";
 import LossAnalysisDashboard from "../pages/ManagementPages/LossTimeDashboard";
 
 import AdvProductionEntry from "../pages/TeamMemberPages/advProductionEnrty";
-
-import PlanSelectionPage from "../pages/PlanningPage/PlanSelectionPage";
 import MonthlyPlanPage from "../pages/PlanningPage/MonthlyPlanPage";
 import CreateMonthlyPlan from "../pages/PlanningPage/CreateMonthlyPlan";
 // import MachineOperatorManagement from "../pages/MachineOperatorManagement";
@@ -72,24 +70,25 @@ const AppRoutes = () => {
       {/* ---------------- Production ---------------- */}
       <Route path="/production/home" element={<UserHome />} />
       <Route path="/production/dashboard" element={<UserDashboard />} />
-      <Route path="/production/production/entry" element={<AdvProductionEntry />} />
-      <Route path="/production/production/history" element={<ProductionHistoryPage />} />
-      <Route path="/production/production/reports" element={<ReportsPage />} />
-      <Route path="/production/production/plans" element={<PlanSelectionPage />} />
+      <Route path="/production/entry" element={<AdvProductionEntry />} />
+      <Route path="/production/history" element={<ProductionHistoryPage />} />
+      <Route path="/production/reports" element={<ReportsPage />} />
+      <Route path="/production/halls/:hallId" element={<HallDashboard />} />
+      <Route path="/production/halls/:hallId/heatmap" element={<HourlyMachineTracking />} />
       <Route
-        path="/production/production/plans/daily"
+        path="/production/plans/daily"
         element={<DailyPlanPage />}
       />
       <Route
-        path="/production/production/plans/daily/operator/allocation"
+        path="/production/plans/daily/operator/allocation"
         element={<DailyPlanPageForOperatorAllocation />}
       />
       <Route
-        path="/production/production/plans/:id/operator/allocation"
+        path="/production/plans/:id/operator/allocation"
         element={<DailyPlanOperatorAssignment />}
       />
       <Route
-        path="/production/production/plans/daily/create"
+        path="/production/plans/daily/create"
         element={<DailyProductionPlan />}
       />
       <Route
@@ -97,27 +96,17 @@ const AppRoutes = () => {
         element={<ViewDailyPlanPage />}
       />
       <Route
-        path="/production/production/plans/monthly"
+        path="/production/plans/monthly"
         element={<MonthlyPlanPage />}
       />
       <Route
-        path="/production/production/plans/monthly/create"
+        path="/production/plans/monthly/create"
         element={<CreateMonthlyPlan />}
       />
       <Route
         path="/production/production/plans/monthly/detail/:id"
         element={<MonthlyPlanView />}
       />
-      ` `{/* ---------- MACHINE MANAGEMENT ---------- */}
-      {/* <Route
-        path="/employee/machines/allocation"
-        element={<MachineOperatorManagement />}
-      />
-
-      <Route
-        path="/employee/machines/allocation/create"
-        element={<AllocateMachineOperator />}
-      /> */}
       <Route
         path="/production/machines/allocation/update"
         element={<UpdateMachineOperator />}

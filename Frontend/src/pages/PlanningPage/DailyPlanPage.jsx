@@ -12,7 +12,7 @@ import {
   HiOutlineCheckCircle,
 } from "react-icons/hi2";
 import { listDailyPlans, deleteDailyPlan } from "../../api/dailyPlanApi";
-import Sidebar from "../../compenents/common/Sidebar";
+import Sidebar from "../TeamMemberPages/Sidebar";
 
 // ============================================================
 // THEME TOKENS — kept consistent with Sidebar.jsx / dashboard pages
@@ -192,8 +192,8 @@ const DailyPlanPage = () => {
     }
   };
 
-  const handleOpen = (plan) => navigate(`/employee/production/plans/daily/detail/${plan.daily_plan_id}`);
-  const handleCreate = () => navigate("/employee/production/plans/daily/create");
+  const handleOpen = (plan) => navigate(`/production/plans/daily/detail/${plan.daily_plan_id}`);
+  const handleCreate = () => navigate("/production/plans/daily/create");
 
   const hasTodayPlan = plans.some((p) => toDateKey(new Date(p.planning_date)) === todayISO());
 

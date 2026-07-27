@@ -21,7 +21,7 @@ import { HiOutlineOfficeBuilding, HiOutlineTrendingUp } from "react-icons/hi";
 import { halls, HALL_ACCENT } from "../../data/productionData";
 import { HALL_CODE_TO_ID } from "../../data/dashboardData";
 import useProductionDashboard from "../../hooks/useProductionDashboard";
-import Sidebar from "../../compenents/common/Sidebar";
+import Sidebar from "./Sidebar";
 
 // ============================================================
 // THEME TOKENS

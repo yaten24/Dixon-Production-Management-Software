@@ -32,7 +32,7 @@ import {
   getLossReasonsList,
 } from "../../api/reportApi";
 import { useNavigate, useLocation } from "react-router-dom";
-import Sidebar from "../../compenents/common/Sidebar";
+import Sidebar from "./Sidebar";
 
 const HALLS = ["Hall-1", "Hall-2", "Hall-3", "Hall-4", "C8"];
 const SHIFTS = ["A", "B"];

@@ -32,7 +32,7 @@ import {
 } from "react-icons/hi";
 
 import { getDashboardOverview, getHallWiseOverview } from "../../api/dashboardApi";
-import Sidebar, { QUICK_ACCESS_ITEMS, NAVY, GOLD, BORDER } from "../../compenents/common/Sidebar";
+import Sidebar, { QUICK_ACCESS_ITEMS, NAVY, GOLD, BORDER } from "./Sidebar";
 import api from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
 

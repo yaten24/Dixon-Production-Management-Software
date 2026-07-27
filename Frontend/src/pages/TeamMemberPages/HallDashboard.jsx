@@ -43,7 +43,7 @@ import {
 } from "../../api/hallDashboardApi";
 import { getHallCodeFromId } from "../../data/dashboardData";
 import { exportHallDashboardToExcel } from "../../utils/exportHallDashboard";
-import Sidebar from "../../compenents/common/Sidebar";
+import Sidebar from "./Sidebar";
 
 // ==========================================================
 // Constants

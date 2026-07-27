@@ -12,7 +12,7 @@ import {
   HiOutlineCheckCircle,
 } from "react-icons/hi2";
 import { listMonthlyPlans, deleteMonthlyPlan } from "../../api/monthlyPlanApi";
-import Sidebar from "../../compenents/common/Sidebar";
+import Sidebar from "../TeamMemberPages/Sidebar";
 
 // ============================================================
 // THEME TOKENS — kept consistent with Sidebar.jsx / dashboard pages
@@ -152,8 +152,8 @@ const MonthlyPlanPage = () => {
     }
   };
 
-  const handleOpen = (plan) => navigate(`/employee/production/plans/monthly/detail/${plan.monthly_plan_id}`);
-  const handleCreate = () => navigate("/employee/production/plans/monthly/create");
+  const handleOpen = (plan) => navigate(`/production/plans/monthly/detail/${plan.monthly_plan_id}`);
+  const handleCreate = () => navigate("/production/plans/monthly/create");
 
   const now = new Date();
   const currentMonth = now.getMonth() + 1;

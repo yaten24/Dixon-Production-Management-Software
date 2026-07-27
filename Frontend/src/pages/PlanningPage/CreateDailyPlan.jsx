@@ -15,11 +15,12 @@ import {
   HiOutlineCog6Tooth,
   HiOutlineArrowRight,
 } from "react-icons/hi2";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import useDailyProductionPlan from "../../hooks/useDailyProductionPlan";
 import { listMonthlyPlans, generatePlanNumber as generateMonthlyNumber } from "../../api/monthlyPlanApi";
 import { generateDailyPlanNumber } from "../../api/dailyPlanApi";
 import api from "../../api/partApi";
+import Sidebar from "../TeamMemberPages/Sidebar";
 
 const HALLS = ["Hall 1", "Hall 2", "Hall 3", "Hall 4", "C-8"];
 const SHIFTS = ["A", "B"];
@@ -129,7 +130,7 @@ function PageTitleStrip({ eyebrow, title, subtitle, showBack = true, actions }) 
   const navigate = useNavigate();
 
   return (
-    <header className="w-full border-b border-[#C6C6C6] bg-white">
+    <header className="w-full border-b border-[#C6C6C6] bg-white p-2">
       {/* Gradient accent line */}
       <div
         className="h-[2px] w-full"
@@ -668,6 +669,8 @@ function MouldChangeHistory({ changes, mcLoading, mcError, start, complete, canc
 // ============================================================
 export default function DailyProductionPlan() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const {
     loading, header, details, hallMachines, monthlyParts, error,
@@ -801,113 +804,121 @@ export default function DailyProductionPlan() {
   // ==========================================================
   if (!header) {
     return (
-      <div className="min-h-screen bg-[#EFEFEF]">
-        <PageTitleStrip
-          eyebrow="Production Planning"
-          title="Daily Production Plan"
-          subtitle="Start a new plan"
+      <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+          activePath={location.pathname}
         />
 
-        <main className="w-full">
-          {/* NOTE: no overflow-hidden here — the ThemedDatePicker popup is
-              position:absolute and would get clipped by an ancestor that
-              hides overflow. Sharp-corner panels don't need it anyway. */}
-          <form
-            onSubmit={handleStart}
-            className="mx-auto grid max-w-4xl grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[260px_1fr]"
-          >
-            {/* Context / summary sidebar */}
-            <div className="bg-[#0F1D24] p-5 text-white">
-              <div className="mb-1 flex items-center gap-2">
-                <HiOutlineClipboardDocumentList className="h-4 w-4 text-[#FDC94D]" />
-                <h2 className="text-[11px] font-bold uppercase tracking-wider text-[#FDC94D]">New Daily Plan</h2>
-              </div>
-              <p className="text-[11.5px] leading-relaxed text-white/70">
-                Select a monthly plan and the hall, date and shift to pull in that hall's machines
-                for allocation.
-              </p>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <PageTitleStrip
+            eyebrow="Production Planning"
+            title="Daily Production Plan"
+            subtitle="Start a new plan"
+          />
 
-              <div className="mt-5 space-y-3 border-t border-white/10 pt-4">
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Monthly Plan</p>
-                  <p className="text-[12.5px] font-semibold">{selectedMonthlyPlan?.plan_number || "Not selected"}</p>
+          <main className="min-h-0 flex-1 overflow-y-auto">
+            {/* NOTE: no overflow-hidden here — the ThemedDatePicker popup is
+                position:absolute and would get clipped by an ancestor that
+                hides overflow. Sharp-corner panels don't need it anyway. */}
+            <form
+              onSubmit={handleStart}
+              className="mx-auto grid max-w-4xl grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] p-3 md:grid-cols-[260px_1fr]"
+            >
+              {/* Context / summary sidebar */}
+              <div className="bg-[#0F1D24] p-5 text-white">
+                <div className="mb-1 flex items-center gap-2">
+                  <HiOutlineClipboardDocumentList className="h-4 w-4 text-[#FDC94D]" />
+                  <h2 className="text-[11px] font-bold uppercase tracking-wider text-[#FDC94D]">New Daily Plan</h2>
                 </div>
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Date</p>
-                  <p className="font-mono text-[12.5px] font-semibold">{formatDateDisplay(planningDate)}</p>
-                </div>
-                <div className="flex gap-6">
+                <p className="text-[11.5px] leading-relaxed text-white/70">
+                  Select a monthly plan and the hall, date and shift to pull in that hall's machines
+                  for allocation.
+                </p>
+
+                <div className="mt-5 space-y-3 border-t border-white/10 pt-4">
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Hall</p>
-                    <p className="text-[12.5px] font-semibold">{hall}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Monthly Plan</p>
+                    <p className="text-[12.5px] font-semibold">{selectedMonthlyPlan?.plan_number || "Not selected"}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Shift</p>
-                    <p className="text-[12.5px] font-semibold">Shift {shift}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Date</p>
+                    <p className="font-mono text-[12.5px] font-semibold">{formatDateDisplay(planningDate)}</p>
+                  </div>
+                  <div className="flex gap-6">
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Hall</p>
+                      <p className="text-[12.5px] font-semibold">{hall}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-wide text-white/40">Shift</p>
+                      <p className="text-[12.5px] font-semibold">Shift {shift}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Form panel */}
-            <div className="bg-white">
-              <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-4 py-2.5">
-                <h2 className="text-[13px] font-bold text-[#0F1D24]">Plan Setup</h2>
-              </div>
-
-              <div className="space-y-4 p-4">
-                <div>
-                  <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Monthly Plan</label>
-                  <ThemedSelect
-                    value={monthlyPlanId}
-                    onChange={setMonthlyPlanId}
-                    options={monthlyPlans.map((p) => ({ value: p.monthly_plan_id, label: p.plan_number }))}
-                    placeholder="-- select monthly plan --"
-                  />
+              {/* Form panel */}
+              <div className="bg-white">
+                <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-4 py-2.5">
+                  <h2 className="text-[13px] font-bold text-[#0F1D24]">Plan Setup</h2>
                 </div>
 
-                <div className="h-px w-full bg-[#C6C6C6]" />
+                <div className="space-y-4 p-4">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Monthly Plan</label>
+                    <ThemedSelect
+                      value={monthlyPlanId}
+                      onChange={setMonthlyPlanId}
+                      options={monthlyPlans.map((p) => ({ value: p.monthly_plan_id, label: p.plan_number }))}
+                      placeholder="-- select monthly plan --"
+                    />
+                  </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <div>
-                    <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Date</label>
-                    <ThemedDatePicker value={planningDate} onChange={setPlanningDate} />
+                  <div className="h-px w-full bg-[#C6C6C6]" />
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Date</label>
+                      <ThemedDatePicker value={planningDate} onChange={setPlanningDate} />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Hall</label>
+                      <ThemedSelect value={hall} onChange={setHall} options={HALLS.map((h) => ({ value: h, label: h }))} />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Shift</label>
+                      <ThemedSelect value={shift} onChange={setShift} options={SHIFTS.map((s) => ({ value: s, label: `Shift ${s}` }))} />
+                    </div>
                   </div>
-                  <div>
-                    <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Hall</label>
-                    <ThemedSelect value={hall} onChange={setHall} options={HALLS.map((h) => ({ value: h, label: h }))} />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Shift</label>
-                    <ThemedSelect value={shift} onChange={setShift} options={SHIFTS.map((s) => ({ value: s, label: `Shift ${s}` }))} />
-                  </div>
+
+                  {error && <p className="text-[11.5px] font-semibold text-red-600">{error}</p>}
+                  {!monthlyPlanId && (
+                    <p className="text-[10.5px] text-[#9B9B9B]">Pick a monthly plan to continue.</p>
+                  )}
                 </div>
 
-                {error && <p className="text-[11.5px] font-semibold text-red-600">{error}</p>}
-                {!monthlyPlanId && (
-                  <p className="text-[10.5px] text-[#9B9B9B]">Pick a monthly plan to continue.</p>
-                )}
+                <div className="flex items-center justify-end gap-px bg-[#C6C6C6] border-t border-[#C6C6C6]">
+                  <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    className="flex h-10 items-center justify-center bg-white px-4 text-[12px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#F5F5F5]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading || !monthlyPlanId}
+                    className="flex h-10 items-center justify-center bg-[#0F1D24] px-5 text-[12px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {loading ? "Loading..." : "Start Planning"}
+                  </button>
+                </div>
               </div>
-
-              <div className="flex items-center justify-end gap-px bg-[#C6C6C6] border-t border-[#C6C6C6]">
-                <button
-                  type="button"
-                  onClick={() => navigate(-1)}
-                  className="flex h-10 items-center justify-center bg-white px-4 text-[12px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#F5F5F5]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading || !monthlyPlanId}
-                  className="flex h-10 items-center justify-center bg-[#0F1D24] px-5 text-[12px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {loading ? "Loading..." : "Start Planning"}
-                </button>
-              </div>
-            </div>
-          </form>
-        </main>
+            </form>
+          </main>
+        </div>
       </div>
     );
   }
@@ -934,179 +945,187 @@ export default function DailyProductionPlan() {
     };
 
     return (
-      <div className="min-h-screen bg-[#EFEFEF]">
-        <PageTitleStrip
-          eyebrow="Production Planning"
-          title={`New Daily Plan — ${hall} · Shift ${shift}`}
-          subtitle={`${planningDate} · ${assignedCount} of ${hallMachines.length} machines assigned`}
-          actions={
-            <button
-              onClick={reset}
-              className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
-            >
-              <HiOutlineArrowUturnLeft className="h-3 w-3" />
-              Change Selection
-            </button>
-          }
+      <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+          activePath={location.pathname}
         />
 
-        <main className="w-full">
-          <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[280px_1fr]">
-            {/* Machine list */}
-            <div className="max-h-[520px] overflow-y-auto bg-white">
-              <div className="sticky top-0 border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
-                <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#0F1D24]">
-                  Hall Machines
-                </h2>
-              </div>
-              {hallMachines.map((m) => {
-                const a = rowAssignments[m.id];
-                const assigned = !!(a?.monthlyDetailId && a?.targetQty);
-                const isActive = m.id === activeMachineId;
-                return (
-                  <button
-                    type="button"
-                    key={m.id}
-                    onClick={() => setActiveMachineId(m.id)}
-                    className={`flex w-full items-center justify-between gap-2 border-b border-[#C6C6C6] px-3 py-2 text-left transition-colors duration-100
-                      ${isActive ? "bg-[#0F1D24] text-[#FDC94D]" : "bg-white text-[#0F1D24] hover:bg-[#FAFAFA]"}`}
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-mono text-[11.5px] font-semibold">{m.machine_code}</p>
-                      <p className={`truncate text-[10.5px] ${isActive ? "text-[#FDC94D]/70" : "text-[#9B9B9B]"}`}>
-                        {m.machine_name}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 border px-1.5 py-[1px] text-[9px] font-bold uppercase tracking-wide
-                        ${assigned
-                          ? isActive
-                            ? "border-[#FDC94D]/60 bg-[#FDC94D]/10 text-[#FDC94D]"
-                            : "border-green-600/30 bg-green-50 text-green-700"
-                          : isActive
-                            ? "border-white/30 bg-white/10 text-white/70"
-                            : "border-[#C6C6C6] bg-[#F5F5F5] text-[#9B9B9B]"}`}
-                    >
-                      {assigned ? "Assigned" : "Empty"}
-                    </span>
-                  </button>
-                );
-              })}
-              {hallMachines.length === 0 && (
-                <p className="px-3 py-6 text-center text-[11.5px] text-[#9B9B9B]">No machines found for this hall.</p>
-              )}
-            </div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <PageTitleStrip
+            eyebrow="Production Planning"
+            title={`New Daily Plan — ${hall} · Shift ${shift}`}
+            subtitle={`${planningDate} · ${assignedCount} of ${hallMachines.length} machines assigned`}
+            actions={
+              <button
+                onClick={reset}
+                className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+              >
+                <HiOutlineArrowUturnLeft className="h-3 w-3" />
+                Change Selection
+              </button>
+            }
+          />
 
-            {/* Detail form */}
-            <div className="bg-white">
-              {activeMachine ? (
-                <>
-                  <div className="flex items-center justify-between border-b border-[#C6C6C6] bg-[#FAFAFA] px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <HiOutlineCog6Tooth className="h-4 w-4 text-[#0F1D24]" />
-                      <div>
-                        <h2 className="text-[13px] font-bold text-[#0F1D24]">
-                          {activeMachine.machine_code} <span className="font-normal text-[#9B9B9B]">{activeMachine.machine_name}</span>
-                        </h2>
+          <main className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+            <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[280px_1fr]">
+              {/* Machine list */}
+              <div className="max-h-[520px] overflow-y-auto bg-white">
+                <div className="sticky top-0 border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
+                  <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#0F1D24]">
+                    Hall Machines
+                  </h2>
+                </div>
+                {hallMachines.map((m) => {
+                  const a = rowAssignments[m.id];
+                  const assigned = !!(a?.monthlyDetailId && a?.targetQty);
+                  const isActive = m.id === activeMachineId;
+                  return (
+                    <button
+                      type="button"
+                      key={m.id}
+                      onClick={() => setActiveMachineId(m.id)}
+                      className={`flex w-full items-center justify-between gap-2 border-b border-[#C6C6C6] px-3 py-2 text-left transition-colors duration-100
+                        ${isActive ? "bg-[#0F1D24] text-[#FDC94D]" : "bg-white text-[#0F1D24] hover:bg-[#FAFAFA]"}`}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-mono text-[11.5px] font-semibold">{m.machine_code}</p>
+                        <p className={`truncate text-[10.5px] ${isActive ? "text-[#FDC94D]/70" : "text-[#9B9B9B]"}`}>
+                          {m.machine_name}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 border px-1.5 py-[1px] text-[9px] font-bold uppercase tracking-wide
+                          ${assigned
+                            ? isActive
+                              ? "border-[#FDC94D]/60 bg-[#FDC94D]/10 text-[#FDC94D]"
+                              : "border-green-600/30 bg-green-50 text-green-700"
+                            : isActive
+                              ? "border-white/30 bg-white/10 text-white/70"
+                              : "border-[#C6C6C6] bg-[#F5F5F5] text-[#9B9B9B]"}`}
+                      >
+                        {assigned ? "Assigned" : "Empty"}
+                      </span>
+                    </button>
+                  );
+                })}
+                {hallMachines.length === 0 && (
+                  <p className="px-3 py-6 text-center text-[11.5px] text-[#9B9B9B]">No machines found for this hall.</p>
+                )}
+              </div>
+
+              {/* Detail form */}
+              <div className="bg-white">
+                {activeMachine ? (
+                  <>
+                    <div className="flex items-center justify-between border-b border-[#C6C6C6] bg-[#FAFAFA] px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <HiOutlineCog6Tooth className="h-4 w-4 text-[#0F1D24]" />
+                        <div>
+                          <h2 className="text-[13px] font-bold text-[#0F1D24]">
+                            {activeMachine.machine_code} <span className="font-normal text-[#9B9B9B]">{activeMachine.machine_name}</span>
+                          </h2>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-px bg-[#C6C6C6]">
+                        <button
+                          type="button"
+                          onClick={() => goToMachine(-1)}
+                          title="Previous machine"
+                          className="flex h-7 w-7 items-center justify-center bg-white text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+                        >
+                          <HiOutlineArrowLeft className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => goToMachine(1)}
+                          title="Next machine"
+                          className="flex h-7 w-7 items-center justify-center bg-white text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+                        >
+                          <HiOutlineArrowRight className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-px bg-[#C6C6C6]">
+
+                    <div className="space-y-4 p-4">
+                      <div>
+                        <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Part</label>
+                        <ThemedSelect
+                          value={activeAssignment.monthlyDetailId || ""}
+                          onChange={(val) => handlePartPick(activeMachineId, val)}
+                          options={monthlyParts.map((p) => ({ value: p.monthly_detail_id, label: `${p.part_number} - ${p.part_name}` }))}
+                          placeholder="-- select part --"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Target Qty</label>
+                          <input
+                            type="number" min="1" value={activeAssignment.targetQty || ""}
+                            onChange={(e) => setAssignment(activeMachineId, { targetQty: e.target.value })}
+                            placeholder="0"
+                            className="h-9 w-full border border-[#C6C6C6] px-2.5 text-[12.5px] font-mono outline-none focus:border-[#0F1D24]"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Planned Cycle Time</label>
+                          <input
+                            type="number" step="0.01" min="0" value={activeAssignment.plannedCycleTime || ""}
+                            onChange={(e) => setAssignment(activeMachineId, { plannedCycleTime: e.target.value })}
+                            placeholder="seconds"
+                            className="h-9 w-full border border-[#C6C6C6] px-2.5 text-[12.5px] font-mono outline-none focus:border-[#0F1D24]"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Operator Code (optional)</label>
+                        <input
+                          value={activeAssignment.operatorCode || ""}
+                          onChange={(e) => setAssignment(activeMachineId, { operatorCode: e.target.value })}
+                          placeholder="e.g. OP-014"
+                          className="h-9 w-full border border-[#C6C6C6] px-2.5 text-[12.5px] outline-none focus:border-[#0F1D24]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-px bg-[#C6C6C6] border-t border-[#C6C6C6]">
                       <button
                         type="button"
-                        onClick={() => goToMachine(-1)}
-                        title="Previous machine"
-                        className="flex h-7 w-7 items-center justify-center bg-white text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+                        onClick={() => clearAssignment(activeMachineId)}
+                        className="flex h-10 items-center justify-center gap-1.5 bg-white px-4 text-[12px] font-semibold text-red-600 transition-colors duration-100 hover:bg-red-50"
                       >
-                        <HiOutlineArrowLeft className="h-3.5 w-3.5" />
+                        <HiOutlineTrash className="h-3.5 w-3.5" />
+                        Clear
                       </button>
                       <button
                         type="button"
                         onClick={() => goToMachine(1)}
-                        title="Next machine"
-                        className="flex h-7 w-7 items-center justify-center bg-white text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+                        className="flex h-10 items-center justify-center gap-1.5 bg-[#0F1D24] px-5 text-[12px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90"
                       >
+                        Save &amp; Next
                         <HiOutlineArrowRight className="h-3.5 w-3.5" />
                       </button>
                     </div>
+                  </>
+                ) : (
+                  <div className="flex h-full items-center justify-center p-10 text-[11.5px] text-[#9B9B9B]">
+                    Select a machine from the list to assign a part.
                   </div>
-
-                  <div className="space-y-4 p-4">
-                    <div>
-                      <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Part</label>
-                      <ThemedSelect
-                        value={activeAssignment.monthlyDetailId || ""}
-                        onChange={(val) => handlePartPick(activeMachineId, val)}
-                        options={monthlyParts.map((p) => ({ value: p.monthly_detail_id, label: `${p.part_number} - ${p.part_name}` }))}
-                        placeholder="-- select part --"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Target Qty</label>
-                        <input
-                          type="number" min="1" value={activeAssignment.targetQty || ""}
-                          onChange={(e) => setAssignment(activeMachineId, { targetQty: e.target.value })}
-                          placeholder="0"
-                          className="h-9 w-full border border-[#C6C6C6] px-2.5 text-[12.5px] font-mono outline-none focus:border-[#0F1D24]"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Planned Cycle Time</label>
-                        <input
-                          type="number" step="0.01" min="0" value={activeAssignment.plannedCycleTime || ""}
-                          onChange={(e) => setAssignment(activeMachineId, { plannedCycleTime: e.target.value })}
-                          placeholder="seconds"
-                          className="h-9 w-full border border-[#C6C6C6] px-2.5 text-[12.5px] font-mono outline-none focus:border-[#0F1D24]"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="mb-1 block text-[10px] font-mono uppercase tracking-wide text-[#9B9B9B]">Operator Code (optional)</label>
-                      <input
-                        value={activeAssignment.operatorCode || ""}
-                        onChange={(e) => setAssignment(activeMachineId, { operatorCode: e.target.value })}
-                        placeholder="e.g. OP-014"
-                        className="h-9 w-full border border-[#C6C6C6] px-2.5 text-[12.5px] outline-none focus:border-[#0F1D24]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-px bg-[#C6C6C6] border-t border-[#C6C6C6]">
-                    <button
-                      type="button"
-                      onClick={() => clearAssignment(activeMachineId)}
-                      className="flex h-10 items-center justify-center gap-1.5 bg-white px-4 text-[12px] font-semibold text-red-600 transition-colors duration-100 hover:bg-red-50"
-                    >
-                      <HiOutlineTrash className="h-3.5 w-3.5" />
-                      Clear
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => goToMachine(1)}
-                      className="flex h-10 items-center justify-center gap-1.5 bg-[#0F1D24] px-5 text-[12px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90"
-                    >
-                      Save &amp; Next
-                      <HiOutlineArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="flex h-full items-center justify-center p-10 text-[11.5px] text-[#9B9B9B]">
-                  Select a machine from the list to assign a part.
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
 
-          {(formError || error) && <p className="text-[11.5px] font-semibold text-red-600">{formError || error}</p>}
+            {(formError || error) && <p className="text-[11.5px] font-semibold text-red-600">{formError || error}</p>}
 
-          <button onClick={handleCreatePlan} disabled={creating}
-            className="border border-[#0F1D24] bg-[#FDC94D] px-4 py-2 text-[12.5px] font-bold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:opacity-50">
-            {creating ? "Creating..." : `Create Plan (${assignedCount} machine${assignedCount === 1 ? "" : "s"})`}
-          </button>
-        </main>
+            <button onClick={handleCreatePlan} disabled={creating}
+              className="border border-[#0F1D24] bg-[#FDC94D] px-4 py-2 text-[12.5px] font-bold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:opacity-50">
+              {creating ? "Creating..." : `Create Plan (${assignedCount} machine${assignedCount === 1 ? "" : "s"})`}
+            </button>
+          </main>
+        </div>
       </div>
     );
   }
@@ -1115,127 +1134,135 @@ export default function DailyProductionPlan() {
   // View 3 — Existing plan: stats + editable machine table + mould changes
   // ==========================================================
   return (
-    <div className="min-h-screen bg-[#EFEFEF]">
-      <PageTitleStrip
-        eyebrow={header.plan_number}
-        title={`${header.planning_date} · ${header.hall} · Shift ${header.shift}`}
-        actions={
-          <>
-            <span className={`flex items-center bg-white px-2.5 text-[11px] font-bold ${STATUS_COLORS[header.status] || STATUS_COLORS.Draft}`}>
-              {header.status}
-            </span>
-            <button
-              onClick={reset}
-              className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
-            >
-              <HiOutlineArrowUturnLeft className="h-3 w-3" />
-              Change Selection
-            </button>
-            {header.status === "Draft" && (
-              <button
-                onClick={handlePublish}
-                disabled={loading}
-                className="flex items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <HiOutlinePaperAirplane className="h-3 w-3" />
-                Publish Plan
-              </button>
-            )}
-          </>
-        }
+    <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        activePath={location.pathname}
       />
 
-      <main className="w-full space-y-1.5 px-3 pb-6 pt-3">
-        {/* Stats */}
-        <div className="flex flex-wrap gap-4 border border-[#C6C6C6] bg-white px-3 py-2 text-[11.5px] font-mono text-[#0F1D24]">
-          <span>Total Machines: <b>{header.total_machines}</b></span>
-          <span>Planned Machines: <b>{header.planned_machines}</b></span>
-          <span>Total Target Qty: <b>{header.total_target_qty}</b></span>
-        </div>
-
-        {/* Machine table */}
-        <div className="overflow-x-auto border border-[#C6C6C6] bg-white">
-          <table className="w-full min-w-[820px] text-[12px]">
-            <thead className="bg-[#0F1D24] text-white">
-              <tr>
-                <th className="px-2.5 py-2 text-left font-semibold">Machine</th>
-                <th className="px-2.5 py-2 text-left font-semibold">Part</th>
-                <th className="px-2.5 py-2 text-right font-semibold font-mono">Target</th>
-                <th className="px-2.5 py-2 text-right font-semibold font-mono">Planned CT</th>
-                <th className="px-2.5 py-2 text-right font-semibold font-mono">Est. Hours</th>
-                <th className="px-2.5 py-2 text-center font-semibold">Mould Change</th>
-                {header.status === "Draft" && <th className="px-2.5 py-2 text-center font-semibold">Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {details.map((row) => {
-                const openChange = openMachineCodes.has(row.machine_code);
-                return (
-                  <tr key={row.daily_detail_id} className="border-t border-[#C6C6C6]">
-                    <td className="px-2.5 py-2 font-mono font-semibold text-[#0F1D24]">
-                      {row.machine_code} <span className="text-[#9B9B9B]">{row.machine_name}</span>
-                    </td>
-                    <td className="px-2.5 py-2">
-                      <div className="font-mono text-[#0F1D24]">{row.part_number}</div>
-                      <div className="text-[#9B9B9B]">{row.part_name}</div>
-                    </td>
-                    <td className="px-2.5 py-2 text-right font-mono">{row.target_qty}</td>
-                    <td className="px-2.5 py-2 text-right font-mono">{row.planned_cycle_time ?? "-"}</td>
-                    <td className="px-2.5 py-2 text-right font-mono">{row.estimated_run_hours ?? "-"}</td>
-                    <td className="px-2.5 py-2 text-center">
-                      {openChange ? (
-                        <span className="border border-[#C6C6C6] bg-[#9B9B9B]/15 px-2 py-0.5 text-[10.5px] font-bold text-[#0F1D24]">
-                          In Progress
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => setMcModalRow(row)}
-                          className="mx-auto flex h-7 items-center gap-1 border border-[#C6C6C6] px-2 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#F5F5F5]"
-                        >
-                          <HiOutlinePlus className="h-3.5 w-3.5" />
-                          Add
-                        </button>
-                      )}
-                    </td>
-                    {header.status === "Draft" && (
-                      <td className="px-2.5 py-2 text-center">
-                        <button onClick={() => removeRow(row.daily_detail_id)}
-                          className="mx-auto flex h-6 w-6 items-center justify-center text-red-500 hover:bg-red-50">
-                          <HiOutlineTrash className="h-3.5 w-3.5" />
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-              {details.length === 0 && (
-                <tr><td colSpan={7} className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]">No machine assignments yet.</td></tr>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <PageTitleStrip
+          eyebrow={header.plan_number}
+          title={`${header.planning_date} · ${header.hall} · Shift ${header.shift}`}
+          actions={
+            <>
+              <span className={`flex items-center bg-white px-2.5 text-[11px] font-bold ${STATUS_COLORS[header.status] || STATUS_COLORS.Draft}`}>
+                {header.status}
+              </span>
+              <button
+                onClick={reset}
+                className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+              >
+                <HiOutlineArrowUturnLeft className="h-3 w-3" />
+                Change Selection
+              </button>
+              {header.status === "Draft" && (
+                <button
+                  onClick={handlePublish}
+                  disabled={loading}
+                  className="flex items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <HiOutlinePaperAirplane className="h-3 w-3" />
+                  Publish Plan
+                </button>
               )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mould change history */}
-        <MouldChangeHistory
-          changes={mouldChanges}
-          mcLoading={mcLoading}
-          mcError={mcError}
-          start={start}
-          complete={complete}
-          cancel={cancel}
-          removeChange={removeChange}
+            </>
+          }
         />
 
-        {mcModalRow && (
-          <MouldChangeModal
-            row={mcModalRow}
-            header={header}
-            monthlyParts={monthlyParts}
-            onClose={() => setMcModalRow(null)}
-            onSubmit={handleAddMouldChange}
+        <main className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 pb-6 pt-3">
+          {/* Stats */}
+          <div className="flex flex-wrap gap-4 border border-[#C6C6C6] bg-white px-3 py-2 text-[11.5px] font-mono text-[#0F1D24]">
+            <span>Total Machines: <b>{header.total_machines}</b></span>
+            <span>Planned Machines: <b>{header.planned_machines}</b></span>
+            <span>Total Target Qty: <b>{header.total_target_qty}</b></span>
+          </div>
+
+          {/* Machine table */}
+          <div className="overflow-x-auto border border-[#C6C6C6] bg-white">
+            <table className="w-full min-w-[820px] text-[12px]">
+              <thead className="bg-[#0F1D24] text-white">
+                <tr>
+                  <th className="px-2.5 py-2 text-left font-semibold">Machine</th>
+                  <th className="px-2.5 py-2 text-left font-semibold">Part</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Target</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Planned CT</th>
+                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Est. Hours</th>
+                  <th className="px-2.5 py-2 text-center font-semibold">Mould Change</th>
+                  {header.status === "Draft" && <th className="px-2.5 py-2 text-center font-semibold">Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {details.map((row) => {
+                  const openChange = openMachineCodes.has(row.machine_code);
+                  return (
+                    <tr key={row.daily_detail_id} className="border-t border-[#C6C6C6]">
+                      <td className="px-2.5 py-2 font-mono font-semibold text-[#0F1D24]">
+                        {row.machine_code} <span className="text-[#9B9B9B]">{row.machine_name}</span>
+                      </td>
+                      <td className="px-2.5 py-2">
+                        <div className="font-mono text-[#0F1D24]">{row.part_number}</div>
+                        <div className="text-[#9B9B9B]">{row.part_name}</div>
+                      </td>
+                      <td className="px-2.5 py-2 text-right font-mono">{row.target_qty}</td>
+                      <td className="px-2.5 py-2 text-right font-mono">{row.planned_cycle_time ?? "-"}</td>
+                      <td className="px-2.5 py-2 text-right font-mono">{row.estimated_run_hours ?? "-"}</td>
+                      <td className="px-2.5 py-2 text-center">
+                        {openChange ? (
+                          <span className="border border-[#C6C6C6] bg-[#9B9B9B]/15 px-2 py-0.5 text-[10.5px] font-bold text-[#0F1D24]">
+                            In Progress
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => setMcModalRow(row)}
+                            className="mx-auto flex h-7 items-center gap-1 border border-[#C6C6C6] px-2 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#F5F5F5]"
+                          >
+                            <HiOutlinePlus className="h-3.5 w-3.5" />
+                            Add
+                          </button>
+                        )}
+                      </td>
+                      {header.status === "Draft" && (
+                        <td className="px-2.5 py-2 text-center">
+                          <button onClick={() => removeRow(row.daily_detail_id)}
+                            className="mx-auto flex h-6 w-6 items-center justify-center text-red-500 hover:bg-red-50">
+                            <HiOutlineTrash className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+                {details.length === 0 && (
+                  <tr><td colSpan={7} className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]">No machine assignments yet.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mould change history */}
+          <MouldChangeHistory
+            changes={mouldChanges}
+            mcLoading={mcLoading}
+            mcError={mcError}
+            start={start}
+            complete={complete}
+            cancel={cancel}
+            removeChange={removeChange}
           />
-        )}
-      </main>
+
+          {mcModalRow && (
+            <MouldChangeModal
+              row={mcModalRow}
+              header={header}
+              monthlyParts={monthlyParts}
+              onClose={() => setMcModalRow(null)}
+              onSubmit={handleAddMouldChange}
+            />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
