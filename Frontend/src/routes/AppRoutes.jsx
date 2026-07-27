@@ -49,18 +49,17 @@ const AppRoutes = () => {
       <Route path="/" element={<Login />} />
       {/* <Route path="/login" element={<Login />} /> */}
       {/* ---------------- Manager ---------------- */}
-      <Route path="/production/overall/dashboard" element={<Dashboard />} />
-      <Route path="/production/reports" element={<ManagerReportsPage />} />
+      <Route path="/management/overall/dashboard" element={<Dashboard />} />
+      <Route path="/management/reports" element={<ManagerReportsPage />} />
+      <Route path="/management/activity-logs" element={<ActivityLogs />} />
+      <Route path="/management/dashboard" element={<ProductionDashboard />} />
+      <Route path="/management/hourly" element={<HourlyMachineTracking />} />
+      <Route path="/management/halls/:hallId" element={<HallDashboard />} />
+      <Route path="/management/halls/:hallId/heatmap" element={<HourlyMachineTracking />} />
+      <Route path="/management/rejection" element={<AllRejectionReasons />} />
+      <Route path="/management/loss-time" element={<LossAnalysisDashboard />} />
+      <Route path="/management/mould-change" element={<MouldChangeDashboard />} />
 
-
-      <Route path="/activity-logs" element={<ActivityLogs />} />
-      <Route path="/production/dashboard" element={<ProductionDashboard />} />
-      <Route path="/production/hourly" element={<HourlyMachineTracking />} />
-      <Route path="/production/halls/:hallId" element={<HallDashboard />} />
-      <Route
-        path="/production/halls/:hallId/heatmap"
-        element={<HourlyMachineTracking />}
-      />
       {/* ---------- ADMIN PRODUCTION ---------- */}
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin/logs" element={<ActivityLogs />} />
@@ -68,64 +67,45 @@ const AppRoutes = () => {
       <Route path="/admin/users" element={<Users />} />
       <Route path="/admin/machines" element={<Machines />} />
       <Route path="/admin/parts" element={<PartsPage />} />
+      <Route path="admin/production/halls/:hallId" element={<HallDashboard />} />
+
+      {/* ---------------- Production ---------------- */}
+      <Route path="/production/home" element={<UserHome />} />
+      <Route path="/production/dashboard" element={<UserDashboarproduction />} />
+      <Route path="/production/production/entry" element={<AdvProductionEntry />} />
+      <Route path="/production/production/history" element={<ProductionHistoryPage />} />
+      <Route path="/production/production/reports" element={<ReportsPage />} />
+      <Route path="/production/production/plans" element={<PlanSelectionPage />} />
       <Route
-        path="admin/production/halls/:hallId"
-        element={<HallDashboard />}
-      />
-      <Route path="/production/rejection" element={<AllRejectionReasons />} />
-      <Route path="/production/loss-time" element={<LossAnalysisDashboard />} />
-      <Route
-        path="/production/mould-change"
-        element={<MouldChangeDashboard />}
-      />
-      {/* ---------------- EMPLOYEE ---------------- */}
-      <Route path="/employee/home" element={<UserHome />} />
-      <Route path="/employee/dashboard" element={<UserDashboard />} />
-      {/* ---------- EMPLOYEE PRODUCTION ---------- */}
-      <Route
-        path="/employee/production/entry"
-        element={<AdvProductionEntry />}
-      />
-      <Route
-        path="/employee/production/history"
-        element={<ProductionHistoryPage />}
-      />
-      <Route path="/employee/production/reports" element={<ReportsPage />} />
-      {/* ---------- PRODUCTION PLANNING ---------- */}
-      <Route
-        path="/employee/production/plans"
-        element={<PlanSelectionPage />}
-      />
-      <Route
-        path="/employee/production/plans/daily"
+        path="/production/production/plans/daily"
         element={<DailyPlanPage />}
       />
       <Route
-        path="/employee/production/plans/daily/operator/allocation"
+        path="/production/production/plans/daily/operator/allocation"
         element={<DailyPlanPageForOperatorAllocation />}
       />
       <Route
-        path="/employee/production/plans/:id/operator/allocation"
+        path="/production/production/plans/:id/operator/allocation"
         element={<DailyPlanOperatorAssignment />}
       />
       <Route
-        path="/employee/production/plans/daily/create"
+        path="/production/production/plans/daily/create"
         element={<DailyProductionPlan />}
       />
       <Route
-        path="/employee/production/plans/daily/detail/:id"
+        path="/production/production/plans/daily/detail/:id"
         element={<ViewDailyPlanPage />}
       />
       <Route
-        path="/employee/production/plans/monthly"
+        path="/production/production/plans/monthly"
         element={<MonthlyPlanPage />}
       />
       <Route
-        path="/employee/production/plans/monthly/create"
+        path="/production/production/plans/monthly/create"
         element={<CreateMonthlyPlan />}
       />
       <Route
-        path="/employee/production/plans/monthly/detail/:id"
+        path="/production/production/plans/monthly/detail/:id"
         element={<MonthlyPlanView />}
       />
       ` `{/* ---------- MACHINE MANAGEMENT ---------- */}
@@ -139,7 +119,7 @@ const AppRoutes = () => {
         element={<AllocateMachineOperator />}
       /> */}
       <Route
-        path="/employee/machines/allocation/update"
+        path="/production/machines/allocation/update"
         element={<UpdateMachineOperator />}
       />
       {/* ---------------- 404 ---------------- */}
