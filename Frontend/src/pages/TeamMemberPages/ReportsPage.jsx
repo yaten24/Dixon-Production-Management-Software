@@ -9,7 +9,7 @@ import {
   FaDownload,
 } from "react-icons/fa";
 import { HiOutlineSquares2X2 } from "react-icons/hi2";
-import Sidebar from "../../compenents/common/Sidebar";
+import Sidebar from "./Sidebar";
 import ThemedDropdown from "../../compenents/common/ThemedDropdown";
 import useProductionReports, { useReportFilters } from "../../hooks/useProductionReports";
 import { exportReportToExcel } from "../../utils/exportReportToExcel";

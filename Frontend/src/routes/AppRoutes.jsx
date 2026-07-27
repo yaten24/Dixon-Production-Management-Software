@@ -18,7 +18,6 @@ import AllRejectionReasons from "../pages/ManagerPages/RejectionReasons";
 import LossAnalysisDashboard from "../pages/ManagerPages/LossTimeDashboard";
 
 import AdvProductionEntry from "../pages/TeamMemberPages/advProductionEnrty";
-import ReportsPage from "../pages/CommanPages/ReportsPage";
 
 import PlanSelectionPage from "../pages/PlanningPage/PlanSelectionPage";
 import MonthlyPlanPage from "../pages/PlanningPage/MonthlyPlanPage";
@@ -42,6 +41,8 @@ import UserHome from "../pages/TeamMemberPages/UserHome";
 import UserDashboard from "../pages/TeamMemberPages/UserDashboard";
 import ProductionHistoryPage from "../pages/TeamMemberPages/ProductionHistoryPage";
 import HallDashboard from "../pages/TeamMemberPages/HallDashboard";
+import ManagerReportsPage from "../pages/ManagerPages/ReportsPage";
+import ReportsPage from "../pages/TeamMemberPages/ReportsPage";
 
 const AppRoutes = () => {
   return (
@@ -51,7 +52,7 @@ const AppRoutes = () => {
       {/* <Route path="/login" element={<Login />} /> */}
       {/* ---------------- Manager ---------------- */}
       <Route path="/production/overall/dashboard" element={<Dashboard />} />
-      <Route path="/production/reports" element={<ReportsPage />} />
+      <Route path="/production/reports" element={<ManagerReportsPage />} />
 
 
       <Route path="/activity-logs" element={<ActivityLogs />} />
