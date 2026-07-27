@@ -130,7 +130,7 @@ function PageTitleStrip({ eyebrow, title, subtitle, showBack = true, actions }) 
   const navigate = useNavigate();
 
   return (
-    <header className="w-full border-b border-[#C6C6C6] bg-white p-2">
+    <header className="w-full border-b border-[#C6C6C6] bg-white">
       {/* Gradient accent line */}
       <div
         className="h-[2px] w-full"
@@ -163,9 +163,6 @@ function PageTitleStrip({ eyebrow, title, subtitle, showBack = true, actions }) 
                   {eyebrow}
                 </span>
               )}
-              {/* <h1 className="truncate text-[13px] font-bold leading-none tracking-tight text-[#0F1D24]">
-                {title}
-              </h1> */}
             </div>
             {subtitle && (
               <p className="truncate font-mono text-[10px] leading-none text-[#9B9B9B]">{subtitle}</p>
@@ -246,11 +243,6 @@ function ThemedSelect({ value, onChange, options, placeholder = "-- select --", 
 // Themed custom date picker — replaces the native <input type="date">
 // with a calendar panel matching ThemedSelect's visual language.
 // Value/onChange use plain "YYYY-MM-DD" strings, same as native input.
-//
-// NOTE: this panel is `position: absolute` and must never sit inside
-// an ancestor with `overflow-hidden` / `overflow-auto` — that clips
-// the popup instead of letting it float over the page. Give the
-// popup a high z-index (z-50) so it always sits above cards/tables.
 // ============================================================
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -397,10 +389,6 @@ function ThemedDatePicker({ value, onChange, disabled = false, className = "" })
 
 // ============================================================
 // Add Mould Change — modal scoped to one machine row.
-// Fields mirror the backend controller exactly:
-// changeType, dailyPlanId, dailyDetailId, machineCode, oldPartId, newPartId,
-// standardCycleTime, actualCycleTime, targetQty, plannedDate, plannedShift,
-// timeSlot, scheduledTime, reason, remarks.
 // ============================================================
 function MouldChangeModal({ row, header, monthlyParts, onClose, onSubmit }) {
   const [changeType, setChangeType] = useState("Unplanned");
@@ -685,10 +673,10 @@ export default function DailyProductionPlan() {
   const [shift, setShift] = useState("A");
 
   // ---- New-plan machine-row assignment state (only used before creation) ----
-  const [rowAssignments, setRowAssignments] = useState({}); // machineId -> { monthlyDetailId, targetQty, plannedCycleTime, operatorCode }
+  const [rowAssignments, setRowAssignments] = useState({});
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState("");
-  const [activeMachineId, setActiveMachineId] = useState(null); // master-detail selection for View 2
+  const [activeMachineId, setActiveMachineId] = useState(null);
 
   // ---- Mould change: fetched for the currently open existing plan only ----
   const mcEnabled = !!(header && !header.isNew);
@@ -697,10 +685,8 @@ export default function DailyProductionPlan() {
     [mcEnabled, header?.hall, header?.shift, header?.planning_date]
   );
   const { changes: mouldChanges, mcLoading, mcError, addChange, removeChange, start, complete, cancel } = useMouldChanges(mcFilters, mcEnabled);
-  const [mcModalRow, setMcModalRow] = useState(null); // machine row currently adding a mould change for
+  const [mcModalRow, setMcModalRow] = useState(null);
 
-  // Machine codes that already have an open (Planned / In Progress) mould change —
-  // the backend blocks creating a second one for the same machine.
   const openMachineCodes = useMemo(() => {
     const set = new Set();
     mouldChanges.forEach((mc) => {
@@ -713,8 +699,6 @@ export default function DailyProductionPlan() {
     listMonthlyPlans().then((res) => setMonthlyPlans(res.data || [])).catch(() => setMonthlyPlans([]));
   }, []);
 
-  // Default the master-detail selection to the first machine once the hall's
-  // machine list loads for a new plan.
   useEffect(() => {
     if (header?.isNew && hallMachines.length > 0 && activeMachineId === null) {
       setActiveMachineId(hallMachines[0].id);
@@ -800,7 +784,7 @@ export default function DailyProductionPlan() {
   const selectedMonthlyPlan = monthlyPlans.find((p) => String(p.monthly_plan_id) === String(monthlyPlanId));
 
   // ==========================================================
-  // View 1 — Setup form (desktop-style: context sidebar + form panel)
+  // View 1 — Setup form
   // ==========================================================
   if (!header) {
     return (
@@ -819,14 +803,10 @@ export default function DailyProductionPlan() {
           />
 
           <main className="min-h-0 flex-1 overflow-y-auto">
-            {/* NOTE: no overflow-hidden here — the ThemedDatePicker popup is
-                position:absolute and would get clipped by an ancestor that
-                hides overflow. Sharp-corner panels don't need it anyway. */}
             <form
               onSubmit={handleStart}
               className="mx-auto grid max-w-4xl grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] p-3 md:grid-cols-[260px_1fr]"
             >
-              {/* Context / summary sidebar */}
               <div className="bg-[#0F1D24] p-5 text-white">
                 <div className="mb-1 flex items-center gap-2">
                   <HiOutlineClipboardDocumentList className="h-4 w-4 text-[#FDC94D]" />
@@ -859,7 +839,6 @@ export default function DailyProductionPlan() {
                 </div>
               </div>
 
-              {/* Form panel */}
               <div className="bg-white">
                 <div className="border-b border-[#C6C6C6] bg-[#FAFAFA] px-4 py-2.5">
                   <h2 className="text-[13px] font-bold text-[#0F1D24]">Plan Setup</h2>
@@ -925,11 +904,6 @@ export default function DailyProductionPlan() {
 
   // ==========================================================
   // View 2 — New plan: master-detail machine assignment
-  // Left: scrollable list of the hall's machines with an
-  // assigned/unassigned indicator. Right: a focused form to
-  // set Part, Target Qty, Planned CT and Operator Code for
-  // whichever machine is selected — the classic desktop-app
-  // "list + detail pane" pattern instead of one dense table row.
   // ==========================================================
   if (header.isNew) {
     const assignedCount = Object.keys(rowAssignments).filter(
@@ -970,7 +944,6 @@ export default function DailyProductionPlan() {
 
           <main className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
             <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[280px_1fr]">
-              {/* Machine list */}
               <div className="max-h-[520px] overflow-y-auto bg-white">
                 <div className="sticky top-0 border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
                   <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#0F1D24]">
@@ -1015,7 +988,6 @@ export default function DailyProductionPlan() {
                 )}
               </div>
 
-              {/* Detail form */}
               <div className="bg-white">
                 {activeMachine ? (
                   <>
@@ -1172,14 +1144,12 @@ export default function DailyProductionPlan() {
         />
 
         <main className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 pb-6 pt-3">
-          {/* Stats */}
           <div className="flex flex-wrap gap-4 border border-[#C6C6C6] bg-white px-3 py-2 text-[11.5px] font-mono text-[#0F1D24]">
             <span>Total Machines: <b>{header.total_machines}</b></span>
             <span>Planned Machines: <b>{header.planned_machines}</b></span>
             <span>Total Target Qty: <b>{header.total_target_qty}</b></span>
           </div>
 
-          {/* Machine table */}
           <div className="overflow-x-auto border border-[#C6C6C6] bg-white">
             <table className="w-full min-w-[820px] text-[12px]">
               <thead className="bg-[#0F1D24] text-white">
@@ -1241,7 +1211,6 @@ export default function DailyProductionPlan() {
             </table>
           </div>
 
-          {/* Mould change history */}
           <MouldChangeHistory
             changes={mouldChanges}
             mcLoading={mcLoading}

@@ -110,7 +110,7 @@ export default function DailyPlanPageForOperatorAllocation() {
       `/employee/production/plans/${plan.daily_plan_id}/operator/allocation`,
     );
   const handleCreate = () =>
-    navigate("/employee/production/plans/daily/create");
+    navigate("/production/plans/daily/create");
 
   const hasTodayPlan = plans.some(
     (p) => toDateKey(new Date(p.planning_date)) === todayISO(),
@@ -147,7 +147,7 @@ export default function DailyPlanPageForOperatorAllocation() {
 
             <div className="flex flex-shrink-0 items-stretch gap-1.5">
               <button
-                onClick={() => navigate("/employee/dashboard")}
+                onClick={() => navigate("/production/home")}
                 className="flex items-center gap-1.5 border border-[#C6C6C6] bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
               >
                 <HiOutlineSquares2X2 className="h-3.5 w-3.5" />

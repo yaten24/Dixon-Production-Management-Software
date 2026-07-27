@@ -80,7 +80,7 @@ const AppRoutes = () => {
         element={<DailyPlanPage />}
       />
       <Route
-        path="/production/plans/daily/operator/allocation"
+        path="/production/plans/operator/allocation"
         element={<DailyPlanPageForOperatorAllocation />}
       />
       <Route
@@ -92,7 +92,7 @@ const AppRoutes = () => {
         element={<DailyProductionPlan />}
       />
       <Route
-        path="/production/production/plans/daily/detail/:id"
+        path="/production/plans/detail/:id"
         element={<ViewDailyPlanPage />}
       />
       <Route
