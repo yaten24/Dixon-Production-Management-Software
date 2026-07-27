@@ -150,11 +150,11 @@ const MachineTableRow = memo(({ index, machine, onStatusChange }) => (
 MachineTableRow.displayName = "MachineTableRow";
 
 /* ==========================================================
-   MACHINE TABLE — flat bordered table, sticky header
+   MACHINE TABLE — flat bordered table, sticky header, scrolls internally
 ========================================================== */
 const MachineTable = memo(({ filteredMachines, onStatusChange }) => (
-  <div className="overflow-hidden border border-[#C6C6C6] bg-white">
-    <div className="overflow-x-auto">
+  <div className="flex min-h-0 flex-1 flex-col overflow-hidden border border-[#C6C6C6] bg-white">
+    <div className="min-h-0 flex-1 overflow-auto">
       <table className="min-w-full text-[11px]">
         <thead className="sticky top-0 z-10 border-b border-[#C6C6C6] bg-[#F5F5F5]">
           <tr>
@@ -359,11 +359,11 @@ const Machines = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F5F5F5]">
+    <div className="flex h-screen overflow-hidden bg-[#F5F5F5]">
       <Sidebar />
 
-      <div className="flex flex-1 flex-col">
-        <div className="flex-1 space-y-2 overflow-auto p-2">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2">
           <MachineToolbar
             halls={halls}
             selectedHall={selectedHall}
@@ -377,7 +377,7 @@ const Machines = () => {
           />
 
           <MachineTable filteredMachines={filteredMachines} onStatusChange={handleStatusChange} />
-        </div>
+        </main>
       </div>
     </div>
   );
