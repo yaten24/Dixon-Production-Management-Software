@@ -5,17 +5,17 @@ import Home from "../pages/TeamMemberPages/Home";
 import NotFound from "../pages/CommanPages/NotFound";
 
 // Admin
-import Dashboard from "../pages/ManagerPages/Dashboard";
+import Dashboard from "../pages/ManagementPages/Dashboard";
 import Employees from "../pages/AdminPages/Employees";
 import Users from "../pages/AdminPages/Users";
 import Machines from "../pages/AdminPages/Machines";
 import PartsPage from "../pages/AdminPages/PartsPage";
 import ActivityLogs from "../pages/AdminPages/Activitylogs";
 
-import ProductionDashboard from "../pages/ManagerPages/ProductionDashboard";
-import MouldChangeDashboard from "../pages/ManagerPages/MouldChangeDashboard";
-import AllRejectionReasons from "../pages/ManagerPages/RejectionReasons";
-import LossAnalysisDashboard from "../pages/ManagerPages/LossTimeDashboard";
+import ProductionDashboard from "../pages/ManagementPages/ProductionDashboard";
+import MouldChangeDashboard from "../pages/ManagementPages/MouldChangeDashboard";
+import AllRejectionReasons from "../pages/ManagementPages/RejectionReasons";
+import LossAnalysisDashboard from "../pages/ManagementPages/LossTimeDashboard";
 
 import AdvProductionEntry from "../pages/TeamMemberPages/advProductionEnrty";
 
@@ -39,7 +39,7 @@ import UserHome from "../pages/TeamMemberPages/UserHome";
 import UserDashboard from "../pages/TeamMemberPages/UserDashboard";
 import ProductionHistoryPage from "../pages/TeamMemberPages/ProductionHistoryPage";
 import HallDashboard from "../pages/TeamMemberPages/HallDashboard";
-import ManagerReportsPage from "../pages/ManagerPages/ReportsPage";
+import ManagerReportsPage from "../pages/ManagementPages/ReportsPage";
 import ReportsPage from "../pages/TeamMemberPages/ReportsPage";
 
 const AppRoutes = () => {
@@ -71,7 +71,7 @@ const AppRoutes = () => {
 
       {/* ---------------- Production ---------------- */}
       <Route path="/production/home" element={<UserHome />} />
-      <Route path="/production/dashboard" element={<UserDashboarproduction />} />
+      <Route path="/production/dashboard" element={<UserDashboard />} />
       <Route path="/production/production/entry" element={<AdvProductionEntry />} />
       <Route path="/production/production/history" element={<ProductionHistoryPage />} />
       <Route path="/production/production/reports" element={<ReportsPage />} />

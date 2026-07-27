@@ -13,7 +13,7 @@ import {
   ListChecks,
 } from "lucide-react";
 
-import Sidebar from "../../compenents/dashboard/Sidebar";
+import Sidebar from "./Sidebar";
 import {
   dayTarget,
   shiftData,

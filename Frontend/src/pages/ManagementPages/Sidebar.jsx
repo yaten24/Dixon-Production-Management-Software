@@ -52,22 +52,22 @@ const menuSections = [
   {
     label: "Overview",
     items: [
-      { id: 1, title: "Dashboard", path: "/production/overall/dashboard", icon: <FaTachometerAlt size={13} /> },
+      { id: 1, title: "Dashboard", path: "/management/overall/dashboard", icon: <FaTachometerAlt size={13} /> },
     ],
   },
   {
     label: "Operations",
     items: [
-      { id: 2, title: "Production", path: "/production/dashboard", icon: <MdOutlineProductionQuantityLimits size={13} /> },
-      { id: 3, title: "Rejection", path: "/production/rejection", icon: <MdOutlineReportProblem size={13} /> },
-      { id: 4, title: "Loss Time", path: "/production/loss-time", icon: <FaClock size={13} /> },
-      { id: 5, title: "Mould Change", path: "/production/mould-change", icon: <FaExchangeAlt size={13} /> },
+      { id: 2, title: "Production", path: "/management/dashboard", icon: <MdOutlineProductionQuantityLimits size={13} /> },
+      { id: 3, title: "Rejection", path: "/management/rejection", icon: <MdOutlineReportProblem size={13} /> },
+      { id: 4, title: "Loss Time", path: "/management/loss-time", icon: <FaClock size={13} /> },
+      { id: 5, title: "Mould Change", path: "/management/mould-change", icon: <FaExchangeAlt size={13} /> },
     ],
   },
   {
     label: "Insights",
     items: [
-      { id: 9, title: "Reports", path: "/production/reports", icon: <FaChartBar size={13} /> },
+      { id: 9, title: "Reports", path: "/management/reports", icon: <FaChartBar size={13} /> },
     ],
   },
 ];

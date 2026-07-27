@@ -1,10 +1,3 @@
-// UserDashboard.jsx — Production Dashboard, single file, advanced desktop UI.
-// Header/TopBar is no longer a separate bar — its content (title, date
-// picker, refresh, export) now lives inside one bordered "control box"
-// row, styled consistently with the summary cards next to it. Overall
-// Production chart always renders its full hour-axis/shift-shading even
-// when there's no data yet — bars just sit at 0 instead of the chart
-// going blank.
 import React, { useState, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {

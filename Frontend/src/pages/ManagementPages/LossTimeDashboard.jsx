@@ -1,7 +1,7 @@
 import React from "react";
 import { FaExclamationTriangle } from "react-icons/fa";
 
-import Sidebar from "../../compenents/dashboard/Sidebar";
+import Sidebar from "./Sidebar";
 
 import useLossTimeData from "../../hooks/useLossTimeData";
 

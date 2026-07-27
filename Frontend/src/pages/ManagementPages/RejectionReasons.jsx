@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import Sidebar from "../../compenents/dashboard/Sidebar";
+import Sidebar from "./Sidebar";
 
 import RejectionFilters from "../../compenents/rejection/RejectionFilters";
 import RejectionTrendChart from "../../compenents/rejection/RejectionTrendChart";

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Sidebar from "../../compenents/dashboard/Sidebar";
+import Sidebar from "./Sidebar";
 import DashboardHeader from "../../compenents/mouldChange/DashboardHeader";
 import HallWiseMouldChange from "../../compenents/mouldChange/HallWiseMouldChange";
 import PlannedUnplannedCard from "../../compenents/mouldChange/PlannedUnplannedCard";

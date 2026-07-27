@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { FaUserShield, FaLock, FaEye, FaEyeSlash, FaIndustry } from "react-icons/fa";
+import {
+  FaUserShield,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
+  FaIndustry,
+} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { HiOutlineArrowLeft } from "react-icons/hi2";
 
@@ -18,10 +24,27 @@ const BORDER = "#C6C6C6";
 const normalizeRole = (role) => (role || "").replace(/\s+/g, "").toLowerCase();
 
 const ROLE_REDIRECTS = {
-  [normalizeRole("Admin")]: "/dashboard",
-  [normalizeRole("Supervisor")]: "/dashboard",
-  [normalizeRole("Operator")]: "/production-entry",
-  [normalizeRole("Assistant Manager")]: "/employee/home",
+  // Admin
+  [normalizeRole("Admin")]: "/admin/dashboard",
+
+  // Production Team
+  [normalizeRole("Operator")]: "/production/dashboard",
+  [normalizeRole("Supervisor")]: "/production/dashboard",
+  [normalizeRole("Engineer")]: "/production/dashboard",
+  [normalizeRole("Sr. Engineer")]: "/production/dashboard",
+
+  // Management Team
+  [normalizeRole("Assistant Manager")]: "/management/overall/dashboard",
+  [normalizeRole("Deputy Manager")]: "/management/dashboard",
+  [normalizeRole("Manager")]: "/management/dashboard",
+  [normalizeRole("Assistant General Manager")]: "/management/dashboard",
+  [normalizeRole("Deputy General Manager")]: "/management/dashboard",
+  [normalizeRole("General Manager")]: "/management/dashboard",
+  [normalizeRole("Sr. General Manager")]: "/management/dashboard",
+  [normalizeRole("Assistant Vice President")]: "/management/dashboard",
+  [normalizeRole("Vice President")]: "/management/dashboard",
+  [normalizeRole("Sr. Vice President")]: "/management/dashboard",
+  [normalizeRole("President")]: "/management/dashboard",
 };
 
 const DEFAULT_REDIRECT = "/dashboard";
@@ -39,10 +62,29 @@ const TRACE_PATHS = [
 ];
 
 const VIAS = [
-  [140, 80], [260, 40], [260, 160], [380, 160], [380, 90],
-  [90, 220], [90, 300], [220, 300], [220, 240], [400, 240], [400, 340],
-  [160, 400], [160, 460], [300, 460], [300, 380], [440, 380], [440, 500],
-  [120, 560], [120, 600], [260, 600], [260, 540], [420, 540], [420, 620],
+  [140, 80],
+  [260, 40],
+  [260, 160],
+  [380, 160],
+  [380, 90],
+  [90, 220],
+  [90, 300],
+  [220, 300],
+  [220, 240],
+  [400, 240],
+  [400, 340],
+  [160, 400],
+  [160, 460],
+  [300, 460],
+  [300, 380],
+  [440, 380],
+  [440, 500],
+  [120, 560],
+  [120, 600],
+  [260, 600],
+  [260, 540],
+  [420, 540],
+  [420, 620],
 ];
 
 const CircuitBackdrop = () => (
@@ -52,16 +94,36 @@ const CircuitBackdrop = () => (
     className="absolute inset-0 h-full w-full opacity-[0.55]"
   >
     {TRACE_PATHS.map((d, i) => (
-      <path key={`trace-${i}`} d={d} fill="none" stroke={GOLD} strokeOpacity="0.14" strokeWidth="1.5" />
+      <path
+        key={`trace-${i}`}
+        d={d}
+        fill="none"
+        stroke={GOLD}
+        strokeOpacity="0.14"
+        strokeWidth="1.5"
+      />
     ))}
 
     {VIAS.map(([cx, cy], i) => (
-      <circle key={`via-${i}`} cx={cx} cy={cy} r="2.5" fill={GOLD} fillOpacity="0.18" />
+      <circle
+        key={`via-${i}`}
+        cx={cx}
+        cy={cy}
+        r="2.5"
+        fill={GOLD}
+        fillOpacity="0.18"
+      />
     ))}
 
     {TRACE_PATHS.map((d, i) => (
       <circle key={`pulse-${i}`} r="3.2" fill={GOLD}>
-        <animateMotion path={d} dur={`${5 + i * 1.3}s`} begin={`${i * 0.9}s`} repeatCount="indefinite" rotate="auto" />
+        <animateMotion
+          path={d}
+          dur={`${5 + i * 1.3}s`}
+          begin={`${i * 0.9}s`}
+          repeatCount="indefinite"
+          rotate="auto"
+        />
         <animate
           attributeName="opacity"
           values="0;1;1;0"
@@ -81,7 +143,11 @@ const BrandPanel = () => (
     <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0A141A] via-[#0A141A]/60 to-[#0A141A]" />
 
     <div className="relative z-10 flex items-center justify-between">
-      <img src="/Dixon_Technologies_Logo.png" alt="Dixon Technologies" className="h-8 object-contain brightness-0 invert" />
+      <img
+        src="/Dixon_Technologies_Logo.png"
+        alt="Dixon Technologies"
+        className="h-8 object-contain brightness-0 invert"
+      />
       <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-white/50">
         <motion.span
           className="h-1.5 w-1.5 rounded-full bg-emerald-400"
@@ -96,7 +162,11 @@ const BrandPanel = () => (
       {/* highlighted PMS Dehradun identity mark */}
       <span
         className="inline-flex items-center gap-1.5 border px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.15em]"
-        style={{ borderColor: GOLD, color: GOLD, background: "rgba(253,201,77,0.08)" }}
+        style={{
+          borderColor: GOLD,
+          color: GOLD,
+          background: "rgba(253,201,77,0.08)",
+        }}
       >
         <FaIndustry className="text-[10px]" />
         PMS &middot; Dehradun
@@ -151,7 +221,7 @@ const Login = () => {
         hour: "2-digit",
         minute: "2-digit",
       }),
-    [now]
+    [now],
   );
 
   const handleSubmit = async (e) => {
@@ -198,7 +268,11 @@ const Login = () => {
       <div className="relative flex items-center justify-center px-4 py-10 sm:px-8">
         {/* mobile-only compact brand strip */}
         <div className="absolute left-0 right-0 top-0 flex items-center justify-between border-b border-[#C6C6C6] bg-[#0F1D24] px-4 py-2.5 lg:hidden">
-          <img src="/Dixon_Technologies_Logo.png" alt="Dixon Technologies" className="h-6 object-contain brightness-0 invert" />
+          <img
+            src="/Dixon_Technologies_Logo.png"
+            alt="Dixon Technologies"
+            className="h-6 object-contain brightness-0 invert"
+          />
           <span
             className="border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest"
             style={{ borderColor: GOLD, color: GOLD }}
@@ -213,7 +287,12 @@ const Login = () => {
           transition={{ duration: 0.3 }}
           className="relative mt-12 w-full max-w-[340px] border border-[#C6C6C6] bg-white lg:mt-0"
         >
-          <div className="h-[2px] w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${BORDER} 50%, ${GOLD} 100%)` }} />
+          <div
+            className="h-[2px] w-full"
+            style={{
+              background: `linear-gradient(90deg, ${NAVY} 0%, ${BORDER} 50%, ${GOLD} 100%)`,
+            }}
+          />
 
           {/* top bar — mirrors AdvProductionEntry's h-[40px] header row */}
           <div className="flex h-[40px] items-center gap-2 border-b border-[#C6C6C6] bg-white px-3">
@@ -226,11 +305,15 @@ const Login = () => {
                 Dehradun
               </span>
             </h1>
-            <span className="ml-auto hidden font-mono text-[9.5px] font-semibold text-[#9B9B9B] sm:block">{timestamp}</span>
+            <span className="ml-auto hidden font-mono text-[9.5px] font-semibold text-[#9B9B9B] sm:block">
+              {timestamp}
+            </span>
           </div>
 
           <div className="p-3">
-            <p className="text-[11px] font-semibold text-[#9B9B9B]">Sign in to your operations console</p>
+            <p className="text-[11px] font-semibold text-[#9B9B9B]">
+              Sign in to your operations console
+            </p>
 
             {error && (
               <div className="mt-2 border border-red-300 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700">
@@ -238,9 +321,15 @@ const Login = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="mt-2.5 flex flex-col gap-2">
+            <form
+              onSubmit={handleSubmit}
+              className="mt-2.5 flex flex-col gap-2"
+            >
               <div>
-                <label htmlFor="employeeId" className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+                <label
+                  htmlFor="employeeId"
+                  className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]"
+                >
                   Employee ID
                 </label>
                 <div className="relative">
@@ -259,7 +348,10 @@ const Login = () => {
               </div>
 
               <div>
-                <label htmlFor="password" className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+                <label
+                  htmlFor="password"
+                  className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]"
+                >
                   Password
                 </label>
                 <div className="relative">
@@ -280,7 +372,11 @@ const Login = () => {
                     disabled={submitting}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9B9B9B] transition-colors duration-100 hover:text-[#0F1D24]"
                   >
-                    {showPassword ? <FaEyeSlash className="text-[11px]" /> : <FaEye className="text-[11px]" />}
+                    {showPassword ? (
+                      <FaEyeSlash className="text-[11px]" />
+                    ) : (
+                      <FaEye className="text-[11px]" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -298,10 +394,13 @@ const Login = () => {
             </form>
 
             <div className="mt-2.5 border-t border-[#C6C6C6] pt-2.5">
-
               <div className="mt-2 flex items-center justify-between">
-                <p className="text-[10px] font-semibold text-[#0F1D24]">Dixon Technologies Dehradun</p>
-                <p className="text-[9.5px] text-[#9B9B9B]">&copy; {new Date().getFullYear()}</p>
+                <p className="text-[10px] font-semibold text-[#0F1D24]">
+                  Dixon Technologies Dehradun
+                </p>
+                <p className="text-[9.5px] text-[#9B9B9B]">
+                  &copy; {new Date().getFullYear()}
+                </p>
               </div>
             </div>
           </div>
