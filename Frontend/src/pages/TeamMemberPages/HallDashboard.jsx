@@ -2,8 +2,8 @@
 //
 // Spacing/surface system matches ProductionDashboard.jsx: one shared
 // outer gutter (p-4) + vertical rhythm (gap-4), and every panel uses the
-// same SURFACE token (rounded border + soft shadow) instead of flat
-// sharp-cornered borders, so both pages read as one consistent app.
+// same SURFACE token (flat border + soft shadow) instead of rounded
+// corners, so both pages read as one consistent, dense desktop app.
 import React, {
   useState,
   useEffect,
@@ -78,22 +78,16 @@ const SHIFT_COLORS = {
 const BAR_COLORS = { target: "#0F1D24", actual: "#FDC94D" };
 const MIN_CHART_HEIGHT = 120;
 
-// shared surface tokens — same system as ProductionDashboard.jsx
+// shared surface tokens — flat, sharp corners, subtle shadow for depth
 const BORDER = "border border-[#E1E4E9]";
-const SURFACE = `bg-white ${BORDER} rounded shadow-[0_1px_2px_rgba(15,29,36,0.06)]`;
+const SURFACE = `bg-white ${BORDER} shadow-[0_1px_2px_rgba(15,29,36,0.06)]`;
 
 // ==========================================================
 // Array-safety helper
 // ==========================================================
-// Normalizes anything that isn't already an array into an array,
-// so that a malformed/unexpected API payload (object, string,
-// null, undefined, etc.) never reaches a `.map()`/`.reduce()` call
-// downstream and crashes the render tree.
 const toArray = (value) => {
   if (Array.isArray(value)) return value;
   if (value && typeof value === "object") {
-    // Handles payloads shaped like { A: {...}, B: {...} } by turning
-    // each key into a row and tagging it with that key, e.g. `shift`.
     return Object.entries(value).map(([key, v]) =>
       v && typeof v === "object" ? { ...v } : { value: v },
     );
@@ -134,69 +128,31 @@ const pct = (num, den) => (den > 0 ? Math.round((num / den) * 100) : 0);
 // Inline icons (KPI cards)
 // ==========================================================
 const IconTarget = (p) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    {...p}
-  >
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
     <circle cx="12" cy="12" r="8" />
     <circle cx="12" cy="12" r="4" />
     <circle cx="12" cy="12" r="0.8" fill="currentColor" />
   </svg>
 );
 const IconTrendUp = (p) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...p}
-  >
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
     <path d="M3 17l6-6 4 4 8-8" />
     <path d="M15 7h6v6" />
   </svg>
 );
 const IconAlert = (p) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...p}
-  >
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
     <path d="M12 9v4M12 17h.01" />
     <circle cx="12" cy="12" r="9" />
   </svg>
 );
 const IconGauge = (p) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...p}
-  >
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
     <path d="M12 14l4-4M4 15a8 8 0 1 1 16 0" />
   </svg>
 );
 const IconAward = (p) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    {...p}
-  >
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
     <circle cx="12" cy="8" r="5" />
     <path d="M8.5 12.5L7 21l5-2.5L17 21l-1.5-8.5" />
   </svg>
@@ -210,8 +166,7 @@ const IconBarChart = (p) => (
 );
 
 // ==========================================================
-// Themed date picker — rounded corners, matches the desktop
-// design tokens used across the plan pages.
+// Themed date picker — flat, sharp corners.
 // ==========================================================
 const CustomDatePicker = ({ value, onChange }) => {
   const [open, setOpen] = useState(false);
@@ -224,8 +179,6 @@ const CustomDatePicker = ({ value, onChange }) => {
     setViewDate(parseDateKey(value));
   }, [value]);
 
-  // Click-outside must check both the trigger button AND the portaled
-  // panel, since the panel no longer lives inside wrapperRef in the DOM.
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -241,11 +194,6 @@ const CustomDatePicker = ({ value, onChange }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // The header row scrolls horizontally and clips absolutely-positioned
-  // children, so the calendar is portaled to document.body and placed
-  // with fixed coordinates instead of being positioned relative to the
-  // trigger. Position is recalculated on open and kept in sync while
-  // open in case the trigger moves (header scroll, window resize).
   const updateCoords = useCallback(() => {
     if (!wrapperRef.current) return;
     const rect = wrapperRef.current.getBoundingClientRect();
@@ -296,7 +244,7 @@ const CustomDatePicker = ({ value, onChange }) => {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-9 flex-shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[11.5px] font-medium outline-none transition-colors duration-100
+        className={`flex h-9 flex-shrink-0 items-center gap-1.5 border px-3 text-[11.5px] font-medium outline-none transition-colors duration-100
           ${open ? "border-[#0F1D24]" : "border-[#E1E4E9] bg-white hover:border-[#0F1D24]"} bg-white text-[#0F1D24]`}
       >
         <Calendar size={13} className="text-[#9B9B9B]" />
@@ -309,13 +257,13 @@ const CustomDatePicker = ({ value, onChange }) => {
           <div
             ref={panelRef}
             style={{ position: "fixed", top: coords.top, left: coords.left }}
-            className="z-[9999] w-60 overflow-hidden rounded-lg border border-[#E1E4E9] bg-white shadow-[0_10px_24px_rgba(15,29,36,0.16)]"
+            className="z-[9999] w-60 overflow-hidden border border-[#E1E4E9] bg-white shadow-[0_10px_24px_rgba(15,29,36,0.16)]"
           >
             <div className="flex items-center justify-between bg-[#0F1D24] px-2.5 py-2">
               <button
                 type="button"
                 onClick={() => changeMonth(-1)}
-                className="flex h-5 w-5 items-center justify-center rounded text-[#FDC94D] transition-colors duration-100 hover:bg-white/10"
+                className="flex h-5 w-5 items-center justify-center text-[#FDC94D] transition-colors duration-100 hover:bg-white/10"
               >
                 <ChevronLeft size={12} />
               </button>
@@ -325,7 +273,7 @@ const CustomDatePicker = ({ value, onChange }) => {
               <button
                 type="button"
                 onClick={() => changeMonth(1)}
-                className="flex h-5 w-5 items-center justify-center rounded text-[#FDC94D] transition-colors duration-100 hover:bg-white/10"
+                className="flex h-5 w-5 items-center justify-center text-[#FDC94D] transition-colors duration-100 hover:bg-white/10"
               >
                 <ChevronRight size={12} />
               </button>
@@ -385,7 +333,7 @@ const CustomDatePicker = ({ value, onChange }) => {
 };
 
 // ==========================================================
-// Themed select — rounded corners, matches ThemedSelect elsewhere.
+// Themed select — flat, sharp corners.
 // ==========================================================
 const CustomSelect = ({
   value,
@@ -399,9 +347,6 @@ const CustomSelect = ({
   const wrapperRef = useRef(null);
   const panelRef = useRef(null);
 
-  // Same fix as CustomDatePicker: the header row scrolls horizontally
-  // and clips absolutely-positioned children, so the options panel is
-  // portaled to document.body and placed with fixed coordinates.
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -456,7 +401,7 @@ const CustomSelect = ({
         type="button"
         onClick={() => setOpen((o) => !o)}
         style={{ maxWidth }}
-        className={`flex h-9 min-w-[110px] flex-shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[11.5px] font-medium outline-none transition-colors duration-100
+        className={`flex h-9 min-w-[110px] flex-shrink-0 items-center gap-1.5 border px-3 text-[11.5px] font-medium outline-none transition-colors duration-100
           ${open ? "border-[#0F1D24]" : "border-[#E1E4E9] hover:border-[#0F1D24]"} bg-white text-[#0F1D24]`}
       >
         {Icon && <Icon size={12} className="shrink-0 text-[#9B9B9B]" />}
@@ -480,7 +425,7 @@ const CustomSelect = ({
               left: coords.left,
               minWidth: coords.minWidth,
             }}
-            className="z-[9999] max-h-56 w-64 overflow-y-auto rounded-lg border border-[#E1E4E9] bg-white py-1 shadow-[0_10px_24px_rgba(15,29,36,0.16)]"
+            className="z-[9999] max-h-56 w-64 overflow-y-auto border border-[#E1E4E9] bg-white py-1 shadow-[0_10px_24px_rgba(15,29,36,0.16)]"
           >
             {safeOptions.map((opt) => (
               <button
@@ -553,7 +498,7 @@ const DashboardHeader = ({
         <button
           onClick={onBack}
           title="Back"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E1E4E9] bg-white text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+          className="flex h-9 w-9 shrink-0 items-center justify-center border border-[#E1E4E9] bg-white text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
         >
           <ArrowLeft size={14} />
         </button>
@@ -587,7 +532,7 @@ const DashboardHeader = ({
           options={shiftOptions}
         />
 
-        <div className="flex shrink-0 items-center gap-px overflow-hidden rounded-lg border border-[#E1E4E9]">
+        <div className="flex shrink-0 items-center gap-px overflow-hidden border border-[#E1E4E9]">
           <button
             onClick={onApply}
             title="Apply selected filters"
@@ -616,7 +561,7 @@ const DashboardHeader = ({
         </div>
 
         {message ? (
-          <div className="flex h-9 min-w-0 flex-1 shrink items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 text-[10.5px] font-semibold text-amber-700">
+          <div className="flex h-9 min-w-0 flex-1 shrink items-center gap-1.5 border border-amber-200 bg-amber-50 px-3 text-[10.5px] font-semibold text-amber-700">
             <AlertTriangle size={12} className="shrink-0" />
             <span className="truncate">{message}</span>
           </div>
@@ -624,7 +569,7 @@ const DashboardHeader = ({
           <div className="min-w-[8px] flex-1" />
         )}
 
-        <div className="flex h-9 shrink-0 items-stretch gap-px overflow-hidden rounded-lg border border-[#E1E4E9] [&>*]:flex [&>*]:items-center [&>*]:whitespace-nowrap">
+        <div className="flex h-9 shrink-0 items-stretch gap-px overflow-hidden border border-[#E1E4E9] [&>*]:flex [&>*]:items-center [&>*]:whitespace-nowrap">
           <button
             onClick={onHeatmap}
             className="flex items-center gap-1.5 bg-white px-3 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/20"
@@ -684,7 +629,7 @@ const useCountUp = (value, duration = 700) => {
 };
 
 // ==========================================================
-// KPI card — rounded surface, tone accent rail on top.
+// KPI card — flat surface, tone accent rail on top.
 // ==========================================================
 const KPI_TONE = {
   green: {
@@ -743,13 +688,13 @@ const MachineWiseTable = ({ rows, loading }) => {
       className={`flex min-h-0 h-full flex-1 flex-col overflow-hidden ${SURFACE}`}
     >
       <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#E1E4E9] bg-[#FAFAFB] px-3.5 py-2.5">
-        <div className="flex h-6 w-6 items-center justify-center rounded bg-[#0F1D24] text-[#FDC94D]">
+        <div className="flex h-6 w-6 items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
           <Boxes className="h-3.5 w-3.5" />
         </div>
         <h2 className="text-[12.5px] font-bold text-[#0F1D24]">
           Machine-wise Breakdown
         </h2>
-        <span className="rounded border border-[#E1E4E9] bg-white px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">
+        <span className="border border-[#E1E4E9] bg-white px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">
           {safeRows.length}
         </span>
       </div>
@@ -866,7 +811,7 @@ const ShiftSummaryPanel = ({ rows, loading }) => {
               <div key={row.shift ?? idx} className="bg-white p-3.5">
                 <div className="flex items-center gap-2">
                   <span
-                    className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-[9.5px] font-bold"
+                    className="flex h-5 w-5 flex-shrink-0 items-center justify-center text-[9.5px] font-bold"
                     style={{
                       background: colors.swatch,
                       color: shiftKey === "A" ? "#0F1D24" : "#FDC94D",
@@ -912,7 +857,7 @@ const TopRejectsPanel = ({ rows, loading }) => {
   return (
     <div className={`flex min-h-0 flex-1 flex-col overflow-hidden ${SURFACE}`}>
       <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#E1E4E9] bg-[#FAFAFB] px-3.5 py-2.5">
-        <div className="flex h-6 w-6 items-center justify-center rounded bg-red-500 text-white">
+        <div className="flex h-6 w-6 items-center justify-center bg-red-500 text-white">
           <AlertOctagon className="h-3.5 w-3.5" />
         </div>
         <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Top Rejects</h2>
@@ -942,9 +887,9 @@ const TopRejectsPanel = ({ rows, loading }) => {
                     {qty.toLocaleString()}
                   </span>
                 </div>
-                <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-[#F0F0F0]">
+                <div className="mt-1.5 h-1 w-full overflow-hidden bg-[#F0F0F0]">
                   <div
-                    className="h-full rounded-full bg-red-500"
+                    className="h-full bg-red-500"
                     style={{ width: `${share}%` }}
                   />
                 </div>
@@ -1106,7 +1051,6 @@ const Chart = ({ chartData }) => {
                 y={PADDING.top - (compact ? 30 : 44)}
                 width={pillW}
                 height={pillH}
-                rx={pillH / 2}
                 fill={SHIFT_COLORS[seg.shift].swatch}
               />
               <text
@@ -1154,7 +1098,6 @@ const Chart = ({ chartData }) => {
               y={g.y1}
               width={g.barW}
               height={g.h1}
-              rx={2}
               fill={BAR_COLORS.target}
               opacity={hoverIdx === null || hoverIdx === i ? 1 : 0.55}
               style={{
@@ -1167,7 +1110,6 @@ const Chart = ({ chartData }) => {
               y={g.y2}
               width={g.barW}
               height={g.h2}
-              rx={2}
               fill={BAR_COLORS.actual}
               opacity={hoverIdx === null || hoverIdx === i ? 1 : 0.55}
               style={{
@@ -1230,7 +1172,7 @@ const Chart = ({ chartData }) => {
 
       {hovered && (
         <div
-          className="pointer-events-none absolute z-10 rounded-lg border border-[#E1E4E9] bg-white px-2.5 py-2 text-[10px] shadow-[0_10px_24px_rgba(15,29,36,0.16)]"
+          className="pointer-events-none absolute z-10 border border-[#E1E4E9] bg-white px-2.5 py-2 text-[10px] shadow-[0_10px_24px_rgba(15,29,36,0.16)]"
           style={{
             left: `${Math.min(Math.max(((hovered.groupX + hovered.groupW / 2) / width) * 100, 10), 90)}%`,
             top: 4,
@@ -1242,7 +1184,7 @@ const Chart = ({ chartData }) => {
               {hovered.label}
             </span>
             <span
-              className="rounded px-1.5 py-0.5 text-[9px] font-semibold"
+              className="px-1.5 py-0.5 text-[9px] font-semibold"
               style={{
                 background: SHIFT_COLORS[hovered.shift].swatch,
                 color: hovered.shift === "A" ? "#0F1D24" : "#FDC94D",
@@ -1309,7 +1251,7 @@ const HourlyChartCard = ({ chartData, loading }) => {
       <div className={`flex min-h-0 h-full flex-1 flex-col ${SURFACE} p-3.5`}>
         <div className="mb-2 flex flex-shrink-0 flex-wrap items-center justify-between gap-2 pr-1">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0F1D24]">
+            <div className="flex h-8 w-8 items-center justify-center bg-[#0F1D24]">
               <IconBarChart className="h-3.5 w-3.5 text-[#FDC94D]" />
             </div>
             <div>
@@ -1324,18 +1266,18 @@ const HourlyChartCard = ({ chartData, loading }) => {
 
           <div className="flex items-center gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 rounded border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-2 py-1">
+              <div className="flex items-center gap-1.5 border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-2 py-1">
                 <span
-                  className="h-2 w-2 rounded-sm"
+                  className="h-2 w-2"
                   style={{ background: BAR_COLORS.target }}
                 />
                 <span className="text-[10px] font-semibold text-[#0F1D24]">
                   Target
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 rounded border border-[#FDC94D]/50 bg-[#FDC94D]/10 px-2 py-1">
+              <div className="flex items-center gap-1.5 border border-[#FDC94D]/50 bg-[#FDC94D]/10 px-2 py-1">
                 <span
-                  className="h-2 w-2 rounded-sm"
+                  className="h-2 w-2"
                   style={{ background: BAR_COLORS.actual }}
                 />
                 <span className="text-[10px] font-semibold text-[#0F1D24]">
@@ -1358,7 +1300,7 @@ const HourlyChartCard = ({ chartData, loading }) => {
             </div>
             <button
               onClick={() => setIsZoomed(true)}
-              className="flex h-7 items-center gap-1 rounded bg-[#0F1D24] px-2.5 text-[9px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#1a2e38]"
+              className="flex h-7 items-center gap-1 bg-[#0F1D24] px-2.5 text-[9px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#1a2e38]"
             >
               <Expand size={11} /> Zoom
             </button>
@@ -1372,7 +1314,7 @@ const HourlyChartCard = ({ chartData, loading }) => {
         ) : (
           <div className="flex h-full min-h-0 flex-col">
             {!hasData && (
-              <div className="mb-2 flex-shrink-0 rounded border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[10px] text-amber-700">
+              <div className="mb-2 flex-shrink-0 border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[10px] text-amber-700">
                 No production recorded for this date — showing 0 for every hour.
               </div>
             )}
@@ -1393,7 +1335,7 @@ const HourlyChartCard = ({ chartData, loading }) => {
         <div className="fixed inset-0 z-50 flex flex-col bg-white">
           <div className="flex flex-shrink-0 items-center justify-between border-b border-[#E1E4E9] px-6 py-3.5">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0F1D24]">
+              <div className="flex h-8 w-8 items-center justify-center bg-[#0F1D24]">
                 <IconBarChart className="h-3.5 w-3.5 text-[#FDC94D]" />
               </div>
               <div>
@@ -1421,7 +1363,7 @@ const HourlyChartCard = ({ chartData, loading }) => {
               </div>
               <button
                 onClick={() => setIsZoomed(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-[#9B9B9B] transition-colors duration-100 hover:bg-[#0F1D24]/5"
+                className="flex h-9 w-9 items-center justify-center text-[#9B9B9B] transition-colors duration-100 hover:bg-[#0F1D24]/5"
               >
                 <X size={16} />
               </button>
@@ -1532,7 +1474,6 @@ const HallDashboard = () => {
     ] = results;
     const failures = [];
 
-    // --- stats: object payload, not an array. Guard against non-object too. ---
     if (
       statsRes.status === "fulfilled" &&
       statsRes.value?.success &&
@@ -1544,7 +1485,6 @@ const HallDashboard = () => {
       failures.push("stats");
     }
 
-    // --- everything below is expected to be array-shaped; normalize defensively ---
     if (
       machineWiseRes.status === "fulfilled" &&
       machineWiseRes.value?.success
@@ -1660,9 +1600,6 @@ const HallDashboard = () => {
       0;
   const showNoDataWarning = !loading && stats && !hasStatsData;
 
-  // Was `<Navigate to="/" replace />` — landed on the public Home page for
-  // an invalid/unknown hallId. Sending to the production dashboard instead
-  // keeps the person inside the app they were already using.
   if (!hallCode) return <Navigate to="/production/dashboard" replace />;
 
   return (
@@ -1679,7 +1616,7 @@ const HallDashboard = () => {
       />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4">
+        <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-2.5 py-1.5">
           <DashboardHeader
             hallCode={hallCode}
             dateLabel={formatDisplay(filters.date)}
@@ -1711,7 +1648,7 @@ const HallDashboard = () => {
                     {Array.from({ length: 5 }).map((_, i) => (
                       <div
                         key={i}
-                        className="h-[92px] animate-pulse rounded border border-[#E1E4E9] bg-[#E1E4E9]/30"
+                        className="h-[92px] animate-pulse border border-[#E1E4E9] bg-[#E1E4E9]/30"
                       />
                     ))}
                   </div>
