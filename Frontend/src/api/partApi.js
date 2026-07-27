@@ -1,21 +1,5 @@
-import axios from "axios";
+import api from "./axios";
 
-// NOTE: if you already have a shared axios instance (the one AuthContext
-// uses, with withCredentials + httpOnly cookie handling baked in), import
-// and use THAT instead of creating a new one here — reusing it avoids
-// repeating the "hardcoded localhost URL" bug you fixed earlier.
-// Set VITE_API_BASE_URL in your .env for prod builds.
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-});
-
-// GET /parts?page=&limit=&search=&category=&customer=&source=&status=
-// -> { success, count, total, page, limit, totalPages, data }
-// filters = { search, category, customer, source, status }
 export const getAllParts = (page = 1, limit = 100, filters = {}) =>
   api
     .get("/parts", { params: { page, limit, ...filters } })

@@ -25,11 +25,25 @@ const cookieParser = require("cookie-parser");
 const app = express();
 
 app.use(cookieParser());
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://192.168.3.87:3000",
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173", // aapka frontend ka exact URL
+    origin: (origin, callback) => {
+      // Allow requests with no origin (Postman, mobile apps, etc.)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
-  }),
+  })
 );
 app.use(express.json());
 

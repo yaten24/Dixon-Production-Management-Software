@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 // Adjust if your frontend uses a different env var / base URL setup.
-const API_BASE = import.meta.env?.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE = import.meta.env?.VITE_API_BASE_URL;
 
 const EMPTY_DATA = {
   users: { total: 0, byRole: [] },
@@ -24,7 +24,7 @@ export default function useAdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/dashboard/summary`, {
+      const res = await fetch(`${API_BASE}/admin/dashboard/summary`, {
         credentials: "include",
       });
 
