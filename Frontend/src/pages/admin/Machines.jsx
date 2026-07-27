@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-import Sidebar from "../../compenents/dashboard/Sidebar";
-import Header from "../../compenents/dashboard/Header";
+import Sidebar from "./Sidebar";
 
 import MachineToolbar from "../../compenents/machines/MachineToolbar";
 import MachineTable from "../../compenents/machines/MachineTable";

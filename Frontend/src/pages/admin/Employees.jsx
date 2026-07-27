@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 
-import Sidebar from "../../compenents/dashboard/Sidebar";
-import Header from "../../compenents/dashboard/Header";
+import Sidebar from "./Sidebar";
 
 import EmployeeFilters from "../../compenents/employees/EmployeeFilters";
 import EmployeeTable from "../../compenents/employees/EmployeeTable";

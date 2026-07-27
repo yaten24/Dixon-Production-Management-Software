@@ -11,23 +11,22 @@ import {
   getHalls,
   getStatuses,
   exportCSV,
-} from "../config/userHelpers";
+} from "../../config/userHelpers";
 import {
   fetchUsers,
   createUserApi,
   updateUserApi,
   deleteUserApi,
-} from "../services/userService";
-import UserStats from "../compenents/users/UserStats";
-import UserFilters from "../compenents/users/UserFilters";
-import BulkActions from "../compenents/users/BulkActions";
-import UserTable from "../compenents/users/UserTable";
-import Pagination from "../compenents/users/Pagination";
-import UserModal from "../compenents/users/UserModal";
-import UserDrawer from "../compenents/users/UserDrawer";
-import DeleteModal from "../compenents/users/DeleteModal";
-import Sidebar from "../compenents/dashboard/Sidebar";
-import Header from "../compenents/dashboard/Header";
+} from "../../services/userService";
+import UserStats from "../../compenents/users/UserStats";
+import UserFilters from "../../compenents/users/UserFilters";
+import BulkActions from "../../compenents/users/BulkActions";
+import UserTable from "../../compenents/users/UserTable";
+import Pagination from "../../compenents/users/Pagination";
+import UserModal from "../../compenents/users/UserModal";
+import UserDrawer from "../../compenents/users/UserDrawer";
+import DeleteModal from "../../compenents/users/DeleteModal";
+import Sidebar from "./Sidebar";
 
 const Users = () => {
   // ===========================

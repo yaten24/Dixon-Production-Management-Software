@@ -3,19 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FaTachometerAlt,
+  FaUsers,
   FaIndustry,
-  FaChartBar,
   FaClock,
-  FaExchangeAlt,
   FaCalendarAlt,
   FaSignOutAlt,
   FaUserCircle,
 } from "react-icons/fa";
 
-import {
-  MdOutlineProductionQuantityLimits,
-  MdOutlineReportProblem,
-} from "react-icons/md";
+import { LuUserCog } from "react-icons/lu";
+import { RiFileList3Line } from "react-icons/ri";
+import { FaScrewdriverWrench } from "react-icons/fa6";
 
 import {
   HiOutlineChevronDoubleLeft,
@@ -45,36 +43,36 @@ const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=Roboto+Mono:wght@500;600&display=swap');
 `;
 
-const EXPANDED_WIDTH = 172;
+const EXPANDED_WIDTH = 176;
 const COLLAPSED_WIDTH = 52;
 
 const menuSections = [
   {
     label: "Overview",
     items: [
-      { id: 1, title: "Dashboard", path: "/dashboard", icon: <FaTachometerAlt size={13} /> },
+      { id: 1, title: "Dashboard", path: "/admin/dashboard", icon: <FaTachometerAlt size={13} /> },
     ],
   },
   {
-    label: "Operations",
+    label: "Resources",
     items: [
-      { id: 2, title: "Production", path: "/production/dashboard", icon: <MdOutlineProductionQuantityLimits size={13} /> },
-      { id: 3, title: "Rejection", path: "/production/rejection", icon: <MdOutlineReportProblem size={13} /> },
-      { id: 4, title: "Loss Time", path: "/production/loss-time", icon: <FaClock size={13} /> },
-      { id: 5, title: "Mould Change", path: "/production/mould-change", icon: <FaExchangeAlt size={13} /> },
+      { id: 6, title: "Users", path: "/admin/users", icon: <FaUsers size={13} /> },
+      { id: 7, title: "Machines", path: "/admin/machines", icon: <FaIndustry size={13} /> },
+      { id: 8, title: "Parts", path: "/admin/parts", icon: <FaScrewdriverWrench size={13} /> },
+      { id: 9, title: "Operators", path: "/admin/operators", icon: <LuUserCog size={13} /> },
     ],
   },
   {
     label: "Insights",
     items: [
-      { id: 9, title: "Reports", path: "/reports", icon: <FaChartBar size={13} /> },
+      { id: 11, title: "Logs", path: "/admin/logs", icon: <RiFileList3Line size={13} /> },
     ],
   },
 ];
 
 const containerVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.025, delayChildren: 0.06 } },
+  show: { transition: { staggerChildren: 0.02, delayChildren: 0.05 } },
 };
 
 const itemVariants = {
@@ -83,7 +81,7 @@ const itemVariants = {
     opacity: 1,
     x: 0,
     filter: "blur(0px)",
-    transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
@@ -212,7 +210,7 @@ const Sidebar = () => {
                       >
                         {isActive && (
                           <motion.div
-                            layoutId="sidebarIndicator"
+                            layoutId="adminSidebarIndicator"
                             transition={{ type: "spring", stiffness: 400, damping: 30 }}
                             className="absolute left-0 top-0 h-full w-[2px] rounded"
                             style={{ background: THEME.accent }}

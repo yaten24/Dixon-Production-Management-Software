@@ -109,7 +109,7 @@ const DayPlanCard = ({ plan, onOpen, onDelete }) => {
         </span>
       </div>
 
-      <HiOutlineArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-[#C6C6C6] opacity-0 transition-opacity duration-100 group-hover:text-[#FDC94D] group-hover:opacity-100" />
+      {/* <HiOutlineArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-[#C6C6C6] opacity-0 transition-opacity duration-100 group-hover:text-[#FDC94D] group-hover:opacity-100" /> */}
 
       <button
         onClick={handleDeleteClick}

@@ -23,8 +23,7 @@ import {
   FaSignOutAlt,
   FaFileImport,
 } from "react-icons/fa";
-import Sidebar from "../../compenents/dashboard/Sidebar";
-import Header from "../../compenents/dashboard/Header";
+import Sidebar from "./Sidebar";
 
 // Set this to your API base URL (or read from an env var in your build setup)
 const API_BASE = "http://localhost:5000/api";

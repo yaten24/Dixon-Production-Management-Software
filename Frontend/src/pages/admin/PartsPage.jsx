@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 
-import Sidebar from "../../compenents/dashboard/Sidebar";
-import Header from "../../compenents/dashboard/Header";
+import Sidebar from "./Sidebar";
 
 import PartsFilters from "../../compenents/parts/PartsFilters";
 import PartsTable from "../../compenents/parts/PartsTable";

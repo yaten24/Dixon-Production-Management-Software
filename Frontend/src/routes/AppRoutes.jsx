@@ -7,12 +7,12 @@ import NotFound from "../pages/NotFound";
 
 // Admin
 import Dashboard from "../pages/AdminPages/Dashboard";
-import Employees from "../pages/AdminPages/Employees";
-import Users from "../pages/Users";
-import Machines from "../pages/AdminPages/Machines";
-import PartsPage from "../pages/AdminPages/PartsPage";
+import Employees from "../pages/admin/Employees";
+import Users from "../pages/admin/Users";
+import Machines from "../pages/admin/Machines";
+import PartsPage from "../pages/admin/PartsPage";
 import Reports from "../pages/AdminPages/Reports";
-import ActivityLogs from "../pages/AdminPages/Activitylogs";
+import ActivityLogs from "../pages/admin/Activitylogs";
 
 import ProductionDashboard from "../pages/AdminPages/ProductionDashboard";
 import HallDashboard from "../pages/HallDashboard";
@@ -45,6 +45,7 @@ import ViewDailyPlanPage from "../pages/PlanningPage/DailyPlanView";
 import DailyPlanOperatorAssignment from "../pages/PlanningPage/DailyPlanOperatorAssignment";
 import DailyPlanPageForOperatorAllocation from "../pages/PlanningPage/DailyPlanPageForOperatorAllocation";
 import HourlyMachineTracking from "../pages/HourlyMachineTracking";
+import AdminDashboard from "../pages/admin/AdminDashboard";
 
 const AppRoutes = () => {
   return (
@@ -52,19 +53,23 @@ const AppRoutes = () => {
       {/* ---------------- PUBLIC ---------------- */}
       <Route path="/" element={<Login />} />
       {/* <Route path="/login" element={<Login />} /> */}
-      {/* ---------------- ADMIN ---------------- */}
+      {/* ---------------- Manager ---------------- */}
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/employees" element={<Employees />} />
-      <Route path="/users" element={<Users />} />
-      <Route path="/machines" element={<Machines />} />
-      <Route path="/parts" element={<PartsPage />} />
       <Route path="/reports" element={<Reports />} />
       <Route path="/activity-logs" element={<ActivityLogs />} />
-      {/* ---------- ADMIN PRODUCTION ---------- */}
       <Route path="/production/dashboard" element={<ProductionDashboard />} />
       <Route path="/production/hourly" element={<HourlyMachineTracking />} />
       <Route path="/production/halls/:hallId" element={<HallDashboard />} />
       <Route path="/production/halls/:hallId/heatmap" element={<HourlyMachineTracking />} />
+
+
+      {/* ---------- ADMIN PRODUCTION ---------- */}
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin/logs" element={<ActivityLogs />} />
+      <Route path="/admin/operators" element={<Employees />} />
+      <Route path="/admin/users" element={<Users />} />
+      <Route path="/admin/machines" element={<Machines />} />
+      <Route path="/admin/parts" element={<PartsPage />} />
       <Route
         path="admin/production/halls/:hallId"
         element={<HallDashboard />}
