@@ -10,7 +10,6 @@ import Employees from "../pages/AdminPages/Employees";
 import Users from "../pages/AdminPages/Users";
 import Machines from "../pages/AdminPages/Machines";
 import PartsPage from "../pages/AdminPages/PartsPage";
-import Reports from "../pages/ManagerPages/Reports";
 import ActivityLogs from "../pages/AdminPages/Activitylogs";
 
 import ProductionDashboard from "../pages/ManagerPages/ProductionDashboard";
@@ -19,7 +18,7 @@ import AllRejectionReasons from "../pages/ManagerPages/RejectionReasons";
 import LossAnalysisDashboard from "../pages/ManagerPages/LossTimeDashboard";
 
 import AdvProductionEntry from "../pages/TeamMemberPages/advProductionEnrty";
-import ReportsPage from "../pages/ManagerPages/ReportsPage";
+import ReportsPage from "../pages/CommanPages/ReportsPage";
 
 import PlanSelectionPage from "../pages/PlanningPage/PlanSelectionPage";
 import MonthlyPlanPage from "../pages/PlanningPage/MonthlyPlanPage";
@@ -51,8 +50,10 @@ const AppRoutes = () => {
       <Route path="/" element={<Login />} />
       {/* <Route path="/login" element={<Login />} /> */}
       {/* ---------------- Manager ---------------- */}
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/reports" element={<Reports />} />
+      <Route path="/production/overall/dashboard" element={<Dashboard />} />
+      <Route path="/production/reports" element={<ReportsPage />} />
+
+
       <Route path="/activity-logs" element={<ActivityLogs />} />
       <Route path="/production/dashboard" element={<ProductionDashboard />} />
       <Route path="/production/hourly" element={<HourlyMachineTracking />} />

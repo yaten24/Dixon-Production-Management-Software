@@ -1,410 +1,196 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { FaHome, FaArrowLeft, FaRocket } from "react-icons/fa";
+import { FaHome, FaArrowLeft, FaSatellite, FaPhoneAlt, FaEnvelope } from "react-icons/fa";
 
-const stars = Array.from({ length: 70 }, (_, index) => ({
-  id: index,
-  duration: Math.random() * 4 + 2,
-  delay: Math.random() * 5,
-  left: `${Math.random() * 100}%`,
-  top: `${Math.random() * 100}%`,
-}));
-
-const particles = Array.from({ length: 40 }, (_, index) => ({
-  id: index,
-  size: Math.random() * 8 + 3,
-  left: `${Math.random() * 100}%`,
-  top: `${Math.random() * 100}%`,
-  duration: Math.random() * 8 + 6,
-  delay: Math.random() * 5,
-}));
+/* ------------------------------------------------------------------ */
+/*  Starfield generator — layered depth (small/dim → large/bright)    */
+/* ------------------------------------------------------------------ */
+const makeStars = (count, sizeRange, opacityRange) =>
+  Array.from({ length: count }, (_, id) => ({
+    id,
+    left: `${Math.random() * 100}%`,
+    top: `${Math.random() * 100}%`,
+    size: Math.random() * (sizeRange[1] - sizeRange[0]) + sizeRange[0],
+    baseOpacity:
+      Math.random() * (opacityRange[1] - opacityRange[0]) + opacityRange[0],
+    duration: Math.random() * 3 + 2,
+    delay: Math.random() * 5,
+  }));
 
 const NotFound = () => {
+  const farStars = useMemo(() => makeStars(90, [0.5, 1.2], [0.15, 0.4]), []);
+  const midStars = useMemo(() => makeStars(50, [1.2, 2], [0.3, 0.7]), []);
+  const nearStars = useMemo(() => makeStars(25, [2, 3], [0.6, 1]), []);
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
-      {/* ===============================
-              Animated Background
-      =============================== */}
-      <div className="absolute inset-0">
-        <motion.div
-          animate={{
-            scale: [1, 1.25, 1],
-            rotate: [0, 180, 360],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-blue-600/20 blur-[120px]"
-        />
+    <div className="relative min-h-screen w-full overflow-hidden bg-[#03040c] flex items-center justify-center px-6 py-16">
+      {/* ============================================================ */}
+      {/*  Background: deep-space gradient + drifting nebulae           */}
+      {/* ============================================================ */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#0a0e2a_0%,_#03040c_55%,_#000000_100%)]" />
 
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            rotate: [360, 180, 0],
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-purple-600/20 blur-[140px]"
-        />
-      </div>
+      <motion.div
+        animate={{ opacity: [0.25, 0.5, 0.25], scale: [1, 1.15, 1] }}
+        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -top-1/4 -left-1/4 h-[600px] w-[600px] rounded-full bg-violet-700/20 blur-[160px]"
+      />
+      <motion.div
+        animate={{ opacity: [0.2, 0.45, 0.2], scale: [1, 1.2, 1] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        className="absolute -bottom-1/4 -right-1/4 h-[550px] w-[550px] rounded-full bg-cyan-600/15 blur-[160px]"
+      />
 
-      {/* ===============================
-                Floating Stars
-      =============================== */}
+      {/* ============================================================ */}
+      {/*  Starfield — three parallax layers of twinkling stars         */}
+      {/* ============================================================ */}
       <div className="absolute inset-0">
-        {stars.map((star) => (
-          <motion.div
-            key={star.id}
-            animate={{
-              opacity: [0.2, 1, 0.2],
-              scale: [1, 1.6, 1],
-            }}
-            transition={{
-              duration: star.duration,
-              repeat: Infinity,
-              delay: star.delay,
-            }}
-            className="absolute h-1 w-1 rounded-full bg-white"
-            style={{
-              left: star.left,
-              top: star.top,
-            }}
+        {[...farStars, ...midStars, ...nearStars].map((s) => (
+          <motion.span
+            key={`${s.size}-${s.id}-${s.left}`}
+            animate={{ opacity: [s.baseOpacity * 0.3, s.baseOpacity, s.baseOpacity * 0.3] }}
+            transition={{ duration: s.duration, repeat: Infinity, delay: s.delay, ease: "easeInOut" }}
+            className="absolute rounded-full bg-white"
+            style={{ left: s.left, top: s.top, width: s.size, height: s.size }}
           />
         ))}
+
+        {/* shooting stars */}
+        <motion.span
+          animate={{ x: [0, 500], y: [0, 220], opacity: [0, 1, 0] }}
+          transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 7, ease: "easeIn" }}
+          className="absolute left-[5%] top-[10%] h-px w-32 bg-gradient-to-r from-transparent via-white to-transparent"
+        />
+        <motion.span
+          animate={{ x: [0, -450], y: [0, 260], opacity: [0, 1, 0] }}
+          transition={{ duration: 3, repeat: Infinity, repeatDelay: 9, ease: "easeIn", delay: 3 }}
+          className="absolute right-[8%] top-[18%] h-px w-40 bg-gradient-to-l from-transparent via-cyan-200 to-transparent"
+        />
       </div>
 
-      {/* ===============================
-                  Main Content
-      =============================== */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 text-center">
-        {/* Badge */}
-
+      {/* ============================================================ */}
+      {/*  Content card                                                  */}
+      {/* ============================================================ */}
+      <div className="relative z-10 flex w-full max-w-3xl flex-col items-center text-center">
+        {/* Orbit badge */}
         <motion.div
-          initial={{ opacity: 0, y: -30 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-8 inline-flex items-center gap-3 rounded border border-blue-500/30 bg-blue-500/10 px-6 py-3 backdrop-blur-xl"
+          className="mb-10 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2 backdrop-blur-sm"
         >
-          <FaRocket className="text-blue-400" />
-
-          <span className="text-sm font-semibold tracking-wide text-blue-300">
-            DIXON PRODUCTION MANAGEMENT
+          <motion.span
+            animate={{ rotate: 360 }}
+            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+          >
+            <FaSatellite className="text-cyan-300" size={13} />
+          </motion.span>
+          <span className="text-[11px] font-medium uppercase tracking-[0.25em] text-slate-400">
+            Dixon Production Management
           </span>
         </motion.div>
 
-        {/* 404 */}
-
-        <motion.h1
-          initial={{ opacity: 0, scale: 0.6 }}
+        {/* Big 404 with orbiting ring */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{
-            duration: 0.8,
-            type: "spring",
-          }}
-          className="select-none text-[140px] md:text-[220px] xl:text-[260px] font-black leading-none tracking-tight"
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="relative mb-2"
         >
-          <span className="bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+            className="pointer-events-none absolute left-1/2 top-1/2 h-[260px] w-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-cyan-400/20 md:h-[340px] md:w-[340px]"
+          />
+          <h1 className="select-none text-[110px] font-black leading-none tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-200 to-slate-500 md:text-[170px]">
             404
-          </span>
-        </motion.h1>
-
-        {/* Heading */}
+          </h1>
+        </motion.div>
 
         <motion.h2
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{
-            delay: 0.3,
-          }}
-          className="mt-4 text-4xl font-bold text-white md:text-5xl"
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="text-2xl font-semibold text-white md:text-3xl"
         >
-          Oops! Page Not Found
+          Lost the signal.
         </motion.h2>
-
-        {/* Description */}
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{
-            delay: 0.5,
-          }}
-          className="mt-6 max-w-2xl text-lg leading-8 text-slate-300"
+          transition={{ delay: 0.45, duration: 0.6 }}
+          className="mt-4 max-w-md text-[15px] leading-7 text-slate-400"
         >
-          The page you're looking for doesn't exist, may have been moved, or is
-          temporarily unavailable.
-          <br />
-          Please return to the dashboard to continue managing your production
-          system.
+          This page has drifted out of orbit — it may have moved, been renamed,
+          or never existed. Head back to mission control to keep working.
         </motion.p>
 
-        {/* Buttons */}
-
+        {/* Actions */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{
-            delay: 0.8,
-          }}
-          className="mt-12 flex flex-wrap items-center justify-center gap-5"
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="mt-9 flex flex-wrap items-center justify-center gap-4"
         >
           <Link
             to="/dashboard"
-            className="group flex items-center gap-3 rounded bg-gradient-to-r from-blue-600 to-cyan-500 px-8 py-4 text-lg font-semibold text-white shadow-2xl transition-all hover:scale-105"
+            className="flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition-transform hover:scale-[1.03] active:scale-95"
           >
-            <FaHome />
-            Go To Dashboard
+            <FaHome size={13} />
+            Back to Dashboard
           </Link>
 
           <button
             onClick={() => window.history.back()}
-            className="group flex items-center gap-3 rounded border border-white/20 bg-white/10 px-8 py-4 text-lg font-semibold text-white backdrop-blur-xl transition-all hover:bg-white/20"
+            className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-200 backdrop-blur-sm transition-colors hover:bg-white/10"
           >
-            <FaArrowLeft />
+            <FaArrowLeft size={13} />
             Go Back
           </button>
         </motion.div>
-        {/* =====================================
-                Floating Astronaut
-        ====================================== */}
 
+        {/* Divider */}
         <motion.div
-          animate={{
-            y: [-20, 20, -20],
-            rotate: [-8, 8, -8],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute right-10 top-28 hidden xl:flex"
-        >
-          <div className="relative">
-            {/* Glow */}
-
-            <div className="absolute inset-0 rounded-full bg-blue-500 blur-3xl opacity-30 scale-150" />
-
-            {/* Helmet */}
-
-            <div className="relative flex h-44 w-44 items-center justify-center rounded-full border-8 border-slate-300 bg-white shadow-2xl">
-              <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
-                <FaRocket size={42} className="text-cyan-300" />
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* =====================================
-                Floating Planet
-        ====================================== */}
-
-        <motion.div
-          animate={{
-            rotate: 360,
-          }}
-          transition={{
-            duration: 60,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          className="absolute left-16 bottom-24 hidden lg:block"
-        >
-          <div className="relative">
-            <div className="h-40 w-40 rounded-full bg-gradient-to-br from-purple-500 to-indigo-700 shadow-2xl" />
-
-            <div className="absolute inset-0 rounded-full bg-purple-500 blur-3xl opacity-40 scale-125" />
-
-            {/* Ring */}
-
-            <div className="absolute left-1/2 top-1/2 h-8 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full border-[6px] border-cyan-300 rotate-12 opacity-70" />
-          </div>
-        </motion.div>
-
-        {/* =====================================
-                Small Floating Planet
-        ====================================== */}
-
-        <motion.div
-          animate={{
-            y: [-12, 12, -12],
-            x: [-8, 8, -8],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-          }}
-          className="absolute right-44 bottom-40 hidden lg:block"
-        >
-          <div className="h-16 w-16 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 shadow-xl" />
-        </motion.div>
-
-        {/* =====================================
-                Shooting Stars
-        ====================================== */}
-
-        <motion.div
-          animate={{
-            x: [-100, 1200],
-            y: [0, 500],
-            opacity: [0, 1, 0],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            repeatDelay: 4,
-          }}
-          className="absolute top-12 left-0 h-[2px] w-44 bg-gradient-to-r from-white to-transparent rotate-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.75, duration: 0.6 }}
+          className="mt-12 h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent"
         />
 
+        {/* Admin contact card */}
         <motion.div
-          animate={{
-            x: [1200, -300],
-            y: [0, 400],
-            opacity: [0, 1, 0],
-          }}
-          transition={{
-            duration: 5,
-            repeat: Infinity,
-            repeatDelay: 6,
-          }}
-          className="absolute top-36 right-0 h-[2px] w-52 bg-gradient-to-l from-cyan-400 to-transparent -rotate-12"
-        />
-
-        {/* =====================================
-                Bottom Glow
-        ====================================== */}
-
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-56 w-[700px] rounded-full bg-blue-600/20 blur-[130px]" />
-        {/* =====================================
-                Floating Particles
-        ====================================== */}
-
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {particles.map((particle) => (
-            <motion.div
-              key={particle.id}
-              className="absolute rounded-full bg-cyan-300/40"
-              style={{
-                width: particle.size,
-                height: particle.size,
-                left: particle.left,
-                top: particle.top,
-              }}
-              animate={{
-                y: [-40, 40, -40],
-                x: [-20, 20, -20],
-                opacity: [0.2, 1, 0.2],
-                scale: [0.8, 1.4, 0.8],
-              }}
-              transition={{
-                duration: particle.duration,
-                repeat: Infinity,
-                delay: particle.delay,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* =====================================
-                  Aurora Glow
-        ====================================== */}
-
-        <motion.div
-          animate={{
-            opacity: [0.3, 0.7, 0.3],
-            scale: [1, 1.08, 1],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-          }}
-          className="absolute left-1/2 top-1/2 h-[650px] w-[650px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10 blur-[120px]"
-        />
-
-        {/* =====================================
-                Animated Rings
-        ====================================== */}
-
-        <motion.div
-          animate={{
-            rotate: 360,
-          }}
-          transition={{
-            duration: 50,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          className="absolute left-1/2 top-1/2 hidden xl:block"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.85, duration: 0.6 }}
+          className="mt-8 w-full max-w-sm rounded-xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm"
         >
-          <div className="absolute -translate-x-1/2 -translate-y-1/2 h-[520px] w-[520px] rounded-full border border-cyan-400/10" />
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Need help? Contact the admin
+          </p>
 
-          <div className="absolute -translate-x-1/2 -translate-y-1/2 h-[700px] w-[700px] rounded-full border border-blue-400/10" />
+          <a
+            href="mailto:admin@dixonproduction.com"
+            className="flex items-center justify-center gap-2 py-1.5 text-sm text-slate-300 transition-colors hover:text-cyan-300"
+          >
+            <FaEnvelope size={13} className="text-cyan-400" />
+            admin@dixonproduction.com
+          </a>
+
+          <a
+            href="tel:+911234567890"
+            className="flex items-center justify-center gap-2 py-1.5 text-sm text-slate-300 transition-colors hover:text-cyan-300"
+          >
+            <FaPhoneAlt size={12} className="text-cyan-400" />
+            +91 12345 67890
+          </a>
         </motion.div>
-
-        {/* =====================================
-                  Floating Icons
-        ====================================== */}
-
-        <motion.div
-          animate={{
-            y: [-12, 12, -12],
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-          }}
-          className="absolute top-40 left-24 hidden xl:flex h-14 w-14 items-center justify-center rounded-xl bg-white/10 backdrop-blur-xl border border-white/10"
-        >
-          <FaRocket className="text-cyan-300 text-xl" />
-        </motion.div>
-
-        <motion.div
-          animate={{
-            y: [12, -12, 12],
-          }}
-          transition={{
-            duration: 5,
-            repeat: Infinity,
-          }}
-          className="absolute bottom-32 right-32 hidden xl:flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-xl border border-white/10"
-        >
-          <FaHome className="text-blue-300 text-xl" />
-        </motion.div>
-
-        {/* =====================================
-                 Pulse Glow
-        ====================================== */}
-
-        <motion.div
-          animate={{
-            scale: [1, 1.25, 1],
-            opacity: [0.2, 0.5, 0.2],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-          }}
-          className="absolute left-1/2 top-1/2 h-[350px] w-[350px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/20 blur-[80px]"
-        />
-
-        {/* =====================================
-              Bottom Text
-        ====================================== */}
 
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{
-            delay: 1.2,
-          }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-sm tracking-[0.3em] uppercase text-slate-500"
+          transition={{ delay: 1, duration: 0.6 }}
+          className="mt-10 text-[11px] tracking-[0.25em] uppercase text-slate-600"
         >
           Dixon Production Management System © 2026
         </motion.p>
