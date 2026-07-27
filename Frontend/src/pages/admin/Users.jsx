@@ -18,14 +18,16 @@ import {
   updateUserApi,
   deleteUserApi,
 } from "../../services/userService";
-import UserStats from "../../compenents/users/UserStats";
-import UserFilters from "../../compenents/users/UserFilters";
-import BulkActions from "../../compenents/users/BulkActions";
-import UserTable from "../../compenents/users/UserTable";
-import Pagination from "../../compenents/users/Pagination";
-import UserModal from "../../compenents/users/UserModal";
-import UserDrawer from "../../compenents/users/UserDrawer";
-import DeleteModal from "../../compenents/users/DeleteModal";
+import {
+  UserStats,
+  UserFilters,
+  BulkActions,
+  UserTable,
+  Pagination,
+  UserModal,
+  UserDrawer,
+  DeleteModal,
+} from "./UserManagementUI";
 import Sidebar from "./Sidebar";
 
 const Users = () => {
@@ -358,26 +360,27 @@ const Users = () => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden">
+    <div className="flex h-screen bg-[#EFEFEF] overflow-hidden">
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Header */}
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-1">
+        {/* Page Content — fits viewport height, no page-level scroll.
+           Only the table area scrolls internally if rows overflow. */}
+        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden p-2">
           {/* Error banner */}
           {(error || actionError) && (
-            <div className="mb-2 rounded-sm border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600 flex items-center justify-between">
+            <div className="flex flex-shrink-0 items-center justify-between border border-red-200 bg-red-50 px-4 py-2 text-[11px] font-medium text-red-700">
               <span>{error || actionError}</span>
               <button
                 onClick={() => {
                   setError(null);
                   setActionError(null);
                 }}
-                className="text-red-500 font-medium"
+                className="text-[10.5px] font-bold uppercase tracking-wide text-red-600"
               >
                 Dismiss
               </button>
@@ -385,7 +388,7 @@ const Users = () => {
           )}
 
           {/* Filters */}
-          <div>
+          <div className="flex-shrink-0">
             <UserFilters
               search={search}
               setSearch={setSearch}
@@ -407,20 +410,22 @@ const Users = () => {
           </div>
 
           {/* Bulk Actions */}
-          <BulkActions
-            selectedUsers={selectedUsers}
-            onDelete={handleBulkDelete}
-            onLock={handleBulkLock}
-            onUnlock={handleBulkUnlock}
-            onExport={handleExportCSV}
-            onClearSelection={() => setSelectedUsers([])}
-            loading={actionLoading}
-          />
+          <div className="flex-shrink-0">
+            <BulkActions
+              selectedUsers={selectedUsers}
+              onDelete={handleBulkDelete}
+              onLock={handleBulkLock}
+              onUnlock={handleBulkUnlock}
+              onExport={handleExportCSV}
+              onClearSelection={() => setSelectedUsers([])}
+              loading={actionLoading}
+            />
+          </div>
 
-          {/* User Table */}
-          <div className="mt-2">
+          {/* User Table — takes remaining space, scrolls internally */}
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {loading ? (
-              <div className="rounded-sm border border-[#E2E4E9] bg-white p-8 text-center text-sm text-slate-500">
+              <div className="border border-[#C6C6C6] bg-white p-8 text-center text-[11px] font-medium text-[#9B9B9B]">
                 Users load ho rahe hain...
               </div>
             ) : (
@@ -439,14 +444,16 @@ const Users = () => {
             )}
           </div>
 
-          {/* Pagination */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={sortedUsers.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-          />
+          {/* Pagination — always pinned at bottom */}
+          <div className="flex-shrink-0">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={sortedUsers.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </main>
       </div>
 

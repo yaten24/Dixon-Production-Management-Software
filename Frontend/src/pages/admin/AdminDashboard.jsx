@@ -8,8 +8,11 @@ import {
   HiOutlineArrowDownTray,
   HiOutlineUserPlus,
   HiOutlineBuildingOffice2,
+  HiOutlineExclamationTriangle,
+  HiOutlineArrowPath,
 } from "react-icons/hi2";
 import Sidebar from "./Sidebar";
+import useAdminDashboard from "../../hooks/useAdminDashboard";
 
 // ============================================================
 // THEME TOKENS — kept consistent with Sidebar.jsx / other pages
@@ -17,43 +20,6 @@ import Sidebar from "./Sidebar";
 const NAVY = "#0F1D24";
 const GOLD = "#FDC94D";
 const BORDER = "#C6C6C6";
-
-/* ==========================================================
-   MOCK DATA — admin resource counts only, no production data
-========================================================== */
-const USERS_BY_ROLE = [
-  { label: "Admin", count: 4 },
-  { label: "Supervisor", count: 12 },
-  { label: "Employee", count: 96 },
-];
-
-const MACHINES_BY_HALL = [
-  { label: "Hall 1", count: 18 },
-  { label: "Hall 2", count: 22 },
-  { label: "Hall 3", count: 16 },
-  { label: "Hall 4", count: 20 },
-  { label: "C-8", count: 12 },
-];
-
-const PARTS_BY_CATEGORY = [
-  { label: "Cabinet Components", count: 64 },
-  { label: "Bezel & Frame", count: 38 },
-  { label: "Internal Fittings", count: 51 },
-  { label: "Miscellaneous", count: 27 },
-];
-
-const OPERATORS_BY_SHIFT = [
-  { label: "Shift A", count: 58 },
-  { label: "Shift B", count: 52 },
-];
-
-const RECENT_ADDITIONS = [
-  { time: "10:42 AM", text: "New operator added — K. Bisht (Hall 1)" },
-  { time: "09:55 AM", text: "Machine M-041 registered under Hall 4" },
-  { time: "09:20 AM", text: 'Part "Speaker Grill v2" added to catalog' },
-  { time: "08:47 AM", text: "New supervisor account created for Hall 3" },
-  { time: "08:10 AM", text: "Operator transferred: P. Negi → C-8" },
-];
 
 /* ---------------------------------------------------------
    QUICK STAT — compact stat tile, flat border + left accent
@@ -75,10 +41,12 @@ const QuickStat = ({ label, value, icon: Icon, accent = NAVY }) => (
 
 /* ---------------------------------------------------------
    RESOURCE PANEL — flat bordered card, header + divider rows
+   Rows list scrolls internally if it ever grows too tall —
+   the page itself never scrolls.
 --------------------------------------------------------- */
 const ResourcePanel = ({ icon: Icon, title, total, accent, rows }) => (
-  <div className="flex flex-col border border-[#C6C6C6] bg-white">
-    <div className="flex items-center justify-between border-b border-[#C6C6C6] px-3 py-2">
+  <div className="flex min-h-0 flex-1 flex-col border border-[#C6C6C6] bg-white">
+    <div className="flex flex-shrink-0 items-center justify-between border-b border-[#C6C6C6] px-3 py-2">
       <div className="flex items-center gap-2">
         <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center border border-[#C6C6C6]" style={{ color: accent }}>
           <Icon className="h-3.5 w-3.5" />
@@ -88,29 +56,47 @@ const ResourcePanel = ({ icon: Icon, title, total, accent, rows }) => (
       <p className="font-mono text-[13px] font-extrabold text-[#0F1D24]">{total}</p>
     </div>
 
-    <div className="flex flex-col">
-      {rows.map((r, i) => (
-        <div
-          key={r.label}
-          className={`flex items-center justify-between px-3 py-1.5 ${i !== rows.length - 1 ? "border-b border-[#C6C6C6]/60" : ""}`}
-        >
-          <span className="text-[10.5px] font-medium text-[#0F1D24]/75">{r.label}</span>
-          <span className="font-mono text-[10.5px] font-bold text-[#0F1D24]">{r.count}</span>
-        </div>
-      ))}
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      {rows.length === 0 ? (
+        <div className="px-3 py-2.5 text-center text-[10.5px] font-medium text-[#9B9B9B]">No data</div>
+      ) : (
+        rows.map((r, i) => (
+          <div
+            key={r.label ?? i}
+            className={`flex flex-shrink-0 items-center justify-between px-3 py-1.5 ${i !== rows.length - 1 ? "border-b border-[#C6C6C6]/60" : ""}`}
+          >
+            <span className="text-[10.5px] font-medium text-[#0F1D24]/75">{r.label ?? "—"}</span>
+            <span className="font-mono text-[10.5px] font-bold text-[#0F1D24]">{r.count}</span>
+          </div>
+        ))
+      )}
     </div>
   </div>
 );
 
+/* ---------------------------------------------------------
+   Format an ISO / MySQL datetime string into hh:mm AM/PM
+--------------------------------------------------------- */
+const formatTime = (isoString) => {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+};
+
 /* ==========================================================
    PAGE — desktop-app layout: persistent sidebar + control-box
-   header + quick-stat strip + flat resource panels
+   header + quick-stat strip + flat resource panels.
+   Whole page fits the viewport height, no page-level scroll —
+   only individual content boxes scroll internally if needed.
 ========================================================== */
 export default function AdminDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [now, setNow] = useState(new Date());
+
+  const { data, loading, error, refetch } = useAdminDashboard();
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -123,10 +109,10 @@ export default function AdminDashboard() {
   );
   const formattedTime = useMemo(() => now.toLocaleTimeString("en-IN", { hour12: true }), [now]);
 
-  const totalUsers = USERS_BY_ROLE.reduce((s, r) => s + r.count, 0);
-  const totalMachines = MACHINES_BY_HALL.reduce((s, h) => s + h.count, 0);
-  const totalParts = PARTS_BY_CATEGORY.reduce((s, p) => s + p.count, 0);
-  const totalOperators = OPERATORS_BY_SHIFT.reduce((s, o) => s + o.count, 0);
+  const totalUsers = data.users.total;
+  const totalMachines = data.machines.total;
+  const totalParts = data.parts.total;
+  const totalOperators = data.operators.total;
 
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
@@ -137,9 +123,9 @@ export default function AdminDashboard() {
       />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pb-3">
+        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden px-3 pb-2 pt-2">
           {/* control box header */}
-          <div className="mx-3 mt-2 flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2">
+          <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2">
             <div className="min-w-0 leading-tight">
               <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9B9B9B]">Administration</p>
               <h1 className="truncate text-[15px] font-extrabold tracking-tight text-[#0F1D24]">Admin Dashboard</h1>
@@ -151,43 +137,73 @@ export default function AdminDashboard() {
                 <span className="h-3 w-px bg-[#C6C6C6]" />
                 <span className="font-mono tabular-nums">{formattedTime}</span>
               </div>
+              <button
+                onClick={refetch}
+                disabled={loading}
+                title="Refresh"
+                className="flex items-center justify-center border border-[#C6C6C6] px-2 text-[#0F1D24] hover:bg-[#F5F5F5] disabled:opacity-50"
+              >
+                <HiOutlineArrowPath className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+              </button>
             </div>
           </div>
+
+          {/* error banner */}
+          {error && (
+            <div className="flex flex-shrink-0 items-center gap-2 border border-red-300 bg-red-50 px-3 py-2 text-[11px] font-semibold text-red-700">
+              <HiOutlineExclamationTriangle className="h-4 w-4 flex-shrink-0" />
+              <span className="min-w-0 flex-1">{error}</span>
+              <button onClick={refetch} className="flex-shrink-0 underline">
+                Retry
+              </button>
+            </div>
+          )}
 
           {/* quick stats */}
-          <div className="mx-3 flex flex-shrink-0 flex-wrap gap-1.5">
-            <QuickStat label="Total Users" value={totalUsers} icon={HiOutlineUsers} accent="#2563EB" />
-            <QuickStat label="Total Machines" value={totalMachines} icon={HiOutlineBuildingOffice2} accent="#16A34A" />
-            <QuickStat label="Total Parts" value={totalParts} icon={HiOutlineWrenchScrewdriver} accent="#EA580C" />
-            <QuickStat label="Total Operators" value={totalOperators} icon={HiOutlineCog6Tooth} accent="#9333EA" />
+          <div className="flex flex-shrink-0 flex-wrap gap-1.5">
+            <QuickStat label="Total Users" value={loading ? "—" : totalUsers} icon={HiOutlineUsers} accent="#2563EB" />
+            <QuickStat label="Total Machines" value={loading ? "—" : totalMachines} icon={HiOutlineBuildingOffice2} accent="#16A34A" />
+            <QuickStat label="Total Parts" value={loading ? "—" : totalParts} icon={HiOutlineWrenchScrewdriver} accent="#EA580C" />
+            <QuickStat label="Total Operators" value={loading ? "—" : totalOperators} icon={HiOutlineCog6Tooth} accent="#9333EA" />
           </div>
 
-          {/* resource breakdown panels */}
-          <div className="mx-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
-            <ResourcePanel icon={HiOutlineUsers} title="Users" total={totalUsers} accent="#2563EB" rows={USERS_BY_ROLE} />
-            <ResourcePanel icon={HiOutlineBuildingOffice2} title="Machines" total={totalMachines} accent="#16A34A" rows={MACHINES_BY_HALL} />
-            <ResourcePanel icon={HiOutlineWrenchScrewdriver} title="Parts" total={totalParts} accent="#EA580C" rows={PARTS_BY_CATEGORY} />
-            <ResourcePanel icon={HiOutlineCog6Tooth} title="Operators" total={totalOperators} accent="#9333EA" rows={OPERATORS_BY_SHIFT} />
-          </div>
-
-          {/* recent additions — flat list */}
-          <div className="mx-3 flex flex-col border border-[#C6C6C6] bg-white">
-            <div className="flex items-center gap-1.5 border-b border-[#C6C6C6] px-3 py-2">
-              <HiOutlineUserPlus className="h-3.5 w-3.5 text-[#9B9B9B]" />
-              <p className="text-[11px] font-bold uppercase tracking-wide text-[#0F1D24]">Recent Additions</p>
+          {/* remaining space split between resource panels + recent additions */}
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+            {/* resource breakdown panels */}
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
+              <ResourcePanel icon={HiOutlineUsers} title="Users" total={totalUsers} accent="#2563EB" rows={data.users.byRole} />
+              <ResourcePanel icon={HiOutlineBuildingOffice2} title="Machines" total={totalMachines} accent="#16A34A" rows={data.machines.byHall} />
+              <ResourcePanel icon={HiOutlineWrenchScrewdriver} title="Parts" total={totalParts} accent="#EA580C" rows={data.parts.byCategory} />
+              <ResourcePanel icon={HiOutlineCog6Tooth} title="Operators" total={totalOperators} accent="#9333EA" rows={data.operators.byShift} />
             </div>
 
-            <div className="flex flex-col">
-              {RECENT_ADDITIONS.map((a, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center gap-2.5 px-3 py-2 ${i !== RECENT_ADDITIONS.length - 1 ? "border-b border-[#C6C6C6]/60" : ""}`}
-                >
-                  <span className="h-1.5 w-1.5 flex-shrink-0" style={{ background: GOLD }} />
-                  <p className="min-w-0 flex-1 truncate text-[11px] font-medium text-[#0F1D24]/80">{a.text}</p>
-                  <span className="flex-shrink-0 font-mono text-[9.5px] font-semibold text-[#9B9B9B]">{a.time}</span>
-                </div>
-              ))}
+            {/* recent additions — flat list, own internal scroll */}
+            <div className="flex min-h-0 flex-[0.9] flex-col border border-[#C6C6C6] bg-white">
+              <div className="flex flex-shrink-0 items-center gap-1.5 border-b border-[#C6C6C6] px-3 py-2">
+                <HiOutlineUserPlus className="h-3.5 w-3.5 text-[#9B9B9B]" />
+                <p className="text-[11px] font-bold uppercase tracking-wide text-[#0F1D24]">Recent Additions</p>
+              </div>
+
+              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                {loading ? (
+                  <div className="px-3 py-3 text-center text-[10.5px] font-medium text-[#9B9B9B]">Loading…</div>
+                ) : data.recentAdditions.length === 0 ? (
+                  <div className="px-3 py-3 text-center text-[10.5px] font-medium text-[#9B9B9B]">No recent activity</div>
+                ) : (
+                  data.recentAdditions.map((a, i) => (
+                    <div
+                      key={i}
+                      className={`flex flex-shrink-0 items-center gap-2.5 px-3 py-2 ${i !== data.recentAdditions.length - 1 ? "border-b border-[#C6C6C6]/60" : ""}`}
+                    >
+                      <span className="h-1.5 w-1.5 flex-shrink-0" style={{ background: GOLD }} />
+                      <p className="min-w-0 flex-1 truncate text-[11px] font-medium text-[#0F1D24]/80">{a.text}</p>
+                      <span className="flex-shrink-0 font-mono text-[9.5px] font-semibold text-[#9B9B9B]">
+                        {formatTime(a.created_at)}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </main>
