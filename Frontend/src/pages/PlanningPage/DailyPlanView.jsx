@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import * as XLSX from "xlsx";
 import {
   HiOutlineArrowLeft,
@@ -14,6 +14,7 @@ import {
 } from "react-icons/hi2";
 import { getDailyPlan, getDailyPlanDetails } from "../../api/dailyPlanApi";
 import PageTitleStrip from "./PageTitleStrip";
+import Sidebar from "../TeamMemberPages/Sidebar";
 
 const STATUS_STYLES = {
   Draft: "bg-[#F5F5F5] text-[#9B9B9B]",
@@ -50,12 +51,14 @@ const StatCard = ({ value, label }) => (
 const ViewDailyPlanPage = () => {
   const { id } = useParams(); // daily_plan_id
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [header, setHeader] = useState(null);
   const [details, setDetails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -151,180 +154,202 @@ const ViewDailyPlanPage = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#EFEFEF]">
-        <p className="text-sm font-medium text-[#9B9B9B]">Loading plan…</p>
+      <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+          activePath={location.pathname}
+        />
+        <div className="flex flex-1 items-center justify-center">
+          <p className="text-sm font-medium text-[#9B9B9B]">Loading plan…</p>
+        </div>
       </div>
     );
   }
 
   if (error || !header) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-[#EFEFEF] px-4">
-        <p className="text-sm font-medium text-red-500">
-          {error || "Plan not found"}
-        </p>
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 border border-[#C6C6C6] bg-white px-3 py-1.5 text-xs font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24]"
-        >
-          <HiOutlineArrowLeft className="h-3.5 w-3.5" />
-          Back
-        </button>
+      <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+          activePath={location.pathname}
+        />
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4">
+          <p className="text-sm font-medium text-red-500">
+            {error || "Plan not found"}
+          </p>
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 border border-[#C6C6C6] bg-white px-3 py-1.5 text-xs font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24]"
+          >
+            <HiOutlineArrowLeft className="h-3.5 w-3.5" />
+            Back
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#EFEFEF]">
-      <PageTitleStrip
-        eyebrow="Daily Plan"
-        title={header.plan_number}
-        subtitle={`${header.planning_date} · ${header.hall} · Shift ${header.shift}`}
-        actions={
-          <>
-            <span
-              className={`flex items-center bg-white px-2.5 text-[11px] font-bold ${
-                STATUS_STYLES[header.status] || STATUS_STYLES.Draft
-              }`}
-            >
-              {header.status}
-            </span>
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
-            >
-              <HiOutlinePrinter className="h-3.5 w-3.5" />
-              Print
-            </button>
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]"
-            >
-              <HiOutlineArrowDownTray className="h-3.5 w-3.5" />
-              Export to Excel
-            </button>
-          </>
-        }
+    <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        activePath={location.pathname}
       />
 
-      <main className="w-full">
-        {/* Context sidebar + stat cards */}
-        <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[260px_1fr]">
-          <div className="space-y-4 bg-[#0F1D24] p-5">
-            <SummaryTile icon={HiOutlineCalendarDays} label="Date" value={header.planning_date} />
-            <SummaryTile icon={HiOutlineBuildingOffice2} label="Hall" value={header.hall} />
-            <SummaryTile icon={HiOutlineClock} label="Shift" value={`Shift ${header.shift}`} />
-            {header.remarks && (
-              <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/60">
-                {header.remarks}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-px bg-[#C6C6C6] sm:flex-row">
-            <StatCard value={header.total_machines} label="Total Machines" />
-            <StatCard value={header.planned_machines} label="Planned Machines" />
-            <StatCard value={header.total_target_qty} label="Total Target Qty" />
-          </div>
-        </div>
-
-        {/* Toolbar: search + result count */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2">
-          <div className="flex items-center gap-2">
-            <HiOutlineCog6Tooth className="h-4 w-4 text-[#0F1D24]" />
-            <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Machine Allocations</h2>
-            <span className="border border-[#C6C6C6] bg-[#FAFAFA] px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">
-              {filteredDetails.length}
-              {search ? ` / ${details.length}` : ""}
-            </span>
-          </div>
-
-          <div className="relative">
-            <HiOutlineMagnifyingGlass className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9B9B9B]" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search machine, operator, part..."
-              className="h-8 w-64 border border-[#C6C6C6] bg-white pl-8 pr-7 text-[11.5px] outline-none focus:border-[#0F1D24]"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[#9B9B9B] hover:text-[#0F1D24]"
+      <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+        <PageTitleStrip
+          eyebrow="Daily Plan"
+          title={header.plan_number}
+          subtitle={`${header.planning_date} · ${header.hall} · Shift ${header.shift}`}
+          actions={
+            <>
+              <span
+                className={`flex items-center bg-white px-2.5 text-[11px] font-bold ${
+                  STATUS_STYLES[header.status] || STATUS_STYLES.Draft
+                }`}
               >
-                <HiOutlineXMark className="h-3.5 w-3.5" />
+                {header.status}
+              </span>
+              <button
+                onClick={handlePrint}
+                className="flex items-center gap-1.5 bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+              >
+                <HiOutlinePrinter className="h-3.5 w-3.5" />
+                Print
               </button>
-            )}
-          </div>
-        </div>
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]"
+              >
+                <HiOutlineArrowDownTray className="h-3.5 w-3.5" />
+                Export to Excel
+              </button>
+            </>
+          }
+        />
 
-        {/* Machine-wise details table */}
-        <div className="border border-[#C6C6C6] bg-white">
-          <div className="max-h-[560px] overflow-auto">
-            <table className="w-full text-left text-[12px]">
-              <thead className="sticky top-0 z-10 bg-[#0F1D24] text-white">
-                <tr>
-                  <th className="px-2.5 py-2 font-semibold">Machine</th>
-                  <th className="px-2.5 py-2 font-semibold">Operator</th>
-                  <th className="px-2.5 py-2 font-semibold">Part</th>
-                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Target Qty</th>
-                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Cycle Time (s)</th>
-                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Est. Run Hrs</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDetails.length === 0 ? (
+        <main className="w-full">
+          {/* Context sidebar + stat cards */}
+          <div className="grid grid-cols-1 gap-px border border-[#C6C6C6] bg-[#C6C6C6] md:grid-cols-[260px_1fr]">
+            <div className="space-y-4 bg-[#0F1D24] p-5">
+              <SummaryTile icon={HiOutlineCalendarDays} label="Date" value={header.planning_date} />
+              <SummaryTile icon={HiOutlineBuildingOffice2} label="Hall" value={header.hall} />
+              <SummaryTile icon={HiOutlineClock} label="Shift" value={`Shift ${header.shift}`} />
+              {header.remarks && (
+                <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/60">
+                  {header.remarks}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-px bg-[#C6C6C6] sm:flex-row">
+              <StatCard value={header.total_machines} label="Total Machines" />
+              <StatCard value={header.planned_machines} label="Planned Machines" />
+              <StatCard value={header.total_target_qty} label="Total Target Qty" />
+            </div>
+          </div>
+
+          {/* Toolbar: search + result count */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2">
+            <div className="flex items-center gap-2">
+              <HiOutlineCog6Tooth className="h-4 w-4 text-[#0F1D24]" />
+              <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Machine Allocations</h2>
+              <span className="border border-[#C6C6C6] bg-[#FAFAFA] px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">
+                {filteredDetails.length}
+                {search ? ` / ${details.length}` : ""}
+              </span>
+            </div>
+
+            <div className="relative">
+              <HiOutlineMagnifyingGlass className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9B9B9B]" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search machine, operator, part..."
+                className="h-8 w-64 border border-[#C6C6C6] bg-white pl-8 pr-7 text-[11.5px] outline-none focus:border-[#0F1D24]"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-1.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[#9B9B9B] hover:text-[#0F1D24]"
+                >
+                  <HiOutlineXMark className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Machine-wise details table */}
+          <div className="border border-[#C6C6C6] bg-white">
+            <div className="max-h-[560px] overflow-auto">
+              <table className="w-full text-left text-[12px]">
+                <thead className="sticky top-0 z-10 bg-[#0F1D24] text-white">
                   <tr>
-                    <td colSpan={6} className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]">
-                      {search ? "No machines match your search." : "No machine allocations yet."}
-                    </td>
+                    <th className="px-2.5 py-2 font-semibold">Machine</th>
+                    <th className="px-2.5 py-2 font-semibold">Operator</th>
+                    <th className="px-2.5 py-2 font-semibold">Part</th>
+                    <th className="px-2.5 py-2 text-right font-semibold font-mono">Target Qty</th>
+                    <th className="px-2.5 py-2 text-right font-semibold font-mono">Cycle Time (s)</th>
+                    <th className="px-2.5 py-2 text-right font-semibold font-mono">Est. Run Hrs</th>
                   </tr>
-                ) : (
-                  filteredDetails.map((d, idx) => (
-                    <tr
-                      key={d.daily_detail_id}
-                      className={`border-t border-[#C6C6C6] transition-colors duration-100 hover:bg-[#FDC94D]/10 ${
-                        idx % 2 === 1 ? "bg-[#FAFAFA]/60" : "bg-white"
-                      }`}
-                    >
-                      <td className="px-2.5 py-1.5 font-mono font-semibold text-[#0F1D24]">
-                        {d.machine_name || `#${d.machine_id}`}
-                      </td>
-                      <td className="px-2.5 py-1.5 text-[#9B9B9B]">{d.operator_code || "—"}</td>
-                      <td className="px-2.5 py-1.5 text-[#9B9B9B]">{d.part_name || `#${d.part_id}`}</td>
-                      <td className="px-2.5 py-1.5 text-right font-mono font-semibold text-[#0F1D24]">
-                        {d.target_qty}
-                      </td>
-                      <td className="px-2.5 py-1.5 text-right font-mono text-[#9B9B9B]">
-                        {d.planned_cycle_time ?? "—"}
-                      </td>
-                      <td className="px-2.5 py-1.5 text-right font-mono text-[#9B9B9B]">
-                        {d.estimated_run_hours ?? "—"}
+                </thead>
+                <tbody>
+                  {filteredDetails.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-3 py-8 text-center text-[11.5px] text-[#9B9B9B]">
+                        {search ? "No machines match your search." : "No machine allocations yet."}
                       </td>
                     </tr>
-                  ))
+                  ) : (
+                    filteredDetails.map((d, idx) => (
+                      <tr
+                        key={d.daily_detail_id}
+                        className={`border-t border-[#C6C6C6] transition-colors duration-100 hover:bg-[#FDC94D]/10 ${
+                          idx % 2 === 1 ? "bg-[#FAFAFA]/60" : "bg-white"
+                        }`}
+                      >
+                        <td className="px-2.5 py-1.5 font-mono font-semibold text-[#0F1D24]">
+                          {d.machine_name || `#${d.machine_id}`}
+                        </td>
+                        <td className="px-2.5 py-1.5 text-[#9B9B9B]">{d.operator_code || "—"}</td>
+                        <td className="px-2.5 py-1.5 text-[#9B9B9B]">{d.part_name || `#${d.part_id}`}</td>
+                        <td className="px-2.5 py-1.5 text-right font-mono font-semibold text-[#0F1D24]">
+                          {d.target_qty}
+                        </td>
+                        <td className="px-2.5 py-1.5 text-right font-mono text-[#9B9B9B]">
+                          {d.planned_cycle_time ?? "—"}
+                        </td>
+                        <td className="px-2.5 py-1.5 text-right font-mono text-[#9B9B9B]">
+                          {d.estimated_run_hours ?? "—"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+                {filteredDetails.length > 0 && (
+                  <tfoot className="sticky bottom-0 border-t-2 border-[#0F1D24] bg-[#FAFAFA]">
+                    <tr>
+                      <td colSpan={3} className="px-2.5 py-2 text-right text-[10.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+                        Totals
+                      </td>
+                      <td className="px-2.5 py-2 text-right font-mono font-bold text-[#0F1D24]">
+                        {totals.targetQty.toLocaleString()}
+                      </td>
+                      <td className="px-2.5 py-2" />
+                      <td className="px-2.5 py-2 text-right font-mono font-bold text-[#0F1D24]">
+                        {totals.estHours.toFixed(1)}
+                      </td>
+                    </tr>
+                  </tfoot>
                 )}
-              </tbody>
-              {filteredDetails.length > 0 && (
-                <tfoot className="sticky bottom-0 border-t-2 border-[#0F1D24] bg-[#FAFAFA]">
-                  <tr>
-                    <td colSpan={3} className="px-2.5 py-2 text-right text-[10.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
-                      Totals
-                    </td>
-                    <td className="px-2.5 py-2 text-right font-mono font-bold text-[#0F1D24]">
-                      {totals.targetQty.toLocaleString()}
-                    </td>
-                    <td className="px-2.5 py-2" />
-                    <td className="px-2.5 py-2 text-right font-mono font-bold text-[#0F1D24]">
-                      {totals.estHours.toFixed(1)}
-                    </td>
-                  </tr>
-                </tfoot>
-              )}
-            </table>
+              </table>
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };

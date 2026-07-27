@@ -104,7 +104,7 @@ const AppRoutes = () => {
         element={<CreateMonthlyPlan />}
       />
       <Route
-        path="/production/production/plans/monthly/detail/:id"
+        path="/production/plans/monthly/detail/:id"
         element={<MonthlyPlanView />}
       />
       <Route

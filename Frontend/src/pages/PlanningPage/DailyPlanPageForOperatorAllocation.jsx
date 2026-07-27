@@ -107,7 +107,7 @@ export default function DailyPlanPageForOperatorAllocation() {
   // purpose is picking a plan to assign operators for.
   const handleAssignOperators = (plan) =>
     navigate(
-      `/employee/production/plans/${plan.daily_plan_id}/operator/allocation`,
+      `/production/plans/${plan.daily_plan_id}/operator/allocation`,
     );
   const handleCreate = () =>
     navigate("/production/plans/daily/create");

@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Search, X, Loader2, Check, AlertTriangle, Lock, Users } from "lucide-react";
 import useDailyPlanOperatorAssignment from "../../hooks/useDailyPlanOperatorAssignment";
 import { searchOperators } from "../../api/operatorApi";
+import Sidebar from "../TeamMemberPages/Sidebar";
 
 const STATUS_COLORS = {
   Draft: "bg-[#9B9B9B]/15 text-[#0F1D24]",
@@ -170,136 +171,161 @@ const OperatorPicker = ({ row, disabled, onAssign, onClear }) => {
 export default function DailyPlanOperatorAssignment() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { header, rows, loading, error, isEditable, assignOperator, clearOperator } = useDailyPlanOperatorAssignment(id);
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const assignedCount = useMemo(() => rows.filter((r) => r.operator_code).length, [rows]);
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#EFEFEF]">
-        <p className="text-[12px] text-[#9B9B9B]">Loading machine assignments…</p>
+      <div className="flex h-screen overflow-hidden bg-[#EFEFEF]">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+          activePath={location.pathname}
+        />
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          <p className="text-[12px] text-[#9B9B9B]">Loading machine assignments…</p>
+        </div>
       </div>
     );
   }
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#EFEFEF]">
-        <p className="text-[12px] font-semibold text-red-600">{error}</p>
+      <div className="flex h-screen overflow-hidden bg-[#EFEFEF]">
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+          activePath={location.pathname}
+        />
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          <p className="text-[12px] font-semibold text-red-600">{error}</p>
+        </div>
       </div>
     );
   }
   if (!header) return null;
 
   return (
-    <div className="min-h-screen bg-[#EFEFEF]">
-      {/* Page title strip */}
-      <header className="w-full border-b border-[#C6C6C6] bg-white">
-        <div
-          className="h-[2px] w-full"
-          style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
-        />
-        <div className="flex py-1.5 w-full items-center justify-between gap-3 px-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <button
-              onClick={() => navigate(-1)}
-              title="Back"
-              aria-label="Go back"
-              className="flex h-7 w-7 shrink-0 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-            </button>
-            <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 border-l border-[#C6C6C6] pl-2.5">
-              <div className="hidden min-w-0 leading-tight sm:block">
-                <p className="text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
-                  Operator Allocation
-                </p>
-                <h1 className="truncate text-[12.5px] font-bold text-[#0F1D24]">
-                  {header.planning_date} · {header.hall} · Shift {header.shift}
-                </h1>
+    <div className="flex h-screen overflow-hidden bg-[#EFEFEF]">
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        activePath={location.pathname}
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        {/* Page title strip */}
+        <header className="w-full border-b border-[#C6C6C6] bg-white">
+          <div
+            className="h-[2px] w-full"
+            style={{ background: "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)" }}
+          />
+          <div className="flex py-1.5 w-full items-center justify-between gap-3 px-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <button
+                onClick={() => navigate(-1)}
+                title="Back"
+                aria-label="Go back"
+                className="flex h-7 w-7 shrink-0 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </button>
+              <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 border-l border-[#C6C6C6] pl-2.5">
+                <div className="hidden min-w-0 leading-tight sm:block">
+                  <p className="text-[8.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">
+                    Operator Allocation
+                  </p>
+                  <h1 className="truncate text-[12.5px] font-bold text-[#0F1D24]">
+                    {header.planning_date} · {header.hall} · Shift {header.shift}
+                  </h1>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex h-7 shrink-0 items-stretch gap-px bg-[#C6C6C6] [&>*]:flex [&>*]:items-center [&>*]:whitespace-nowrap">
-            <span className={`px-2.5 text-[11px] font-bold ${STATUS_COLORS[header.status] || STATUS_COLORS.Draft}`}>
-              {header.status}
-            </span>
-          </div>
-        </div>
-      </header>
-
-      {/* Hairline-separated stack — no vertical gaps between sections */}
-      <main className="w-full pb-3">
-        <div className="flex flex-col gap-px border border-[#C6C6C6] bg-[#C6C6C6]">
-          {!isEditable && (
-            <div className="flex items-center gap-2 bg-white px-3 py-2 text-[11.5px] font-semibold text-[#0F1D24]">
-              <Lock className="h-3.5 w-3.5 flex-shrink-0 text-[#9B9B9B]" />
-              This plan is {header.status.toLowerCase()} — assignments are locked and read-only.
+            <div className="flex h-7 shrink-0 items-stretch gap-px bg-[#C6C6C6] [&>*]:flex [&>*]:items-center [&>*]:whitespace-nowrap">
+              <span className={`px-2.5 text-[11px] font-bold ${STATUS_COLORS[header.status] || STATUS_COLORS.Draft}`}>
+                {header.status}
+              </span>
             </div>
-          )}
-
-          {/* Stat cards */}
-          <div className="flex flex-col gap-px bg-[#C6C6C6] sm:flex-row">
-            <StatCard value={rows.length} label="Machines" />
-            <StatCard value={assignedCount} label="Assigned" valueClassName="text-green-600" />
-            <StatCard value={rows.length - assignedCount} label="Unassigned" valueClassName="text-red-500" />
           </div>
+        </header>
 
-          {/* Machine table — no overflow-auto wrapper, so each row's
-              operator dropdown can float over sibling rows instead of
-              being clipped by a scroll container. */}
-          <div className="bg-white">
-            <table className="w-full min-w-[760px] text-left text-[12px]">
-              <thead className="bg-[#0F1D24] text-white">
-                <tr>
-                  <th className="px-2.5 py-2 font-semibold">Machine</th>
-                  <th className="px-2.5 py-2 font-semibold">Part</th>
-                  <th className="px-2.5 py-2 text-right font-semibold font-mono">Target</th>
-                  <th className="px-2.5 py-2 font-semibold">Operator</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.length === 0 ? (
+        {/* Hairline-separated stack — no vertical gaps between sections */}
+        <main className="w-full pb-3">
+          <div className="flex flex-col gap-px border border-[#C6C6C6] bg-[#C6C6C6]">
+            {!isEditable && (
+              <div className="flex items-center gap-2 bg-white px-3 py-2 text-[11.5px] font-semibold text-[#0F1D24]">
+                <Lock className="h-3.5 w-3.5 flex-shrink-0 text-[#9B9B9B]" />
+                This plan is {header.status.toLowerCase()} — assignments are locked and read-only.
+              </div>
+            )}
+
+            {/* Stat cards */}
+            <div className="flex flex-col gap-px bg-[#C6C6C6] sm:flex-row">
+              <StatCard value={rows.length} label="Machines" />
+              <StatCard value={assignedCount} label="Assigned" valueClassName="text-green-600" />
+              <StatCard value={rows.length - assignedCount} label="Unassigned" valueClassName="text-red-500" />
+            </div>
+
+            {/* Machine table — no overflow-auto wrapper, so each row's
+                operator dropdown can float over sibling rows instead of
+                being clipped by a scroll container. */}
+            <div className="bg-white">
+              <table className="w-full min-w-[760px] text-left text-[12px]">
+                <thead className="bg-[#0F1D24] text-white">
                   <tr>
-                    <td colSpan={4} className="px-3 py-8 text-center text-[11px] text-[#9B9B9B]">
-                      No machines in this plan.
-                    </td>
+                    <th className="px-2.5 py-2 font-semibold">Machine</th>
+                    <th className="px-2.5 py-2 font-semibold">Part</th>
+                    <th className="px-2.5 py-2 text-right font-semibold font-mono">Target</th>
+                    <th className="px-2.5 py-2 font-semibold">Operator</th>
                   </tr>
-                ) : (
-                  rows.map((row, idx) => (
-                    <tr
-                      key={row.daily_detail_id}
-                      className={`border-t border-[#C6C6C6] transition-colors duration-100 hover:bg-[#FDC94D]/10 ${
-                        idx % 2 === 1 ? "bg-[#FAFAFA]/60" : "bg-white"
-                      }`}
-                    >
-                      <td className="px-2.5 py-1.5 align-top">
-                        <p className="truncate font-mono text-[11.5px] font-semibold text-[#0F1D24]">{row.machine_code}</p>
-                        <p className="truncate text-[10px] text-[#9B9B9B]">{row.machine_name}</p>
-                      </td>
-                      <td className="px-2.5 py-1.5 align-top">
-                        <p className="truncate font-mono text-[11px] text-[#0F1D24]">{row.part_number}</p>
-                        <p className="truncate text-[10px] text-[#9B9B9B]">{row.part_name}</p>
-                      </td>
-                      <td className="px-2.5 py-1.5 text-right align-top font-mono text-[11.5px] font-semibold text-[#0F1D24]">
-                        {row.target_qty}
-                      </td>
-                      <td className="w-64 px-2.5 py-1.5 align-top">
-                        <OperatorPicker
-                          row={row}
-                          disabled={!isEditable}
-                          onAssign={(op) => assignOperator(row.daily_detail_id, op)}
-                          onClear={() => clearOperator(row.daily_detail_id)}
-                        />
+                </thead>
+                <tbody>
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-8 text-center text-[11px] text-[#9B9B9B]">
+                        No machines in this plan.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    rows.map((row, idx) => (
+                      <tr
+                        key={row.daily_detail_id}
+                        className={`border-t border-[#C6C6C6] transition-colors duration-100 hover:bg-[#FDC94D]/10 ${
+                          idx % 2 === 1 ? "bg-[#FAFAFA]/60" : "bg-white"
+                        }`}
+                      >
+                        <td className="px-2.5 py-1.5 align-top">
+                          <p className="truncate font-mono text-[11.5px] font-semibold text-[#0F1D24]">{row.machine_code}</p>
+                          <p className="truncate text-[10px] text-[#9B9B9B]">{row.machine_name}</p>
+                        </td>
+                        <td className="px-2.5 py-1.5 align-top">
+                          <p className="truncate font-mono text-[11px] text-[#0F1D24]">{row.part_number}</p>
+                          <p className="truncate text-[10px] text-[#9B9B9B]">{row.part_name}</p>
+                        </td>
+                        <td className="px-2.5 py-1.5 text-right align-top font-mono text-[11.5px] font-semibold text-[#0F1D24]">
+                          {row.target_qty}
+                        </td>
+                        <td className="w-64 px-2.5 py-1.5 align-top">
+                          <OperatorPicker
+                            row={row}
+                            disabled={!isEditable}
+                            onAssign={(op) => assignOperator(row.daily_detail_id, op)}
+                            onClear={() => clearOperator(row.daily_detail_id)}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
