@@ -1,10 +1,3 @@
-// UserDashboard.jsx — Production Dashboard, single file, advanced desktop UI.
-// Header/TopBar is no longer a separate bar — its content (title, date
-// picker, refresh, export) now lives inside one bordered "control box"
-// row, styled consistently with the summary cards next to it. Overall
-// Production chart always renders its full hour-axis/shift-shading even
-// when there's no data yet — bars just sit at 0 instead of the chart
-// going blank.
 import React, { useState, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -50,12 +43,8 @@ const formatDisplayDate = (iso) => {
 
 const hourLabel = (h) => `${String(h).padStart(2, "0")}:00`;
 
-// hour -> is it inside Shift A (08:00–19:59) or Shift B
 const isShiftA = (h) => h >= 8 && h < 20;
 
-// Always returns a full 24-slot series (08:00 -> 07:00 next day), filling
-// in { target: 0, actual: 0 } for any hour missing from the backend data —
-// so the chart's axis/shift-bands/labels are always fully drawn.
 const buildFullDaySeries = (data = []) => {
   const byHour = {};
   data.forEach((p) => {
@@ -134,11 +123,6 @@ function SummaryCard({ title, icon: Icon, accent = DEFAULT_ACCENT, actual, targe
   );
 }
 
-// ============================================================
-// CONTROL BOX — title + date picker + refresh + export, all
-// merged into ONE bordered row that sits above the summary cards
-// (replaces the standalone TopBar header).
-// ============================================================
 function ControlBox({
   draftDate,
   setDraftDate,

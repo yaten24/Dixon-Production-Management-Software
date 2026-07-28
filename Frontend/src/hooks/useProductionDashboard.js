@@ -4,11 +4,25 @@ import api from "../api/axios";
 const useProductionDashboard = (date) => {
   const [summary, setSummary] = useState({
     overall: { target: 0, actual: 0, rejection: 0 },
-    hallSummary: [],
+    hallSummary: {},
   });
   const [hourlyData, setHourlyData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const normalizeHallSummary = (hallSummaryArr = []) => {
+    const map = {};
+    (hallSummaryArr || []).forEach((h) => {
+      if (!h || !h.hall) return;
+      const key = String(h.hall).trim();
+      map[key] = {
+        target: Number(h.target) || 0,
+        actual: Number(h.actual) || 0,
+        rejection: Number(h.rejection) || 0,
+      };
+    });
+    return map;
+  };
 
   const fetchDashboard = useCallback(async () => {
     if (!date) return;
@@ -22,7 +36,15 @@ const useProductionDashboard = (date) => {
       ]);
 
       if (summaryRes.status === "fulfilled") {
-        setSummary(summaryRes.value.data.data);
+        const data = summaryRes.value.data.data || {};
+        setSummary({
+          overall: {
+            target: Number(data.overall?.target) || 0,
+            actual: Number(data.overall?.actual) || 0,
+            rejection: Number(data.overall?.rejection) || 0,
+          },
+          hallSummary: normalizeHallSummary(data.hallSummary),
+        });
       } else {
         console.error("Summary fetch failed:", summaryRes.reason);
       }
