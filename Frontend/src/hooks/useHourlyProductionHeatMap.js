@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const POLL_INTERVAL_MS = 5000;
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "http://192.168.3.87:5000/api";
 
 
 export function useHourlyProductionHeatmap(hallId, { date, pollMs = POLL_INTERVAL_MS } = {}) {

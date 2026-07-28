@@ -35,7 +35,7 @@ import {
   AlertTriangle,
   Boxes,
   Layers,
-  AlertOctagon,
+  Gauge,
 } from "lucide-react";
 
 import {
@@ -43,7 +43,6 @@ import {
   getHallMachineWise,
   getHallHourlyTrend,
   getHallShiftSummary,
-  getHallTopRejects,
   getHallMachines,
 } from "../../api/hallDashboardApi";
 import { getHallCodeFromId } from "../../data/dashboardData";
@@ -81,6 +80,12 @@ const MIN_CHART_HEIGHT = 120;
 // shared surface tokens — flat, sharp corners, subtle shadow for depth
 const BORDER = "border border-[#E1E4E9]";
 const SURFACE = `bg-white ${BORDER} shadow-[0_1px_2px_rgba(15,29,36,0.06)]`;
+// panel header — highlighted (amber-on-navy) instead of flat gray, used
+// consistently across every panel header (Machine-wise / Shift Summary /
+// Chart card) so headings read as one uniform, highlighted theme.
+const PANEL_HEADER = "bg-[#0F1D24]";
+const PANEL_HEADER_ICON = "flex h-6 w-6 items-center justify-center bg-[#FDC94D] text-[#0F1D24]";
+const PANEL_HEADER_TITLE = "text-[12.5px] font-bold text-white";
 
 // ==========================================================
 // Array-safety helper
@@ -244,10 +249,10 @@ const CustomDatePicker = ({ value, onChange }) => {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-9 flex-shrink-0 items-center gap-1.5 border px-3 text-[11.5px] font-medium outline-none transition-colors duration-100
+        className={`flex h-8 flex-shrink-0 items-center gap-1.5 border px-2.5 text-[11px] font-medium outline-none transition-colors duration-100
           ${open ? "border-[#0F1D24]" : "border-[#E1E4E9] bg-white hover:border-[#0F1D24]"} bg-white text-[#0F1D24]`}
       >
-        <Calendar size={13} className="text-[#9B9B9B]" />
+        <Calendar size={12} className="text-[#9B9B9B]" />
         <span className="whitespace-nowrap">{formatDisplay(selectedKey)}</span>
       </button>
 
@@ -401,7 +406,7 @@ const CustomSelect = ({
         type="button"
         onClick={() => setOpen((o) => !o)}
         style={{ maxWidth }}
-        className={`flex h-9 min-w-[110px] flex-shrink-0 items-center gap-1.5 border px-3 text-[11.5px] font-medium outline-none transition-colors duration-100
+        className={`flex h-8 min-w-[100px] flex-shrink-0 items-center gap-1.5 border px-2.5 text-[11px] font-medium outline-none transition-colors duration-100
           ${open ? "border-[#0F1D24]" : "border-[#E1E4E9] hover:border-[#0F1D24]"} bg-white text-[#0F1D24]`}
       >
         {Icon && <Icon size={12} className="shrink-0 text-[#9B9B9B]" />}
@@ -473,8 +478,8 @@ const DashboardHeader = ({
     () => [
       { value: "All", label: "All Machines" },
       ...safeMachineList.map((m) => ({
-        value: m.machine_code,
-        label: m.machine_name || m.machine_code,
+        value: m.machine_code || m.machine,
+        label: m.machine_name || m.machine || m.machine_code,
       })),
     ],
     [safeMachineList],
@@ -494,27 +499,25 @@ const DashboardHeader = ({
             "linear-gradient(90deg, #0F1D24 0%, #C6C6C6 50%, #FDC94D 100%)",
         }}
       />
-      <div className="flex h-14 w-full flex-nowrap items-center gap-2.5 overflow-x-auto px-4 py-2">
+      <div className="flex h-11 w-full flex-nowrap items-center gap-2 overflow-x-auto px-3 py-1.5">
         <button
           onClick={onBack}
           title="Back"
-          className="flex h-9 w-9 shrink-0 items-center justify-center border border-[#E1E4E9] bg-white text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+          className="flex h-7 w-7 shrink-0 items-center justify-center border border-[#E1E4E9] bg-white text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
         >
-          <ArrowLeft size={14} />
+          <ArrowLeft size={13} />
         </button>
 
-        <div className="flex min-w-0 shrink-0 flex-col justify-center gap-0.5 border-l border-[#E1E4E9] pl-3 pr-1.5">
-          <div className="flex items-baseline gap-2">
-            <span className="shrink-0 text-[9px] font-bold uppercase leading-none tracking-wider text-[#0F1D24]/60">
-              {hallCode} Dashboard
-            </span>
-          </div>
-          <p className="truncate font-mono text-[10px] leading-none text-[#9B9B9B]">
+        <div className="flex min-w-0 shrink-0 flex-col justify-center border-l border-[#E1E4E9] pl-2.5 pr-1">
+          <span className="shrink-0 text-[11px] font-extrabold uppercase leading-none tracking-wide text-[#2F6FED]">
+            {hallCode} Dashboard
+          </span>
+          <p className="truncate font-mono text-[9px] leading-none text-[#9B9B9B]">
             {dateLabel}
           </p>
         </div>
 
-        <div className="h-8 w-px shrink-0 bg-[#E1E4E9]" />
+        <div className="h-6 w-px shrink-0 bg-[#E1E4E9]" />
 
         <CustomDatePicker
           value={draft.date}
@@ -536,40 +539,40 @@ const DashboardHeader = ({
           <button
             onClick={onApply}
             title="Apply selected filters"
-            className="flex h-9 items-center gap-1.5 bg-[#0F1D24] px-3 text-[11px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90"
+            className="flex h-8 items-center gap-1.5 bg-[#0F1D24] px-2.5 text-[10.5px] font-semibold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90"
           >
-            <Filter size={13} />
+            <Filter size={12} />
             <span className="hidden md:inline">Apply</span>
           </button>
           <button
             onClick={onRefresh}
             disabled={loading}
             title="Refresh data"
-            className="flex h-9 items-center gap-1.5 bg-white px-3 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FAFAFB] disabled:opacity-60"
+            className="flex h-8 items-center gap-1.5 bg-white px-2.5 text-[10.5px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FAFAFB] disabled:opacity-60"
           >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
             <span className="hidden md:inline">Refresh</span>
           </button>
           <button
             onClick={onReset}
             title="Reset filters"
-            className="flex h-9 items-center gap-1.5 bg-white px-3 text-[11px] font-semibold text-red-600 transition-colors duration-100 hover:bg-red-50"
+            className="flex h-8 items-center gap-1.5 bg-white px-2.5 text-[10.5px] font-semibold text-red-600 transition-colors duration-100 hover:bg-red-50"
           >
-            <RotateCcw size={13} />
+            <RotateCcw size={12} />
             <span className="hidden md:inline">Reset</span>
           </button>
         </div>
 
         {message ? (
-          <div className="flex h-9 min-w-0 flex-1 shrink items-center gap-1.5 border border-amber-200 bg-amber-50 px-3 text-[10.5px] font-semibold text-amber-700">
-            <AlertTriangle size={12} className="shrink-0" />
+          <div className="flex h-8 min-w-0 flex-1 shrink items-center gap-1.5 border border-amber-200 bg-amber-50 px-2.5 text-[10px] font-semibold text-amber-700">
+            <AlertTriangle size={11} className="shrink-0" />
             <span className="truncate">{message}</span>
           </div>
         ) : (
           <div className="min-w-[8px] flex-1" />
         )}
 
-        <div className="flex h-9 shrink-0 items-stretch gap-px overflow-hidden border border-[#E1E4E9] [&>*]:flex [&>*]:items-center [&>*]:whitespace-nowrap">
+        <div className="flex h-8 shrink-0 items-stretch gap-px overflow-hidden border border-[#E1E4E9] [&>*]:flex [&>*]:items-center [&>*]:whitespace-nowrap">
           <button
             onClick={onHeatmap}
             className="flex items-center gap-1.5 bg-white px-3 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/20"
@@ -629,53 +632,79 @@ const useCountUp = (value, duration = 700) => {
 };
 
 // ==========================================================
-// KPI card — flat surface, tone accent rail on top.
+// KPI card — flat white surface with border (matches SURFACE token used
+// everywhere else). One consistent navy/amber palette across all cards,
+// except the Rejects card which gets a red accent so the negative metric
+// is immediately readable at a glance without hunting through the table.
 // ==========================================================
-const KPI_TONE = {
-  green: {
-    value: "text-emerald-600",
-    accent: "#10b981",
-    chip: "bg-emerald-50 text-emerald-600",
-  },
-  blue: {
-    value: "text-[#0F1D24]",
-    accent: "#0F1D24",
-    chip: "bg-[#0F1D24]/5 text-[#0F1D24]",
-  },
-  red: {
-    value: "text-red-600",
-    accent: "#ef4444",
-    chip: "bg-red-50 text-red-600",
-  },
-  amber: {
-    value: "text-[#0F1D24]",
-    accent: "#FDC94D",
-    chip: "bg-[#FDC94D]/15 text-[#0F1D24]",
-  },
-};
-
 const KpiCard = ({ item }) => {
-  const tone = KPI_TONE[item.tone] || KPI_TONE.blue;
   const Icon = item.icon;
   const display = useCountUp(item.value);
+  const isNegative = item.tone === "negative";
 
   return (
-    <div className={`relative flex flex-col justify-between ${SURFACE} p-3`}>
-      <div>
-        <p className="truncate text-[9px] font-bold uppercase leading-none tracking-wider text-[#9B9B9B]">
+    <div
+      className={`relative flex flex-col justify-between ${SURFACE} p-3 ${isNegative ? "border-red-200" : ""}`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 truncate text-[9px] font-bold uppercase leading-none tracking-wider text-[#9B9B9B]">
           {item.title}
         </p>
-        <h2
-          className={`mt-2 font-mono text-[22px] font-extrabold leading-none tabular-nums ${tone.value}`}
-        >
-          {display}
-        </h2>
-        <p className="mt-1.5 truncate text-[9.5px] font-semibold leading-none text-[#9B9B9B]">
-          {item.subtitle}
-        </p>
+        {Icon && (
+          <div
+            className={`flex h-6 w-6 flex-shrink-0 items-center justify-center ${isNegative ? "bg-red-500" : "bg-[#0F1D24]"}`}
+          >
+            <Icon
+              className={`h-3.5 w-3.5 ${isNegative ? "text-white" : "text-[#FDC94D]"}`}
+            />
+          </div>
+        )}
       </div>
+      <h2
+        className={`mt-2 font-mono text-[22px] font-extrabold leading-none tabular-nums ${isNegative ? "text-red-600" : "text-[#0F1D24]"}`}
+      >
+        {display}
+      </h2>
+      <p className="mt-1.5 truncate text-[9.5px] font-semibold leading-none text-[#9B9B9B]">
+        {item.subtitle}
+      </p>
     </div>
   );
+};
+
+// ==========================================================
+// OEE helpers — machine-wise rows can arrive either with a flat `oee`
+// field, or with an `oeeBreakdown` object ({availability, performance,
+// quality, oee}). Some backends send oeeBreakdown.oee as 0 even when the
+// sub-metrics are healthy, so we recompute from the sub-metrics whenever
+// they're present and non-zero, and only fall back to the reported value.
+const resolveOee = (row) => {
+  const bd = row?.oeeBreakdown;
+  if (bd && typeof bd === "object") {
+    const availability = Number(bd.availability) || 0;
+    const performance = Number(bd.performance) || 0;
+    const quality = Number(bd.quality) || 0;
+    const computed = Math.round(
+      (availability / 100) * (performance / 100) * (quality / 100) * 100,
+    );
+    if (computed > 0) return { oee: computed, availability, performance, quality };
+    const reported = Number(bd.oee) || Number(row.oee) || 0;
+    return { oee: reported, availability, performance, quality };
+  }
+  return {
+    oee: Number(row?.oee) || 0,
+    availability: null,
+    performance: null,
+    quality: null,
+  };
+};
+
+const oeeTone = (value) => {
+  if (value >= 85)
+    return { text: "text-emerald-600", chip: "bg-emerald-50 text-emerald-700 border-emerald-200", bar: "#10b981" };
+  if (value >= 60)
+    return { text: "text-[#0F1D24]", chip: "bg-[#FDC94D]/20 text-[#7a5b00] border-[#FDC94D]/60", bar: "#FDC94D" };
+  return { text: "text-red-600", chip: "bg-red-50 text-red-600 border-red-200", bar: "#ef4444" };
 };
 
 // ==========================================================
@@ -687,14 +716,14 @@ const MachineWiseTable = ({ rows, loading }) => {
     <div
       className={`flex min-h-0 h-full flex-1 flex-col overflow-hidden ${SURFACE}`}
     >
-      <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#E1E4E9] bg-[#FAFAFB] px-3.5 py-2.5">
-        <div className="flex h-6 w-6 items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
+      <div className={`flex flex-shrink-0 items-center gap-2 border-b border-[#E1E4E9] ${PANEL_HEADER} px-3.5 py-2.5`}>
+        <div className={PANEL_HEADER_ICON}>
           <Boxes className="h-3.5 w-3.5" />
         </div>
-        <h2 className="text-[12.5px] font-bold text-[#0F1D24]">
+        <h2 className={PANEL_HEADER_TITLE}>
           Machine-wise Breakdown
         </h2>
-        <span className="border border-[#E1E4E9] bg-white px-1.5 py-[1px] text-[10px] font-bold text-[#9B9B9B]">
+        <span className="border border-[#FDC94D]/40 bg-white/10 px-1.5 py-[1px] text-[10px] font-bold text-[#FDC94D]">
           {safeRows.length}
         </span>
       </div>
@@ -710,6 +739,9 @@ const MachineWiseTable = ({ rows, loading }) => {
                 Actual
               </th>
               <th className="px-3 py-2 text-right font-semibold font-mono">
+                Good
+              </th>
+              <th className="px-3 py-2 text-right font-semibold font-mono">
                 Reject
               </th>
               <th className="px-3 py-2 text-right font-semibold font-mono">
@@ -721,7 +753,7 @@ const MachineWiseTable = ({ rows, loading }) => {
             {loading ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={7}
                   className="px-3 py-6 text-center text-[#9B9B9B]"
                 >
                   Loading…
@@ -730,7 +762,7 @@ const MachineWiseTable = ({ rows, loading }) => {
             ) : safeRows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={7}
                   className="px-3 py-6 text-center text-[#9B9B9B]"
                 >
                   No machine data for this selection.
@@ -738,24 +770,27 @@ const MachineWiseTable = ({ rows, loading }) => {
               </tr>
             ) : (
               safeRows.map((row, idx) => {
+                const machineLabel =
+                  row.machine || row.machine_name || row.machine_code || "—";
                 const target = Number(row.target) || 0;
                 const actual = Number(row.actual) || 0;
-                const reject = Number(row.reject) || 0;
+                const good = Number(row.good ?? actual - (Number(row.rejection ?? row.reject) || 0)) || 0;
+                const reject = Number(row.rejection ?? row.reject) || 0;
                 const achievement = row.achievement ?? pct(actual, target);
+                const { oee } = resolveOee(row);
+                const tone = oeeTone(oee);
                 return (
                   <tr
-                    key={row.machine_code || row.id || idx}
+                    key={row.machine_code || row.machine || row.id || idx}
                     className={`border-t border-[#E1E4E9] transition-colors duration-100 hover:bg-[#FDC94D]/10 ${idx % 2 === 1 ? "bg-[#FAFAFB]/60" : "bg-white"}`}
                   >
                     <td className="px-3 py-2">
-                      <p className="font-mono font-semibold text-[#0F1D24]">
-                        {row.machine_code}
-                      </p>
-                      {row.machine_name && (
-                        <p className="text-[10px] text-[#9B9B9B]">
-                          {row.machine_name}
-                        </p>
-                      )}
+                      <span className="inline-flex items-center gap-1.5 border border-[#0F1D24]/15 bg-[#0F1D24]/[0.04] px-2 py-1">
+                        <span className="h-1.5 w-1.5 flex-shrink-0 bg-[#FDC94D]" />
+                        <span className="font-mono text-[11.5px] font-extrabold tracking-wide text-[#0F1D24]">
+                          {machineLabel}
+                        </span>
+                      </span>
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-[#9B9B9B]">
                       {target.toLocaleString()}
@@ -763,14 +798,24 @@ const MachineWiseTable = ({ rows, loading }) => {
                     <td className="px-3 py-2 text-right font-mono font-semibold text-[#0F1D24]">
                       {actual.toLocaleString()}
                     </td>
+                    <td className="px-3 py-2 text-right font-mono text-emerald-600">
+                      {good.toLocaleString()}
+                    </td>
                     <td
-                      className={`px-3 py-2 text-right font-mono ${reject > 0 ? "text-red-600" : "text-[#9B9B9B]"}`}
+                      className={`px-3 py-2 text-right font-mono ${reject > 0 ? "text-red-600 font-semibold" : "text-[#9B9B9B]"}`}
                     >
                       {reject.toLocaleString()}
                     </td>
                     <td className="px-3 py-2 text-right font-mono font-semibold text-[#0F1D24]">
                       {achievement}%
                     </td>
+                    {/* <td className="px-3 py-2 text-right">
+                      <span
+                        className={`inline-flex min-w-[54px] items-center justify-center gap-1 border px-1.5 py-0.5 font-mono text-[11px] font-extrabold ${tone.chip}`}
+                      >
+                        {oee}%
+                      </span>
+                    </td> */}
                   </tr>
                 );
               })
@@ -782,16 +827,83 @@ const MachineWiseTable = ({ rows, loading }) => {
   );
 };
 
+// Donut progress indicator — square (non-rounded) line caps to stay
+// consistent with the "zero rounded" flat design language.
+const ProgressRing = ({ value, size = 52, stroke = 6, color }) => {
+  const safeValue = Math.min(Math.max(Number(value) || 0, 0), 100);
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (safeValue / 100) * circumference;
+  return (
+    <svg width={size} height={size} className="flex-shrink-0">
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke="#E1E4E9"
+        strokeWidth={stroke}
+        fill="none"
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke={color}
+        strokeWidth={stroke}
+        fill="none"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="butt"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        style={{ transition: "stroke-dashoffset 600ms ease-out" }}
+      />
+      <text
+        x="50%"
+        y="50%"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize="12"
+        fontWeight="800"
+        fill="#0F1D24"
+        fontFamily="ui-monospace, monospace"
+      >
+        {safeValue}%
+      </text>
+    </svg>
+  );
+};
+
+// Some backends send an ambiguous or missing `shift` flag instead of a
+// clean "A"/"B" string, which was causing both shift cards to render as
+// "Shift A". Recognise common variants and, failing that, fall back to
+// the row's position in the list (first row = A, second = B) instead of
+// defaulting everything to "A".
+const normalizeShiftKey = (val, idx) => {
+  const s = String(val ?? "").trim().toUpperCase();
+  if (s === "A" || s === "B") return s;
+  if (s === "1" || s === "SHIFT A" || s === "DAY") return "A";
+  if (s === "2" || s === "SHIFT B" || s === "NIGHT") return "B";
+  return idx === 1 ? "B" : "A";
+};
+
 // ==========================================================
-// Shift A / B summary cards
+// Shift A / B summary cards — header now matches the highlighted
+// amber-on-navy style used by every other panel so headings read as one
+// consistent theme across the page.
 // ==========================================================
 const ShiftSummaryPanel = ({ rows, loading }) => {
   const safeRows = toArray(rows);
   return (
     <div
-      className={`flex min-h-0 flex-shrink-0 flex-col overflow-hidden ${SURFACE}`}
+      className={`flex min-h-0 flex-1 flex-col overflow-hidden ${SURFACE}`}
     >
-      <div className="grid grid-cols-1 gap-px bg-[#E1E4E9] sm:grid-cols-2">
+      <div className={`flex flex-shrink-0 items-center gap-2 border-b border-[#E1E4E9] ${PANEL_HEADER} px-3.5 py-2.5`}>
+        <div className={PANEL_HEADER_ICON}>
+          <Layers className="h-3.5 w-3.5" />
+        </div>
+        <h2 className={PANEL_HEADER_TITLE}>Shift Summary</h2>
+      </div>
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-px overflow-auto bg-[#E1E4E9] sm:grid-cols-2">
         {loading ? (
           <div className="col-span-2 bg-white px-3.5 py-6 text-center text-[11.5px] text-[#9B9B9B]">
             Loading…
@@ -804,95 +916,41 @@ const ShiftSummaryPanel = ({ rows, loading }) => {
           safeRows.map((row, idx) => {
             const target = Number(row.target) || 0;
             const actual = Number(row.actual) || 0;
+            const reject = Number(row.rejection ?? row.reject) || 0;
             const achievement = row.achievement ?? pct(actual, target);
-            const shiftKey = row.shift === "B" ? "B" : "A";
+            const shiftKey = normalizeShiftKey(row.shift, idx);
             const colors = SHIFT_COLORS[shiftKey];
             return (
-              <div key={row.shift ?? idx} className="bg-white p-3.5">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="flex h-5 w-5 flex-shrink-0 items-center justify-center text-[9.5px] font-bold"
-                    style={{
-                      background: colors.swatch,
-                      color: shiftKey === "A" ? "#0F1D24" : "#FDC94D",
-                    }}
-                  >
-                    {shiftKey}
-                  </span>
+              <div key={row.shift ?? idx} className="flex items-center gap-3 bg-white p-3">
+                <span
+                  className="flex h-7 w-7 flex-shrink-0 items-center justify-center text-[10.5px] font-bold"
+                  style={{
+                    background: colors.swatch,
+                    color: shiftKey === "A" ? "#0F1D24" : "#FDC94D",
+                  }}
+                >
+                  {shiftKey}
+                </span>
+                <div className="min-w-0 flex-1">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-[#0F1D24]">
                     Shift {shiftKey}
                   </p>
-                </div>
-                <div className="mt-2.5 flex items-end justify-between font-mono">
-                  <div>
-                    <p className="text-[9px] font-bold uppercase text-[#9B9B9B]">
-                      Target / Actual
-                    </p>
-                    <p className="text-[13px] font-bold text-[#0F1D24]">
-                      {target.toLocaleString()} / {actual.toLocaleString()}
-                    </p>
-                  </div>
-                  <p className="text-[16px] font-extrabold text-[#0F1D24]">
-                    {achievement}%
+                  <p className="mt-1 text-[8.5px] font-bold uppercase text-[#9B9B9B]">
+                    Target / Actual
+                  </p>
+                  <p className="font-mono text-[13px] font-bold text-[#0F1D24]">
+                    {target.toLocaleString()} / {actual.toLocaleString()}
+                  </p>
+                  <p className="mt-1 text-[8.5px] font-bold uppercase text-[#9B9B9B]">
+                    Reject
+                  </p>
+                  <p
+                    className={`font-mono text-[12px] font-bold ${reject > 0 ? "text-red-600" : "text-[#0F1D24]"}`}
+                  >
+                    {reject.toLocaleString()}
                   </p>
                 </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ==========================================================
-// Top Rejects panel
-// ==========================================================
-const TopRejectsPanel = ({ rows, loading }) => {
-  const safeRows = toArray(rows);
-  const total = safeRows.reduce(
-    (s, r) => s + (Number(r.qty ?? r.reject_qty ?? r.count) || 0),
-    0,
-  );
-  return (
-    <div className={`flex min-h-0 flex-1 flex-col overflow-hidden ${SURFACE}`}>
-      <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#E1E4E9] bg-[#FAFAFB] px-3.5 py-2.5">
-        <div className="flex h-6 w-6 items-center justify-center bg-red-500 text-white">
-          <AlertOctagon className="h-3.5 w-3.5" />
-        </div>
-        <h2 className="text-[12.5px] font-bold text-[#0F1D24]">Top Rejects</h2>
-      </div>
-      <div className="min-h-0 flex-1 divide-y divide-[#E1E4E9] overflow-auto">
-        {loading ? (
-          <p className="px-3.5 py-6 text-center text-[11.5px] text-[#9B9B9B]">
-            Loading…
-          </p>
-        ) : safeRows.length === 0 ? (
-          <p className="px-3.5 py-6 text-center text-[11.5px] text-[#9B9B9B]">
-            No rejects recorded for this selection.
-          </p>
-        ) : (
-          safeRows.map((row, idx) => {
-            const qty = Number(row.qty ?? row.reject_qty ?? row.count) || 0;
-            const share = pct(qty, total);
-            const label =
-              row.reason || row.part_name || row.part_number || "Unspecified";
-            return (
-              <div key={idx} className="px-3.5 py-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-[11.5px] font-semibold text-[#0F1D24]">
-                    {label}
-                  </span>
-                  <span className="flex-shrink-0 font-mono text-[11.5px] font-bold text-red-600">
-                    {qty.toLocaleString()}
-                  </span>
-                </div>
-                <div className="mt-1.5 h-1 w-full overflow-hidden bg-[#F0F0F0]">
-                  <div
-                    className="h-full bg-red-500"
-                    style={{ width: `${share}%` }}
-                  />
-                </div>
+                <ProgressRing value={achievement} color={colors.swatch} />
               </div>
             );
           })
@@ -1006,6 +1064,9 @@ const Chart = ({ chartData }) => {
   }, [chartData, chartW, chartH, width, compact, PADDING.left, PADDING.top]);
 
   const hovered = hoverIdx !== null ? groups[hoverIdx] : null;
+  // Value labels are only legible once a bar is wide enough — below that
+  // they'd overlap each other, so we fall back to hover-only tooltips.
+  const showValueLabels = groups.length > 0 && groups[0].barW >= 9;
 
   return (
     <div ref={containerRef} className="relative h-full min-h-0 w-full">
@@ -1117,6 +1178,32 @@ const Chart = ({ chartData }) => {
                 animation: `hdGrowBar 450ms ease-out ${i * 16 + 40}ms both`,
               }}
             />
+            {showValueLabels && g.target > 0 && (
+              <text
+                x={g.barX1 + g.barW / 2}
+                y={g.y1 - 3}
+                textAnchor="middle"
+                fontSize={compact ? "7" : "8"}
+                fontWeight="700"
+                fontFamily="ui-monospace, monospace"
+                fill={BAR_COLORS.target}
+              >
+                {g.target}
+              </text>
+            )}
+            {showValueLabels && g.actual > 0 && (
+              <text
+                x={g.barX2 + g.barW / 2}
+                y={g.y2 - 3}
+                textAnchor="middle"
+                fontSize={compact ? "7" : "8"}
+                fontWeight="700"
+                fontFamily="ui-monospace, monospace"
+                fill="#0F1D24"
+              >
+                {g.actual}
+              </text>
+            )}
           </g>
         ))}
         {groups.map((g, i) => (
@@ -1426,7 +1513,6 @@ const HallDashboard = () => {
   const [machineWise, setMachineWise] = useState([]);
   const [hourlyTrend, setHourlyTrend] = useState([]);
   const [shiftSummary, setShiftSummary] = useState([]);
-  const [topRejects, setTopRejects] = useState([]);
   const [machines, setMachines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -1460,7 +1546,6 @@ const HallDashboard = () => {
         shift: filters.shift,
       }),
       getHallShiftSummary(commonParams),
-      getHallTopRejects({ ...commonParams, limit: 5 }),
       getHallMachines({ hall: hallCode }),
     ]);
 
@@ -1469,7 +1554,6 @@ const HallDashboard = () => {
       machineWiseRes,
       hourlyRes,
       shiftSummaryRes,
-      topRejectsRes,
       machinesRes,
     ] = results;
     const failures = [];
@@ -1507,12 +1591,6 @@ const HallDashboard = () => {
       setShiftSummary(toArray(shiftSummaryRes.value.data));
     } else {
       failures.push("shift-summary");
-    }
-
-    if (topRejectsRes.status === "fulfilled" && topRejectsRes.value?.success) {
-      setTopRejects(toArray(topRejectsRes.value.data));
-    } else {
-      failures.push("top-rejects");
     }
 
     if (machinesRes.status === "fulfilled" && machinesRes.value?.success) {
@@ -1555,7 +1633,6 @@ const HallDashboard = () => {
         value: stats.actual?.toLocaleString?.() ?? stats.actual,
         subtitle: `Target: ${stats.target?.toLocaleString?.() ?? stats.target}`,
         icon: IconTrendUp,
-        tone: "green",
       },
       {
         id: "target",
@@ -1563,15 +1640,14 @@ const HallDashboard = () => {
         value: stats.target?.toLocaleString?.() ?? stats.target,
         subtitle: `Hall ${hallCode}`,
         icon: IconTarget,
-        tone: "blue",
       },
       {
         id: "reject",
         title: "Rejects",
         value: stats.reject?.toLocaleString?.() ?? stats.reject,
-        subtitle: "Total rejected qty",
+        subtitle: `${pct(Number(stats.reject) || 0, Number(stats.actual) || 0)}% of actual output`,
         icon: IconAlert,
-        tone: "red",
+        tone: "negative",
       },
       {
         id: "achievement",
@@ -1579,7 +1655,6 @@ const HallDashboard = () => {
         value: `${stats.achievement}%`,
         subtitle: "Target vs Actual",
         icon: IconAward,
-        tone: "amber",
       },
       {
         id: "oee",
@@ -1587,7 +1662,6 @@ const HallDashboard = () => {
         value: `${stats.oee}%`,
         subtitle: "Overall equipment eff.",
         icon: IconGauge,
-        tone: "blue",
       },
     ];
   }, [stats, hallCode]);
@@ -1640,7 +1714,7 @@ const HallDashboard = () => {
           />
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-            {/* Row 1: KPI cards + Shift summary + Top rejects (left) / Machine-wise breakdown (right). */}
+            {/* Row 1: KPI cards + Shift summary (left) / Machine-wise breakdown (right). */}
             <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:flex-[0_0_44%] lg:grid-cols-2">
               <div className="flex min-h-0 flex-col gap-3 overflow-hidden lg:h-full">
                 {loading && !stats ? (
@@ -1661,7 +1735,6 @@ const HallDashboard = () => {
                 )}
                 <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
                   <ShiftSummaryPanel rows={shiftSummary} loading={loading} />
-                  <TopRejectsPanel rows={topRejects} loading={loading} />
                 </div>
               </div>
 

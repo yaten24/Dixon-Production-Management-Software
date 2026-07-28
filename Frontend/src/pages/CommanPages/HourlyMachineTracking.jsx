@@ -33,6 +33,14 @@ const cellTone = (target, achieved) => {
   return achieved >= target ? "bg-green-200/70 text-green-900" : "bg-red-200/70 text-red-900";
 };
 
+// Rejection cell: any rejection at all gets flagged red, zero is neutral,
+// null (hour hasn't started) stays faded like the other cells.
+const rejectTone = (reject) => {
+  if (reject === null || reject === undefined) return "bg-white text-[#0F1D24]/30";
+  if (reject === 0) return "bg-white text-[#9B9B9B]";
+  return "bg-red-200/70 text-red-900 font-semibold";
+};
+
 function useTicker(ms = 1000) {
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -114,7 +122,8 @@ export default function HourlyMachineTracking() {
         ? Math.round((withTarget.reduce((s, m) => s + (m.summary.efficiency ?? 0), 0) / withTarget.length) * 10) / 10
         : null;
     const behindTarget = withTarget.filter((m) => (m.summary.efficiency ?? 0) < 100).length;
-    return { total: allMachines.length, running, avgEff, behindTarget };
+    const totalReject = allMachines.reduce((s, m) => s + (m.summary.reject ?? 0), 0);
+    return { total: allMachines.length, running, avgEff, behindTarget, totalReject };
   }, [allMachines]);
 
   const isInitialLoading = loading && !data;
@@ -168,6 +177,22 @@ export default function HourlyMachineTracking() {
             </span>
           </div>
         )}
+
+        {/* KPI row — includes total rejection across the hall
+        {kpis && (
+          <div className="mt-2 flex flex-shrink-0 gap-2">
+            <StatCard value={kpis.total} label="Machines" />
+            <StatCard value={kpis.running} label="Running" tone="ok" />
+            <StatCard value={kpis.avgEff !== null ? `${kpis.avgEff}%` : "—"} label="Avg Efficiency" />
+            <StatCard value={kpis.behindTarget} label="Behind Target" tone={kpis.behindTarget > 0 ? "warn" : "ok"} />
+            <StatCard
+              value={kpis.totalReject}
+              label="Total Rejection"
+              tone={kpis.totalReject > 0 ? "warn" : "ok"}
+            />
+          </div>
+        )} */}
+
         {/* Table */}
         <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden border border-[#C6C6C6] bg-white">
           {isInitialLoading ? (
@@ -195,7 +220,7 @@ export default function HourlyMachineTracking() {
                   {machines.map((m) => (
                     <th
                       key={m.machineId}
-                      colSpan={2}
+                      colSpan={3}
                       className="border border-[#C6C6C6] bg-[#0F1D24] px-1 py-1 text-center font-bold leading-none text-[#FDC94D]"
                     >
                       {m.machineName}
@@ -215,6 +240,9 @@ export default function HourlyMachineTracking() {
                             · {m.summary.efficiency}%
                           </span>
                         )}
+                        {m.summary.reject > 0 && (
+                          <span className="text-red-300">· {m.summary.reject} rej</span>
+                        )}
                       </div>
                     </th>
                   ))}
@@ -228,6 +256,9 @@ export default function HourlyMachineTracking() {
                       <th className="border border-[#C6C6C6] bg-[#0F1D24]/90 px-1 py-0.5 text-center font-semibold text-white">
                         Ach.
                       </th>
+                      <th className="border border-[#C6C6C6] bg-[#0F1D24]/90 px-1 py-0.5 text-center font-semibold text-white">
+                        Rej.
+                      </th>
                     </React.Fragment>
                   ))}
                 </tr>
@@ -238,7 +269,7 @@ export default function HourlyMachineTracking() {
                     {row.isShiftStart && (
                       <tr>
                         <td
-                          colSpan={2 + machines.length * 2}
+                          colSpan={2 + machines.length * 3}
                           className={`sticky left-0 z-10 border border-[#C6C6C6] px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide ${
                             row.shift === "A" ? "bg-[#FDC94D] text-[#0F1D24]" : "bg-[#0F1D24] text-[#FDC94D]"
                           }`}
@@ -270,6 +301,13 @@ export default function HourlyMachineTracking() {
                               )}`}
                             >
                               {cell.achieved ?? ""}
+                            </td>
+                            <td
+                              className={`border border-[#C6C6C6] px-1 py-0.5 text-center font-mono leading-none ${rejectTone(
+                                cell.reject
+                              )}`}
+                            >
+                              {cell.reject ?? ""}
                             </td>
                           </React.Fragment>
                         );

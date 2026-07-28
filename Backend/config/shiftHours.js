@@ -23,12 +23,29 @@ function buildHourSlots() {
 }
 
 // Has this hour's shift slot already started, relative to `currentHour`?
-// Shift B wraps past midnight, so hours 0-7 belong to "yesterday's" shift day
-// until the clock actually reaches them again.
+//
+// NOTE: this is only used as a FALLBACK for slots that have no DB row yet
+// (see productionHeatmapService.js — real entries always win, regardless
+// of what this returns). It just decides whether an empty slot should be
+// shown as "future" (null) or "started but no entry" (0).
+//
+// Shift B wraps past midnight:
+//  - hours 20-23 belong to "today's" evening — started once currentHour
+//    reaches them, OR once we're past midnight into the early morning (0-7).
+//  - hours 0-7 belong to the shift that began the previous evening — they're
+//    "started" for as long as we're still within that overnight window
+//    (currentHour < 8) and we've reached/passed that hour, i.e. this is
+//    still an in-progress overnight shift.
 function hasHourStarted(slotHour, currentHour) {
-  if (slotHour >= 8) return currentHour >= slotHour;
-  if (currentHour < 8) return currentHour >= slotHour;
-  return false;
+  if (slotHour >= 8) {
+    // Shift A (8-19) or Shift B evening (20-23):
+    // started if we've reached that hour today, or if it's already
+    // past midnight (meaning that evening fully happened).
+    return currentHour >= slotHour || currentHour < 8;
+  }
+  // Shift B early-morning hours (0-7): only "started" while we're still
+  // inside that overnight window and have reached the hour.
+  return currentHour < 8 && currentHour >= slotHour;
 }
 
 module.exports = { SHIFT_A_HOURS, SHIFT_B_HOURS, ORDERED_HOURS, buildHourSlots, hasHourStarted };
