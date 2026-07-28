@@ -690,11 +690,11 @@ const UserHome = () => {
           <QuickAccessSection />
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-1.5 lg:grid-cols-3">
+        {/* <div className="grid min-h-0 flex-1 grid-cols-1 gap-1.5 lg:grid-cols-3">
           <ProductionTrendChart />
           <MachineStatusPanel />
           <TodaysSummaryPanel />
-        </div>
+        </div> */}
 {/* 
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-1.5 lg:grid-cols-2">
           <RecentActivityPanel />
