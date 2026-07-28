@@ -63,8 +63,7 @@ const TABS = [
 // Availability is computed against a fixed 60-minute slot. If a time slot in
 // your data represents a different duration, change this constant (or wire
 // it to a real field once one exists) and the OEE panel below updates
-// automatically. It's also used as the Loss Time breakup's cap-check limit
-// (see the ReasonBreakup bug-fix note further down).
+// automatically.
 //
 // NOTE: this same "one slot = 60 minutes" assumption is also used by
 // useProductionEntry.js's Target Qty auto-calc formula (SLOT_MINUTES) —
@@ -101,26 +100,90 @@ const formatDateDisplay = (key) =>
     : parseDateKey(key).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
 // ============================================================
-// Themed dropdown — flat bordered, no motion
+// Global dropdown coordination — ensures only ONE popover-style
+// dropdown (ThemedSelect / CustomDatePicker / machine-number search)
+// is open at a time. Previously each dropdown tracked its own `open`
+// state in isolation, so opening a second dropdown while another was
+// already open left both rendered on top of each other ("dropdown
+// overriding dropdown"). Every popover now dispatches this event with
+// its own unique id right before it opens; every other popover listens
+// and closes itself when the id doesn't match its own.
+// ============================================================
+const DROPDOWN_OPEN_EVENT = "adv-entry-dropdown-open";
+let dropdownIdCounter = 0;
+const nextDropdownId = () => ++dropdownIdCounter;
+const announceDropdownOpen = (id) => {
+  window.dispatchEvent(new CustomEvent(DROPDOWN_OPEN_EVENT, { detail: id }));
+};
+const useCloseOnOtherDropdownOpen = (id, setOpen) => {
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail !== id) setOpen(false);
+    };
+    window.addEventListener(DROPDOWN_OPEN_EVENT, handler);
+    return () => window.removeEventListener(DROPDOWN_OPEN_EVENT, handler);
+  }, [id, setOpen]);
+};
+
+// ============================================================
+// Themed dropdown — flat bordered, no motion. Options panel is
+// portaled to document.body with fixed coordinates (like
+// CustomDatePicker) so it's never clipped by the scrollable <main>,
+// and only one dropdown across the whole page can be open at once.
 // ============================================================
 function ThemedSelect({ value, onChange, options, icon: Icon, placeholder = "Select", disabled = false, className = "" }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [coords, setCoords] = useState(null);
+  const idRef = useRef(nextDropdownId());
+  const triggerRef = useRef(null);
+  const panelRef = useRef(null);
+
+  useCloseOnOtherDropdownOpen(idRef.current, setOpen);
 
   useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const h = (e) => {
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target) &&
+        panelRef.current && !panelRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  const updateCoords = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setCoords({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updateCoords();
+    const reposition = () => updateCoords();
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [open, updateCoords]);
+
+  const toggleOpen = () => {
+    if (!open) announceDropdownOpen(idRef.current);
+    setOpen((o) => !o);
+  };
+
   const selected = options.find((o) => o.value === value);
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div ref={triggerRef} className={`relative ${className}`}>
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggleOpen}
         className={`flex h-9 w-full items-center gap-2 border px-2.5 text-[12.5px] font-semibold text-[#0F1D24] outline-none transition-colors duration-100 ${
           disabled ? "cursor-not-allowed border-[#C6C6C6] bg-[#F5F5F5] text-[#9B9B9B]" : open ? "border-[#0F1D24] bg-white" : "border-[#C6C6C6] bg-white hover:border-[#0F1D24]"
         }`}
@@ -132,8 +195,12 @@ function ThemedSelect({ value, onChange, options, icon: Icon, placeholder = "Sel
         <FaChevronDown className={`flex-shrink-0 text-[9px] text-[#9B9B9B] transition-transform duration-100 ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && !disabled && (
-        <div className="absolute left-0 top-full z-30 mt-1 max-h-56 w-full overflow-y-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
+      {open && !disabled && coords && createPortal(
+        <div
+          ref={panelRef}
+          style={{ position: "fixed", top: coords.top, left: coords.left, width: coords.width }}
+          className="z-[9999] max-h-56 overflow-y-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.15)]"
+        >
           {options.length === 0 && <div className="px-2.5 py-2 text-[11.5px] text-[#9B9B9B]">No options</div>}
           {options.map((o) => (
             <button
@@ -147,7 +214,8 @@ function ThemedSelect({ value, onChange, options, icon: Icon, placeholder = "Sel
               {o.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -158,14 +226,18 @@ function ThemedSelect({ value, onChange, options, icon: Icon, placeholder = "Sel
 // the native <input type="date">. The calendar panel is portaled
 // to document.body with `position: fixed` coordinates (rather than
 // `absolute` inside the trigger) so it never gets clipped by the
-// scrollable <main> panel this field sits inside.
+// scrollable <main> panel this field sits inside. Also participates
+// in the shared "only one dropdown open" coordination.
 // ============================================================
 function CustomDatePicker({ value, onChange, disabled = false }) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => parseDateKey(value));
   const [coords, setCoords] = useState(null);
+  const idRef = useRef(nextDropdownId());
   const wrapperRef = useRef(null);
   const panelRef = useRef(null);
+
+  useCloseOnOtherDropdownOpen(idRef.current, setOpen);
 
   useEffect(() => { setViewDate(parseDateKey(value)); }, [value]);
 
@@ -219,13 +291,17 @@ function CustomDatePicker({ value, onChange, disabled = false }) {
 
   const changeMonth = (delta) => setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1));
   const handleSelect = (date) => { onChange(toDateKey(date)); setOpen(false); };
+  const toggleOpen = () => {
+    if (!open) announceDropdownOpen(idRef.current);
+    setOpen((o) => !o);
+  };
 
   return (
     <div ref={wrapperRef} className="relative">
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggleOpen}
         className={`flex h-9 w-full items-center gap-2 border px-2.5 text-[12.5px] font-semibold outline-none transition-colors duration-100 ${
           disabled ? "cursor-not-allowed border-[#C6C6C6] bg-[#F5F5F5] text-[#9B9B9B]" : open ? "border-[#0F1D24] bg-white text-[#0F1D24]" : "border-[#C6C6C6] bg-white text-[#0F1D24] hover:border-[#0F1D24]"
         }`}
@@ -329,35 +405,29 @@ const textInputClass =
 //
 // `valueField` tells the component which key on each row holds the
 // number ("qty" for Reject/Mould Reject, "minutes" for Loss Time).
-// This used to be auto-detected from `rows[0]`, which broke down for
-// an empty list or any row shape that didn't happen to carry the
-// expected key — now it's explicit, so it can never silently write
-// to (or total up) the wrong field.
 //
 // `matchMode` controls how the total is validated against
 // `matchAgainst`:
-//   - "equal" (Reject / Mould Reject): breakup total must equal the
-//     entry's total reject qty.
-//   - "max" (Loss Time): there's no separate "total loss minutes"
-//     field to reconcile against, so this is a cap check instead —
-//     breakup total must not exceed the planned slot length. This
-//     replaces the previous `matchAgainst={0}` wiring, which made
-//     `matchValue > 0` always false and silently disabled the
-//     mismatch warning for Loss Time entirely (the actual bug).
+//   - "equal" (Reject / Mould Reject / Loss Time): breakup total must
+//     equal the target value (entry's reject qty, or the formula-
+//     calculated loss-time minutes for Loss Time — see
+//     `calculatedLossMinutes` in the main component).
+//   - "max": generic cap check — breakup total must not exceed
+//     `matchAgainst`.
 // ============================================================
-function ReasonBreakup({ title, rows, reasonOptions, updateRow, addRow, removeRow, unitLabel, totalLabel, valueField, matchAgainst, matchMode = "equal" }) {
+function ReasonBreakup({ title, rows, reasonOptions, updateRow, addRow, removeRow, unitLabel, totalLabel, valueField, matchAgainst, matchMode = "equal", highlight = false }) {
   const total = rows.reduce((sum, r) => sum + (Number(r[valueField]) || 0), 0);
   const matchValue = Number(matchAgainst) || 0;
   const isEqualMode = matchMode === "equal";
-  const isMatched = isEqualMode && matchValue > 0 && matchValue === total;
+  const isMatched = matchValue > 0 && matchValue === total;
   const isMismatched = isEqualMode
     ? matchValue > 0 && matchValue !== total
     : matchValue > 0 && total > matchValue;
 
   return (
-    <div className="flex flex-col border border-[#C6C6C6] bg-white">
-      <div className="flex items-center justify-between border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
-        <h3 className="text-[12.5px] font-bold text-[#0F1D24]">{title}</h3>
+    <div className={`flex flex-col border bg-white ${highlight && isMismatched ? "border-red-400 ring-1 ring-red-300" : "border-[#C6C6C6]"}`}>
+      <div className={`flex items-center justify-between border-b px-3 py-2 ${highlight && isMismatched ? "border-red-300 bg-red-50" : "border-[#C6C6C6] bg-[#FAFAFA]"}`}>
+        <h3 className={`text-[12.5px] font-bold ${highlight && isMismatched ? "text-red-700" : "text-[#0F1D24]"}`}>{title}</h3>
         <button
           type="button"
           onClick={addRow}
@@ -408,14 +478,14 @@ function ReasonBreakup({ title, rows, reasonOptions, updateRow, addRow, removeRo
         )}
 
         <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5">
-          <div className="border border-[#C6C6C6] bg-[#FAFAFA] px-3 py-1.5 font-mono text-[11.5px] font-bold text-[#0F1D24]">
+          <div className={`border px-3 py-1.5 font-mono text-[11.5px] font-bold ${highlight && isMismatched ? "border-red-300 bg-red-50 text-red-700" : "border-[#C6C6C6] bg-[#FAFAFA] text-[#0F1D24]"}`}>
             {totalLabel}: {total}
           </div>
           {isMismatched && (
             <span className="border border-red-300 bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-700">
               {isEqualMode
-                ? `Mismatch: entry (${matchValue}) ≠ breakup (${total})`
-                : `Breakup (${total} min) exceeds the planned slot (${matchValue} min)`}
+                ? `Mismatch: required (${matchValue}) ≠ breakup (${total})`
+                : `Breakup (${total}) exceeds the limit (${matchValue})`}
             </span>
           )}
           {isMatched && (
@@ -506,6 +576,35 @@ const AdvProductionEntry = () => {
   const [showAddMouldPart, setShowAddMouldPart] = useState(false);
   const [newMouldPart, setNewMouldPart] = useState({ part_name: "", standard_cycle_time: "" });
   const [addMouldPartError, setAddMouldPartError] = useState(null);
+
+  // ================= MACHINE NUMBER SEARCH (replaces Unit Identifier) =================
+  // This used to be a free-text "Unit Identifier" input with no real
+  // meaning. It's now a search box over the same machine list the left
+  // sidebar shows, matched against machine_code (or name), and selecting
+  // a result jumps the whole form straight to that machine — same as
+  // clicking it in the sidebar — instead of collecting a throwaway
+  // string field.
+  const [machineNumberQuery, setMachineNumberQuery] = useState("");
+  const [machineNumberSuggestions, setMachineNumberSuggestions] = useState([]);
+  const [showMachineNumberDropdown, setShowMachineNumberDropdown] = useState(false);
+  const machineNumberIdRef = useRef(nextDropdownId());
+  const machineNumberWrapperRef = useRef(null);
+
+  useCloseOnOtherDropdownOpen(machineNumberIdRef.current, setShowMachineNumberDropdown);
+
+  useEffect(() => {
+    setMachineNumberQuery(currentMachine?.machine_code || currentMachine?.name || "");
+  }, [currentMachine?.id]);
+
+  useEffect(() => {
+    const h = (e) => {
+      if (machineNumberWrapperRef.current && !machineNumberWrapperRef.current.contains(e.target)) {
+        setShowMachineNumberDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
 
   // BUG FIX: useProductionEntry's plan-loading effect is gated on
   // `if (!setupComplete) return;`, but this component never called
@@ -842,6 +941,34 @@ const AdvProductionEntry = () => {
     }
   };
 
+  // ================= MACHINE NUMBER SEARCH handlers =================
+  const handleMachineNumberChange = (e) => {
+    const val = e.target.value;
+    setMachineNumberQuery(val);
+    if (!val || !val.trim()) {
+      setMachineNumberSuggestions([]);
+      setShowMachineNumberDropdown(false);
+      return;
+    }
+    const q = val.trim().toLowerCase();
+    const matches = filteredMachines.filter(
+      (m) =>
+        String(m.machine_code || "").toLowerCase().includes(q) ||
+        (m.name || "").toLowerCase().includes(q)
+    );
+    setMachineNumberSuggestions(matches);
+    announceDropdownOpen(machineNumberIdRef.current);
+    setShowMachineNumberDropdown(true);
+  };
+
+  const selectMachineByNumber = (m) => {
+    const idx = filteredMachines.indexOf(m);
+    if (idx >= 0) goToMachine(idx);
+    setMachineNumberQuery(m.machine_code || m.name || "");
+    setMachineNumberSuggestions([]);
+    setShowMachineNumberDropdown(false);
+  };
+
   const handleFinalSubmit = async () => {
     setSubmitResult(null);
     const results = await finalSubmit();
@@ -876,6 +1003,27 @@ const AdvProductionEntry = () => {
   };
 
   const handleBack = () => window.history.back();
+
+  // ================= LOSS TIME (formula-calculated) =================
+  // Loss Time = ((Target Qty − Actual Qty) × Actual Cycle Time) ÷ 60,
+  // expressed in minutes. Only positive when the machine ran short of
+  // target; if actual meets/exceeds target there's no loss.
+  const calculatedLossMinutes = useMemo(() => {
+    const target = Number(formData.target) || 0;
+    const actual = Number(formData.actual) || 0;
+    const cycleTimeSec = Number(formData.actualCycleTime) || 0;
+    const shortfall = target - actual;
+    if (shortfall <= 0 || cycleTimeSec <= 0) return 0;
+    return Math.round(((shortfall * cycleTimeSec) / 60) * 10) / 10;
+  }, [formData.target, formData.actual, formData.actualCycleTime]);
+
+  const roundedRequiredLossMinutes = Math.round(calculatedLossMinutes);
+  // A loss is "unaccounted for" until the Loss Time Breakup rows add up
+  // to the calculated figure — same match-the-total pattern already used
+  // for Reject Breakup. While unaccounted, Save & Next / Save Entry stay
+  // disabled so every loss has to be explained before moving on.
+  const lossTimeMismatch =
+    roundedRequiredLossMinutes > 0 && Number(totalLossMinutes || 0) !== roundedRequiredLossMinutes;
 
   // ================= OEE (Availability / Performance / Quality) =================
   // Standard three-factor OEE, computed from what this form already
@@ -957,7 +1105,7 @@ const AdvProductionEntry = () => {
       {/* ================= TOP BAR ================= */}
       <div className="w-full flex-shrink-0 border-b border-[#C6C6C6] bg-white">
         <div className="h-[2px] w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${BORDER} 50%, ${GOLD} 100%)` }} />
-        <div className="flex h-[40px] items-center gap-2.5 px-3">
+        <div className="flex h-auto min-h-[40px] flex-wrap items-center gap-2.5 px-3 py-1.5">
           <button onClick={handleBack} title="Back" className="flex h-7 w-7 flex-shrink-0 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]">
             <FaArrowLeft className="text-[11px]" />
           </button>
@@ -966,7 +1114,7 @@ const AdvProductionEntry = () => {
           </button>
 
           {(masterError || submitError || submitResult || planError) && (
-            <div className="ml-2 min-w-0 flex-1 truncate text-[11px] font-semibold">
+            <div className="min-w-0 flex-1 truncate text-[11px] font-semibold">
               {masterError && <span className="text-red-700">{masterError}</span>}
               {submitError && <span className="text-red-700">{submitError}</span>}
               {submitResult && <span className={submitResult.type === "success" ? "text-emerald-700" : "text-red-700"}>{submitResult.message}</span>}
@@ -974,7 +1122,7 @@ const AdvProductionEntry = () => {
             </div>
           )}
           {plan?.header && (
-            <span className="ml-auto hidden flex-shrink-0 items-center gap-1 border border-[#FDC94D] bg-[#FDC94D]/10 px-2 py-1 text-[10.5px] font-bold text-[#0F1D24] sm:flex">
+            <span className="ml-auto flex flex-shrink-0 items-center gap-1 border border-[#FDC94D] bg-[#FDC94D]/10 px-2 py-1 text-[10.5px] font-bold text-[#0F1D24]">
               <FaClipboardCheck className="text-[10px]" />
               Plan {plan.header.plan_number} loaded
             </span>
@@ -987,12 +1135,28 @@ const AdvProductionEntry = () => {
             user the entry will save as a manual/ad-hoc entry — it never
             blocks saving. */}
         {formData.date && formData.hall && formData.shift && !planLoading && !hasRealPlan && !planError && (
-          <div className="flex items-center gap-2 border-t border-amber-200 bg-amber-50 px-3 py-1.5">
-            <FaExclamationTriangle className="flex-shrink-0 text-[11px] text-amber-700" />
+          <div className="flex items-start gap-2 border-t border-amber-200 bg-amber-50 px-3 py-1.5">
+            <FaExclamationTriangle className="mt-[1px] flex-shrink-0 text-[11px] text-amber-700" />
             <span className="text-[11px] font-semibold text-amber-800">
               No production plan found for Hall {formData.hall}, Shift {formData.shift} on {formData.date}.
               {" "}
               Entries will be saved as manual entries (no plan link) — create the plan when possible.
+            </span>
+          </div>
+        )}
+
+        {/* Loss Time banner — highlighted whenever the formula finds a
+            shortfall against target. Stays visible on every tab since
+            it directly gates the Save & Next / Save Entry buttons below. */}
+        {roundedRequiredLossMinutes > 0 && (
+          <div className={`flex items-start gap-2 border-t px-3 py-1.5 ${lossTimeMismatch ? "border-red-300 bg-red-50" : "border-emerald-300 bg-emerald-50"}`}>
+            <FaExclamationTriangle className={`mt-[1px] flex-shrink-0 text-[11px] ${lossTimeMismatch ? "text-red-700" : "text-emerald-700"}`} />
+            <span className={`text-[11px] font-semibold ${lossTimeMismatch ? "text-red-800" : "text-emerald-800"}`}>
+              Loss Time detected: <span className="font-mono font-extrabold">{roundedRequiredLossMinutes} min</span>
+              {" "}(Target {formData.target || 0} − Actual {formData.actual || 0}) × Actual Cycle Time {formData.actualCycleTime || 0}s ÷ 60.
+              {lossTimeMismatch
+                ? " Add matching reasons in the Loss Time Breakup below to enable Save & Next / Save Entry."
+                : " Loss Time Breakup matched — Save enabled."}
             </span>
           </div>
         )}
@@ -1033,12 +1197,14 @@ const AdvProductionEntry = () => {
                   key={m.id}
                   onClick={() => goToMachine(idx)}
                   className={`group flex w-full items-center justify-between gap-2 border-b border-[#C6C6C6] px-2.5 py-2 text-left transition-colors duration-100 ${
-                    isSelected ? "border-l-[3px] border-l-[#0F1D24] bg-[#0F1D24]/[0.04]" : "hover:bg-[#FAFAFA]"
+                    isSelected ? "border-l-[4px] border-l-[#0F1D24] bg-[#FDC94D]/25" : "hover:bg-[#FAFAFA]"
                   }`}
                 >
                   <div className="min-w-0">
-                    <span className="text-[12px] font-bold text-[#0F1D24]">{m.name}</span>
-                    <p className="truncate text-[10px] text-[#9B9B9B]">ID: {m.id}</p>
+                    <span className={`text-[12px] font-bold ${isSelected ? "text-[#0F1D24]" : "text-[#0F1D24]"}`}>
+                      {isSelected ? <mark className="bg-[#FDC94D] px-1 text-[#0F1D24]">{m.name}</mark> : m.name}
+                    </span>
+                    <p className="truncate text-[10px] text-[#9B9B9B]">ID: {m.id}{m.machine_code ? ` · Code: ${m.machine_code}` : ""}</p>
                   </div>
                   <div className="flex flex-shrink-0 items-center gap-1.5">
                     {done && <FaCheckCircle className="text-[11px] text-emerald-500" />}
@@ -1067,7 +1233,7 @@ const AdvProductionEntry = () => {
         <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto">
           {/* Selected-machine header strip */}
           <div className="flex-shrink-0 border border-[#C6C6C6] bg-white">
-            <div className="grid grid-cols-2 gap-2 border-b border-[#C6C6C6] p-2 sm:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2 border-b border-[#C6C6C6] p-2 sm:grid-cols-3 lg:grid-cols-5">
               <div>
                 <label className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">Date</label>
                 <CustomDatePicker value={formData.date} onChange={(v) => handleChange({ target: { name: "date", value: v } })} />
@@ -1084,16 +1250,59 @@ const AdvProductionEntry = () => {
                 <label className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">Time Slot</label>
                 <ThemedSelect value={formData.timeSlot} onChange={(v) => handleChange({ target: { name: "timeSlot", value: v } })} icon={FaClock} options={timeSlotOptions} placeholder="Select Time Slot" />
               </div>
-              <div>
-                <label className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">Unit Identifier</label>
-                <input
-                  type="text"
-                  name="unitIdentifier"
-                  value={formData.unitIdentifier || ""}
-                  onChange={handleChange}
-                  placeholder="Batch / Lot / Unit ID"
-                  className={textInputClass}
-                />
+
+              {/* Machine Number search — replaces the old free-text "Unit
+                  Identifier" field. Typing filters the same machine list
+                  the sidebar uses (matched on machine_code / name);
+                  picking a result jumps the whole form to that machine. */}
+              <div ref={machineNumberWrapperRef} className="relative">
+                <label className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">Machine Number</label>
+                <div className="relative">
+                  <FaBarcode className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-[#0F1D24]/70" />
+                  <input
+                    type="text"
+                    value={machineNumberQuery}
+                    onChange={handleMachineNumberChange}
+                    onFocus={() => {
+                      if (machineNumberQuery.trim()) {
+                        announceDropdownOpen(machineNumberIdRef.current);
+                        setShowMachineNumberDropdown(true);
+                      }
+                    }}
+                    autoComplete="off"
+                    placeholder="Search machine no..."
+                    className={`${textInputClass} pl-6`}
+                  />
+                </div>
+
+                {showMachineNumberDropdown && machineNumberSuggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 z-[60] mt-1 max-h-52 overflow-y-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
+                    {machineNumberSuggestions.map((m) => {
+                      const idx = filteredMachines.indexOf(m);
+                      const isCurrent = idx === currentMachineIndex;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => selectMachineByNumber(m)}
+                          className={`block w-full border-b border-[#C6C6C6] px-2.5 py-1.5 text-left last:border-b-0 transition-colors duration-100 ${
+                            isCurrent ? "bg-[#0F1D24] text-[#FDC94D]" : "hover:bg-[#FDC94D]/20"
+                          }`}
+                        >
+                          <div className="text-[11.5px] font-bold">{m.name}</div>
+                          <div className={`text-[9.5px] ${isCurrent ? "text-[#FDC94D]/80" : "text-[#9B9B9B]"}`}>
+                            Code: {m.machine_code || "—"} · ID: {m.id}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {showMachineNumberDropdown && machineNumberQuery.trim() && machineNumberSuggestions.length === 0 && (
+                  <div className="absolute left-0 right-0 z-[60] mt-1 border border-[#C6C6C6] bg-white p-2 text-[10.5px] text-[#9B9B9B] shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
+                    No machine matched "{machineNumberQuery}".
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1104,9 +1313,11 @@ const AdvProductionEntry = () => {
                 </div>
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-wide text-[#9B9B9B]">Selected Machine</p>
-                  <h2 className="text-[14.5px] font-extrabold leading-tight text-[#0F1D24]">
-                    {currentMachine?.name || "—"}
-                    {isDone && <span className="ml-1.5 text-[10px] font-bold text-emerald-600">· Saved</span>}
+                  <h2 className="inline-flex flex-wrap items-center gap-1.5 text-[14.5px] font-extrabold leading-tight text-[#0F1D24]">
+                    <mark className="bg-[#FDC94D]/40 px-1.5 py-0.5 border-l-[3px] border-l-[#0F1D24]">
+                      {currentMachine?.name || "—"}
+                    </mark>
+                    {isDone && <span className="text-[10px] font-bold text-emerald-600">· Saved</span>}
                   </h2>
                 </div>
               </div>
@@ -1172,7 +1383,7 @@ const AdvProductionEntry = () => {
               which tab is active (see the formula comment above `oee` for
               exactly what's used and why). */}
           <div className="flex-shrink-0 border border-[#C6C6C6] bg-white">
-            <div className="flex items-center gap-2 border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
+            <div className="flex flex-wrap items-center gap-2 border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
               <div className="flex h-6 w-6 items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
                 <FaTachometerAlt className="text-[11px]" />
               </div>
@@ -1344,7 +1555,7 @@ const AdvProductionEntry = () => {
               </div>
 
               {/* Reject Breakup, Loss Time Breakup, and Remarks — one row */}
-              <div className="grid flex-shrink-0 grid-cols-1 gap-2 lg:grid-cols-3">
+              <div className="grid flex-shrink-0 grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
                 <ReasonBreakup
                   title={`Reject Breakup (${totalRejectQty})`}
                   rows={activeRejectRows}
@@ -1358,10 +1569,12 @@ const AdvProductionEntry = () => {
                   matchMode="equal"
                   matchAgainst={formData.reject}
                 />
-                {/* BUG FIX: this used to pass matchAgainst={0}, which made the
-                    mismatch check permanently inert (see the ReasonBreakup
-                    comment above). It now cap-checks the breakup total
-                    against the planned slot length instead. */}
+                {/* Loss Time Breakup now validates against the formula-
+                    calculated loss (see calculatedLossMinutes above), not a
+                    flat planned-slot cap. When there's a shortfall against
+                    target, the breakup total must equal that figure exactly
+                    — highlighted red until it does, since that mismatch is
+                    what disables Save & Next / Save Entry. */}
                 <ReasonBreakup
                   title={`Loss Time Breakup (${totalLossMinutes})`}
                   rows={activeLossRows}
@@ -1372,8 +1585,9 @@ const AdvProductionEntry = () => {
                   unitLabel="Min"
                   totalLabel="Total Loss"
                   valueField="minutes"
-                  matchMode="max"
-                  matchAgainst={PLANNED_MINUTES_PER_SLOT}
+                  matchMode="equal"
+                  matchAgainst={roundedRequiredLossMinutes}
+                  highlight
                 />
 
                 <div className="flex flex-col border border-[#C6C6C6] bg-white">
@@ -1499,42 +1713,52 @@ const AdvProductionEntry = () => {
       </div>
 
       {/* Footer — stays fixed at the bottom of the screen, outside the scroll areas */}
-      <div className="flex flex-shrink-0 items-center justify-between gap-2 border-t border-[#C6C6C6] bg-white px-3 py-2">
+      <div className="flex flex-col gap-1.5 border-t border-[#C6C6C6] bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
         <button
           onClick={previousMachine}
           disabled={isFirstMachine || submitting}
-          className="flex h-8 items-center gap-1.5 border border-[#C6C6C6] bg-white px-3 text-[11.5px] font-bold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#FAFAFA] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-8 items-center justify-center gap-1.5 border border-[#C6C6C6] bg-white px-3 text-[11.5px] font-bold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#FAFAFA] disabled:cursor-not-allowed disabled:opacity-40"
         >
           <FaChevronLeft className="text-[9px]" />
           Previous
         </button>
 
-        {/* Save & Next / Save Entry are only ever disabled while a save is
-            actually in flight (`submitting`) — a plan is optional, so
-            there's no "no plan configured" state to block on anymore
-            (see PLAN IS OPTIONAL in useProductionEntry.js). Operator/part
-            validation and the actual save still run inside
-            nextMachine()/finalSubmit(), surfaced via the submitError
-            banner at the top. */}
-        {!isLastMachine ? (
-          <button
-            onClick={nextMachine}
-            disabled={submitting}
-            className="flex h-8 items-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-3.5 text-[11.5px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Save & Next
-            <FaChevronRight className="text-[9px]" />
-          </button>
-        ) : (
-          <button
-            onClick={handleFinalSubmit}
-            disabled={submitting}
-            className="flex h-8 items-center gap-1.5 border border-emerald-700 bg-emerald-600 px-3.5 text-[11.5px] font-bold text-white transition-colors duration-100 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <FaSave className="text-[10px]" />
-            {submitting ? "Saving..." : "Save Entry"}
-          </button>
-        )}
+        <div className="flex flex-col items-stretch gap-1 sm:items-end">
+          {/* Save & Next / Save Entry are disabled while a save is in
+              flight (`submitting`) AND while an unaccounted formula-
+              calculated Loss Time exists (`lossTimeMismatch`) — a plan is
+              optional, so there's no "no plan configured" state to block
+              on (see PLAN IS OPTIONAL in useProductionEntry.js). Operator/
+              part validation and the actual save still run inside
+              nextMachine()/finalSubmit(), surfaced via the submitError
+              banner at the top. */}
+          {!isLastMachine ? (
+            <button
+              onClick={nextMachine}
+              disabled={submitting || lossTimeMismatch}
+              title={lossTimeMismatch ? `Add ${roundedRequiredLossMinutes} min in Loss Time Breakup to continue` : undefined}
+              className="flex h-8 items-center justify-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-3.5 text-[11.5px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:border-red-300 disabled:bg-red-50 disabled:text-red-400"
+            >
+              Save & Next
+              <FaChevronRight className="text-[9px]" />
+            </button>
+          ) : (
+            <button
+              onClick={handleFinalSubmit}
+              disabled={submitting || lossTimeMismatch}
+              title={lossTimeMismatch ? `Add ${roundedRequiredLossMinutes} min in Loss Time Breakup to continue` : undefined}
+              className="flex h-8 items-center justify-center gap-1.5 border border-emerald-700 bg-emerald-600 px-3.5 text-[11.5px] font-bold text-white transition-colors duration-100 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:border-red-300 disabled:bg-red-50 disabled:text-red-400"
+            >
+              <FaSave className="text-[10px]" />
+              {submitting ? "Saving..." : "Save Entry"}
+            </button>
+          )}
+          {lossTimeMismatch && (
+            <span className="text-[10px] font-semibold text-red-600">
+              Loss Time not fully accounted ({totalLossMinutes}/{roundedRequiredLossMinutes} min) — save disabled.
+            </span>
+          )}
+        </div>
       </div>
       </div>
     </div>
