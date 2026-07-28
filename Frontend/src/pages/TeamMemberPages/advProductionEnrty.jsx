@@ -65,6 +65,10 @@ const TABS = [
 // it to a real field once one exists) and the OEE panel below updates
 // automatically. It's also used as the Loss Time breakup's cap-check limit
 // (see the ReasonBreakup bug-fix note further down).
+//
+// NOTE: this same "one slot = 60 minutes" assumption is also used by
+// useProductionEntry.js's Target Qty auto-calc formula (SLOT_MINUTES) —
+// keep the two in sync if you ever change slot length.
 const PLANNED_MINUTES_PER_SLOT = 60;
 
 const generatePartNumber = (base) => {
@@ -463,7 +467,12 @@ const AdvProductionEntry = () => {
     saveCurrentMachine, loadMachineData,
     previousMachine, nextMachine, finalSubmit,
     loadingMaster, masterError, submitting, submitError,
-    plan, planLoading, planError, hasPlan,
+    plan, planLoading, planError,
+    // `hasRealPlan` = a genuine plan was found for this date/hall/shift
+    // — used only to decide whether the informational "no plan" banner
+    // shows. A plan is optional: saving always works either way (see
+    // the PLAN IS OPTIONAL note in useProductionEntry.js).
+    hasRealPlan,
     setSetupComplete,
   } = useProductionEntry();
 
@@ -849,7 +858,7 @@ const AdvProductionEntry = () => {
   };
 
   const timeSlotOptions = (formData.shift === "A" ? shiftATimes : shiftBTimes).map((t) => ({ value: t, label: t }));
-  const isFromPlan = !!formData.plan_detail_id;
+  const isFromPlan = !!formData.plan_detail_id && hasRealPlan;
   const isFirstMachine = currentMachineIndex === 0;
   const isLastMachine = currentMachineIndex === filteredMachines.length - 1;
   const isDone = !!machineEntries[currentMachine?.id];
@@ -955,12 +964,6 @@ const AdvProductionEntry = () => {
           <button onClick={() => setSidebarOpen((o) => !o)} className="flex h-7 w-7 flex-shrink-0 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D] md:hidden" title="Toggle machine list">
             <FaIndustry className="text-[11px]" />
           </button>
-          {/* <div className="flex items-center gap-2 border-l border-[#C6C6C6] pl-2.5">
-            <div className="hidden h-6 w-6 flex-shrink-0 items-center justify-center border border-[#0F1D24] bg-[#0F1D24] sm:flex">
-              <FaClipboardList className="text-[11px] text-[#FDC94D]" />
-            </div>
-            <h1 className="text-[12.5px] font-bold leading-tight text-[#0F1D24]">Production Entry</h1>
-          </div> */}
 
           {(masterError || submitError || submitResult || planError) && (
             <div className="ml-2 min-w-0 flex-1 truncate text-[11px] font-semibold">
@@ -978,16 +981,18 @@ const AdvProductionEntry = () => {
           )}
         </div>
 
-        {/* No-plan warning: production_entries requires a real plan_id /
-            plan_detail_id (NOT NULL, no default) — rather than altering
-            the table to allow manual entries, saving is blocked until a
-            plan is loaded for this date/hall/shift, and this banner tells
-            the user what to do about it. */}
-        {formData.date && formData.hall && formData.shift && !planLoading && !hasPlan && !planError && (
+        {/* Informational-only banner: a plan is optional now (see PLAN IS
+            OPTIONAL note in useProductionEntry.js). When no real plan is
+            found for the selected date/hall/shift this just tells the
+            user the entry will save as a manual/ad-hoc entry — it never
+            blocks saving. */}
+        {formData.date && formData.hall && formData.shift && !planLoading && !hasRealPlan && !planError && (
           <div className="flex items-center gap-2 border-t border-amber-200 bg-amber-50 px-3 py-1.5">
             <FaExclamationTriangle className="flex-shrink-0 text-[11px] text-amber-700" />
             <span className="text-[11px] font-semibold text-amber-800">
-              No production plan found for Hall {formData.hall}, Shift {formData.shift} on {formData.date}. Please upload/create the plan first — entries can't be saved without one.
+              No production plan found for Hall {formData.hall}, Shift {formData.shift} on {formData.date}.
+              {" "}
+              Entries will be saved as manual entries (no plan link) — create the plan when possible.
             </span>
           </div>
         )}
@@ -1149,6 +1154,11 @@ const AdvProductionEntry = () => {
                 {isFromPlan && (
                   <span className="border border-[#FDC94D] bg-[#FDC94D]/20 px-2 py-0.5 text-[9.5px] font-bold text-[#0F1D24]">Pre-filled from Plan</span>
                 )}
+                {!hasRealPlan && (
+                  <span className="border border-amber-400 bg-amber-50 px-2 py-0.5 text-[9.5px] font-bold text-amber-800">
+                    Manual entry (no plan link)
+                  </span>
+                )}
               </div>
 
               <span className="text-[10.5px] font-semibold text-[#9B9B9B]">
@@ -1308,8 +1318,16 @@ const AdvProductionEntry = () => {
                   <Field label="Actual Cycle Time" suffix="Sec">
                     <input type="number" name="actualCycleTime" value={formData.actualCycleTime} onChange={handleChange} className={numInputClass} />
                   </Field>
-                  <Field label="Target Qty" suffix="Nos">
-                    <input type="number" name="target" value={formData.target} onChange={handleChange} className={numInputClass} />
+                  {/* Target Qty is now auto-calculated (see computeCalcTarget /
+                      the targetSource effect in useProductionEntry.js) instead
+                      of being typed in: it uses the matched plan's target_qty
+                      when one exists, otherwise floor(slot seconds ÷ standard
+                      cycle time). Shown read-only, same style as Std. Cycle
+                      Time, so it's clear it isn't a manual field anymore. */}
+                  <Field label="Target Qty (auto)" suffix="Nos">
+                    <div className="flex h-9 items-center bg-[#FAFAFA] px-2.5 font-mono text-[12.5px] font-bold text-[#0F1D24]">
+                      {formData.target || "-"}
+                    </div>
                   </Field>
                   <Field label="Actual Qty" suffix="Nos">
                     <input type="number" name="actual" value={formData.actual} onChange={handleChange} className={numInputClass} />
@@ -1491,11 +1509,17 @@ const AdvProductionEntry = () => {
           Previous
         </button>
 
+        {/* Save & Next / Save Entry are only ever disabled while a save is
+            actually in flight (`submitting`) — a plan is optional, so
+            there's no "no plan configured" state to block on anymore
+            (see PLAN IS OPTIONAL in useProductionEntry.js). Operator/part
+            validation and the actual save still run inside
+            nextMachine()/finalSubmit(), surfaced via the submitError
+            banner at the top. */}
         {!isLastMachine ? (
           <button
             onClick={nextMachine}
-            disabled={submitting || !hasPlan}
-            title={!hasPlan ? "No production plan loaded for this date/hall/shift — upload the plan first." : undefined}
+            disabled={submitting}
             className="flex h-8 items-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-3.5 text-[11.5px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Save & Next
@@ -1504,8 +1528,7 @@ const AdvProductionEntry = () => {
         ) : (
           <button
             onClick={handleFinalSubmit}
-            disabled={submitting || !hasPlan}
-            title={!hasPlan ? "No production plan loaded for this date/hall/shift — upload the plan first." : undefined}
+            disabled={submitting}
             className="flex h-8 items-center gap-1.5 border border-emerald-700 bg-emerald-600 px-3.5 text-[11.5px] font-bold text-white transition-colors duration-100 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <FaSave className="text-[10px]" />

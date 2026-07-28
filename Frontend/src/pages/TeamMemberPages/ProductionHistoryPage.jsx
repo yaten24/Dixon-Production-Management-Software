@@ -34,7 +34,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 
-const HALLS = ["Hall-1", "Hall-2", "Hall-3", "Hall-4", "C8"];
+const HALLS = ["Hall 1", "Hall 2", "Hall 3", "Hall 4", "C8"];
 const SHIFTS = ["A", "B"];
 const MOULD_CHANGE_OPTIONS = [
   { value: "All", label: "All Entries" },

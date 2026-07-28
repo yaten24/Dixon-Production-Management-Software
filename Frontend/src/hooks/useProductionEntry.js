@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 
 import { getAllMachines } from "../api/machineApi";
+import api from "../api/axios"
 import {
   getAllRejectionReasons,
   createRejectionReason,
@@ -23,6 +24,27 @@ const SHIFT_B_TIMES = [
   "04:00 - 05:00", "05:00 - 06:00", "06:00 - 07:00", "07:00 - 08:00",
 ];
 
+// ==========================================================
+// Slot length used for the Target Qty auto-calc formula below.
+// NOTE: keep this in sync with PLANNED_MINUTES_PER_SLOT in
+// AdvProductionEntry.jsx (used there for the OEE Availability calc) —
+// they represent the same "one time-slot = 60 minutes" assumption.
+// ==========================================================
+const SLOT_MINUTES = 60;
+
+// Target Qty auto-calc: plan_id/plan_detail_id are now fully optional
+// (see PLAN IS OPTIONAL note below), so Target Qty can no longer rely
+// on always having a matched plan detail to read target_qty from.
+//   1. If the machine has a matched plan detail with a target_qty, use it
+//      as-is (that's the officially planned number).
+//   2. Otherwise compute a theoretical max for the slot:
+//      target = floor( (slot seconds) / (standard cycle time seconds) )
+const computeCalcTarget = (standardCycleTime) => {
+  const std = Number(standardCycleTime) || 0;
+  if (!std) return "";
+  return String(Math.floor((SLOT_MINUTES * 60) / std));
+};
+
 const baseFormData = {
   date: "",
   hall: "",
@@ -39,6 +61,11 @@ const baseFormData = {
   actualCycleTime: "",
 
   target: "",
+  // "plan"  -> target came from a matched plan detail's target_qty and
+  //            should NOT be overwritten by the cycle-time formula.
+  // "calc"  -> target was computed from the cycle-time formula and
+  //            should keep recalculating whenever cycle time changes.
+  targetSource: null,
   actual: "",
 
   reject: "",
@@ -89,6 +116,24 @@ const isActiveReason = (item) => {
 };
 
 const API_BASE = import.meta.env?.VITE_API_URL || "http://localhost:5000";
+
+// ==========================================================
+// PLAN IS OPTIONAL
+// ==========================================================
+// plan_id / plan_detail_id on production_entries are nullable
+// (see migration_allow_manual_entries.sql) and the backend's
+// validatePlanLink() only rejects the case where ONE of the two is
+// provided without the other — both null is a perfectly valid
+// "manual / ad-hoc entry, no matched plan" row.
+//
+// Previously this hook required a fixed pair of placeholder
+// MANUAL_PLAN_ID / MANUAL_PLAN_DETAIL_ID ids (configured via env
+// vars) before it would let ANY entry save when no real plan existed
+// for the date/hall/shift. That's no longer needed: when there's no
+// matched plan detail for a machine, plan_id/plan_detail_id are just
+// sent as null and the entry saves as a manual entry, same as any
+// other optional field.
+// ==========================================================
 
 const useProductionEntry = () => {
   const [setupComplete, setSetupComplete] = useState(false);
@@ -173,8 +218,9 @@ const useProductionEntry = () => {
   // PRODUCTION PLAN — auto-load the plan for date+hall+shift once
   // setup is complete. If a plan exists we use it to drive which
   // machines show up and to prefill operator/part/target per machine.
-  // If no plan exists, everything works exactly like before
-  // (fully manual entry).
+  // If no plan exists, everything works as a fully manual entry —
+  // plan_id/plan_detail_id simply stay null (see PLAN IS OPTIONAL
+  // note above).
   // ==========================================================
   const [plan, setPlan] = useState(null); // { header, details }
   const [planLoading, setPlanLoading] = useState(false);
@@ -299,7 +345,6 @@ const useProductionEntry = () => {
       const carryPartId = prevSnapshot?.formData?.part_id || null;
       const carryPartName = prevSnapshot?.formData?.part || "";
       const carryStandardCT = prevSnapshot?.formData?.standardCycleTime || "";
-      // FIX: actualCycleTime bhi carry-forward karo (pehle sirf standardCT carry hota tha)
       const carryActualCT = prevSnapshot?.formData?.actualCycleTime || "";
 
       const prevHadMould =
@@ -311,22 +356,24 @@ const useProductionEntry = () => {
       const partId = planDetail ? planDetail.part_id || null : carryPartId;
       const partName = planDetail?.part_name || carryPartName;
 
-      // FIX: std CT aur actual CT — plan se ek hi jagah (parts table) se aati hain
-      // (cycle_time / actual_cycle_time), dono usually equal hote hain.
       const standardCT = planDetail?.cycle_time ?? carryStandardCT;
       const actualCT =
         planDetail?.actual_cycle_time ?? planDetail?.cycle_time ?? carryActualCT;
 
-      const target = planDetail?.target_qty ? String(planDetail.target_qty) : "";
+      // ==========================================================
+      // TARGET QTY — auto-calculated, not typed in by the user:
+      //   1. Matched plan detail's target_qty, if one exists.
+      //   2. Otherwise floor(slot seconds / standard cycle time) —
+      //      see computeCalcTarget() above.
+      // ==========================================================
+      const planTargetQty = planDetail?.target_qty ? String(planDetail.target_qty) : "";
+      const target = planTargetQty || computeCalcTarget(standardCT);
+      const targetSource = planTargetQty ? "plan" : (target ? "calc" : null);
 
       const plannedMould = (planDetail?.mould_changes || []).find(
         (mc) => mc.status === "Planned",
       );
 
-      // FIX: mould change ke naye part ka std CT / actual CT / target ab
-      // plan response se seedha aa raha hai (new_part_standard_cycle_time,
-      // new_part_actual_cycle_time, new_part_target_quantity) — pehle ye
-      // 3 fields set hi nahi ho rahi thi, form khaali dikhta tha.
       const mouldStdCT = plannedMould?.new_part_standard_cycle_time || "";
       const mouldActualCT =
         plannedMould?.new_part_actual_cycle_time ||
@@ -335,6 +382,13 @@ const useProductionEntry = () => {
       const mouldTargetQty = plannedMould?.new_part_target_quantity
         ? String(plannedMould.new_part_target_quantity)
         : "";
+
+      // plan_id / plan_detail_id resolution: real plan header/detail id
+      // when a plan was actually loaded and matched this machine,
+      // otherwise null (manual/ad-hoc entry — see PLAN IS OPTIONAL note
+      // above). Never a made-up id.
+      const resolvedPlanId = plan?.header?.plan_id ?? plan?.header?.daily_plan_id ?? null;
+      const resolvedPlanDetailId = planDetail?.detail_id ?? null;
 
       setFormData((prev) => ({
         ...baseFormData,
@@ -351,6 +405,7 @@ const useProductionEntry = () => {
         standardCycleTime: standardCT,
         actualCycleTime: actualCT,
         target,
+        targetSource,
 
         old_part_id: carryOldPartId,
         old_part_number: carryOldPartNumber,
@@ -361,21 +416,12 @@ const useProductionEntry = () => {
         mouldPart: plannedMould?.new_part_name || "",
         mould_remarks: plannedMould?.reason || "",
 
-        // FIX: mould section ke naye part ki std/actual CT aur target ab
-        // auto-fill hoti hai, aur inputs pehle se editable hain (ProductionForm /
-        // MouldChangeSection me koi extra change nahi chahiye).
         mouldStandardCycleTime: mouldStdCT,
         mouldActualCycleTime: mouldActualCT,
         mouldTarget: mouldTargetQty,
 
-        // NOTE: plan.header's primary key field name wasn't confirmed —
-        // trying both `plan_id` and `daily_plan_id` (the column name from
-        // the schema) so this works whichever the API actually returns.
-        // If neither matches, this'll stay null and saving will correctly
-        // be blocked by the "no plan loaded" guard below rather than
-        // silently sending a bad id.
-        plan_id: plan?.header?.plan_id ?? plan?.header?.daily_plan_id ?? null,
-        plan_detail_id: planDetail?.detail_id || null,
+        plan_id: resolvedPlanId,
+        plan_detail_id: resolvedPlanDetailId,
       }));
 
       setShowMouldSection(!!plannedMould);
@@ -389,15 +435,13 @@ const useProductionEntry = () => {
       filteredMachines,
       masterRejectReasons,
       planDetailsByMachineCode,
+      plan,
     ],
   );
 
   // ==========================================================
-  // FIX: pehli machine (ya hall/shift switch ke baad ki pehli machine)
-  // auto-load nahi hoti thi kyunki loadMachineData sirf Next/Prev pe
-  // call hoti thi. Ye effect currentMachine badalte hi — ya plan load
-  // hone ke baad — auto-fill kar dega, bas tab jab us machine ka data
-  // abhi tak khaali hai (user ne kuch edit nahi kiya / already saved nahi hai).
+  // Auto-load the first machine (or first machine after a hall/shift
+  // switch), same as before.
   // ==========================================================
   useEffect(() => {
     if (!currentMachine) return;
@@ -407,6 +451,24 @@ const useProductionEntry = () => {
     loadMachineData(currentMachine);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMachine?.id, plan]);
+
+  // ==========================================================
+  // TARGET QTY — keep it live-recalculated from Standard Cycle Time
+  // whenever that changes AFTER the initial load (e.g. the user picks
+  // a different part in the search box, which changes cycle time).
+  // A plan-provided target (targetSource === "plan") is left alone —
+  // that number is the officially planned target and shouldn't be
+  // silently replaced by the formula.
+  // ==========================================================
+  useEffect(() => {
+    if (formData.targetSource === "plan") return;
+
+    const calc = computeCalcTarget(formData.standardCycleTime);
+    if (calc && calc !== formData.target) {
+      setFormData((prev) => ({ ...prev, target: calc, targetSource: calc ? "calc" : prev.targetSource }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.standardCycleTime, formData.targetSource]);
 
   const progress = useMemo(() => {
     if (!filteredMachines.length) return 0;
@@ -474,20 +536,6 @@ const useProductionEntry = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mouldDurationCalc, formData.mouldChange]);
 
-  // ==========================================================
-  // BUG FIX (crash): these three functions were referenced with
-  // shorthand syntax in the return statement at the bottom of this
-  // hook (`addCustomRejectReason, removeCustomRejectReason,
-  // updateRejectReason,`) but were never actually defined anywhere
-  // in the hook body. Since a shorthand object property requires the
-  // identifier to already exist in scope, this threw
-  // `ReferenceError: addCustomRejectReason is not defined` the moment
-  // the hook ran — crashing the entire Production Entry page on load.
-  // These mirror the equivalent, already-working Mould Reject
-  // mutators below (addCustomMouldRejectReason /
-  // removeCustomMouldRejectReason / updateMouldRejectReason), just
-  // operating on `rejectReasons` / `setRejectReasons` instead.
-  // ==========================================================
   const addCustomRejectReason = () => {
     setRejectReasons((prev) => [
       ...prev,
@@ -533,16 +581,6 @@ const useProductionEntry = () => {
     );
   };
 
-  // BUG FIX (Loss Time breakup): new rows pushed here were missing
-  // `custom: true`. The component that renders these rows filters
-  // with `r.custom || r.reason` to decide what's visible — a freshly
-  // added row has an empty `reason`, so without `custom: true` that
-  // condition evaluated to `undefined || ""` (falsy) and the new row
-  // was hidden the instant it was added. From the user's side, the
-  // "Add Reason" button under Loss Time Breakup looked like it did
-  // nothing. (Mould/Reject's equivalent `addCustom...` functions
-  // above already set `custom: true` correctly — Loss Time's
-  // `addLossReason` was the one place this was missed.)
   const addLossReason = () => {
     setLossReasons((prev) => [...prev, { reason: "", minutes: 0, custom: true }]);
   };
@@ -564,20 +602,6 @@ const useProductionEntry = () => {
 
   const customReasonCache = useRef({});
 
-  // BUG FIX (409 Conflict -> save fails with 500): the "Add Reason" dropdown
-  // for custom rows only offers existing master reason names (there's no
-  // free-text "type a brand new reason" input in the UI). If a custom row's
-  // reason text is set by picking one of those existing names, only
-  // `row.reason` gets updated — `row.reason_id` stays null, since selecting
-  // from the dropdown never looks the id back up. This function used to
-  // treat any `row.custom === true` row as needing a brand-new reason
-  // created via the API regardless, so picking an existing name in a custom
-  // row tried to INSERT a duplicate reason_name/reason_code — the backend
-  // correctly rejects that with 409, which then aborted the whole
-  // production-entry save (surfacing as the 500 seen downstream). Now it
-  // first checks whether the row's text already matches a known master
-  // reason (case/whitespace-insensitive) and reuses that reason's real id
-  // instead of trying to create a duplicate.
   const resolveReasonId = async (row) => {
     if (!row.custom) return row.reason_id;
     if (!row.reason || !row.reason.trim()) return null;
@@ -600,12 +624,6 @@ const useProductionEntry = () => {
       if (newId) customReasonCache.current[key] = newId;
       return newId || null;
     } catch (err) {
-      // A 409 here means the name/code collided server-side despite the
-      // local master-list check above (e.g. it was added by someone else
-      // after this page's master data loaded). We don't get an id back
-      // from a 409 response, so this row's reason can't be resolved this
-      // time — log it and drop just this row rather than throwing, so one
-      // unresolvable reject reason doesn't abort the entire entry save.
       console.error("Failed to create custom rejection reason:", err);
       return null;
     }
@@ -676,10 +694,6 @@ const useProductionEntry = () => {
             duration_minutes: Number(data.mould_duration) || 0,
             remarks: data.mould_remarks || null,
             mould_actual_cycle_time: Number(data.mouldActualCycleTime) || 0,
-            // NEW: mould_changes table also tracks the new part's standard
-            // cycle time and target qty for this change — these were
-            // never sent before, which is part of why the mould-change
-            // insert didn't line up with the table's actual columns.
             standard_cycle_time: Number(data.mouldStandardCycleTime) || null,
             target_qty: Number(data.mouldTarget) || null,
           },
@@ -709,49 +723,59 @@ const useProductionEntry = () => {
       rejects: rejectDetailRows,
       losses,
       mould_changes,
+      // PLAN IS OPTIONAL: null/null is a valid manual entry — the
+      // backend's validatePlanLink() only rejects a mismatched pair
+      // (one present, one missing).
       plan_id: data.plan_id || null,
       plan_detail_id: data.plan_detail_id || null,
     };
   };
 
-  const submitMachineEntry = async (machine, snapshot) => {
-    const existing = machineEntries[machine.id];
+const submitMachineEntry = async (machine, snapshot) => {
+  const existing = machineEntries[machine.id];
 
-    if (snapshot.formData.mouldChange && !snapshot.formData.new_part_id) {
-      throw new Error(
-        "Mould change is enabled but no new part was selected — pick a part from the mould section's suggestions before saving.",
+  if (snapshot.formData.mouldChange && !snapshot.formData.new_part_id) {
+    throw new Error(
+      "Mould change is enabled but no new part was selected — pick a part from the mould section's suggestions before saving."
+    );
+  }
+
+  // Payload build
+  const payload = await buildPayload(
+    machine,
+    snapshot,
+    existing?.production_id
+  );
+
+  try {
+    let response;
+
+    if (existing?.entryId) {
+      // Update Entry
+      response = await api.put(
+        `/production-entries/${existing.entryId}`,
+        
+        payload
+      );
+    } else {
+      // Create Entry
+      response = await api.post(
+        "/production-entries",
+        payload
       );
     }
 
-    const payload = await buildPayload(machine, snapshot, existing?.production_id);
+    const res = response.data;
 
-    const url = existing?.entryId
-      ? `${API_BASE}/api/production-entries/${existing.entryId}`
-      : `${API_BASE}/api/production-entries`;
+    if (!res?.success) {
+      const detail =
+        res?.error && res.error !== res?.message
+          ? ` (${res.error})`
+          : "";
 
-    const response = await fetch(url, {
-      method: existing?.entryId ? "PUT" : "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const res = await response.json();
-
-    if (!response.ok || !res?.success) {
-      // BUG FIX (undiagnosable 500s): the backend sends back both a
-      // generic `message` (e.g. "Failed to create production entry.")
-      // and an `error` field with the actual exception detail (SQL
-      // error, constraint violation, etc — see the controller's
-      // `error: err.message` in its catch block). This only ever
-      // surfaced `res.message`, so every server-side failure looked
-      // identical and gave no clue what actually broke. Now both are
-      // included so the real cause (e.g. "Cannot add or update a
-      // child row: a foreign key constraint fails...") shows up in
-      // the submitError banner and the console instead of being
-      // silently dropped.
-      const detail = res?.error && res.error !== res?.message ? ` (${res.error})` : "";
-      throw new Error((res?.message || `Failed to save entry (HTTP ${response.status}).`) + detail);
+      throw new Error(
+        (res?.message || "Failed to save entry.") + detail
+      );
     }
 
     const entryId = res?.data?.id || existing?.entryId || null;
@@ -767,7 +791,24 @@ const useProductionEntry = () => {
     }));
 
     return res;
-  };
+  } catch (error) {
+    if (error.response) {
+      const res = error.response.data;
+
+      const detail =
+        res?.error && res.error !== res?.message
+          ? ` (${res.error})`
+          : "";
+
+      throw new Error(
+        (res?.message || `Failed to save entry (HTTP ${error.response.status}).`) +
+          detail
+      );
+    }
+
+    throw new Error(error.message || "Network Error");
+  }
+};
 
   const previousMachine = () => {
     saveCurrentMachine();
@@ -779,27 +820,16 @@ const useProductionEntry = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
-  // production_entries.plan_id / plan_detail_id are NOT NULL in the
-  // database with no default — rather than altering the table to allow
-  // manual/no-plan entries, saving is blocked here whenever no plan is
-  // loaded for the current date+hall+shift, and the component shows a
-  // banner telling the user to upload/create the plan first. This keeps
-  // the schema's constraint intact and guarantees `formData.plan_id` /
-  // `formData.plan_detail_id` are always real values by the time
-  // buildPayload runs.
-  const hasPlan = !!plan?.header;
+  // `hasRealPlan` = a real plan was found in the DB for this
+  // date+hall+shift (drives the informational banner in the
+  // component). Saving is now ALWAYS possible regardless of whether a
+  // plan was found — see PLAN IS OPTIONAL above.
+  const hasRealPlan = !!plan?.header;
 
   const nextMachine = async () => {
     if (!currentMachine) return;
 
     setSubmitError(null);
-
-    if (!hasPlan) {
-      setSubmitError(
-        "No production plan found for this date/hall/shift. Please upload/create the plan before entering production data.",
-      );
-      return;
-    }
 
     if (!formData.operator_id || !formData.part_id) {
       setSubmitError(
@@ -836,13 +866,6 @@ const useProductionEntry = () => {
     if (!currentMachine) return null;
 
     setSubmitError(null);
-
-    if (!hasPlan) {
-      setSubmitError(
-        "No production plan found for this date/hall/shift. Please upload/create the plan before entering production data.",
-      );
-      return null;
-    }
 
     if (!formData.operator_id || !formData.part_id) {
       setSubmitError(
@@ -940,7 +963,7 @@ const useProductionEntry = () => {
     plan,
     planLoading,
     planError,
-    hasPlan,
+    hasRealPlan,
   };
 };
 

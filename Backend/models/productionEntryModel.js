@@ -160,18 +160,6 @@ exports.findByProductionId = async (productionId) => {
 // Create Production Entry
 // =========================================
 
-// BUG FIX: `plan_id` and `plan_detail_id` were never destructured from
-// `data` or included in the INSERT column list here, even though the
-// controller was already correctly passing them in as
-// `plan_id: n(plan_id), plan_detail_id: n(plan_detail_id)`. Since those
-// two columns are NOT NULL in the schema (no default), omitting them
-// from the INSERT entirely made every single create fail at the
-// database layer with something like "Field 'plan_id' doesn't have a
-// default value" — surfacing to the client as a generic 500. They're
-// now included end-to-end. (This also requires the companion migration
-// making both columns nullable, since the app explicitly supports
-// manual/ad-hoc entries with no matched plan — see
-// migration_allow_manual_entries.sql.)
 exports.create = async (connection, data) => {
   const {
     production_id,
@@ -319,9 +307,6 @@ exports.create = async (connection, data) => {
 // Update Production Entry
 // =========================================
 
-// Same fix as create() above — plan_id / plan_detail_id are now part of
-// the UPDATE too, so editing an entry doesn't silently ignore its plan
-// link.
 exports.update = async (connection, id, data) => {
   const {
     production_id,
@@ -493,9 +478,19 @@ exports.deleteLossDetails = async (connection, productionEntryId) => {
   );
 };
 
+// BUG FIX: this used to `DELETE FROM mould_change_entries WHERE
+// production_entry_id = ?` — that table doesn't exist. The real table
+// (per the schema shared earlier, and per the controller's own
+// insertMouldChange, which already writes to it correctly) is
+// `mould_changes`, and the column that links a mould-change row back
+// to a production entry is `production_id` (holding
+// production_entries.id), not `production_entry_id`. This now deletes
+// from the right table/column so updates can safely wipe and
+// re-insert mould-change rows for an entry, same as the reject/loss
+// deletes above.
 exports.deleteMouldChanges = async (connection, productionEntryId) => {
   await connection.query(
-    `DELETE FROM mould_change_entries WHERE production_entry_id = ?`,
+    `DELETE FROM mould_changes WHERE production_id = ?`,
     [productionEntryId],
   );
 };
@@ -576,16 +571,23 @@ exports.getLossDetails = async (productionEntryId) => {
 // Get Mould Change Details
 // =========================================
 
+// BUG FIX: same issue as deleteMouldChanges above — this queried the
+// non-existent `mould_change_entries` table with a
+// `production_entry_id` column. Pointed at the real `mould_changes`
+// table, filtered by its real `production_id` column. Also, that
+// table's primary key is `mould_change_id`, not `id` — `ORDER BY id`
+// was throwing "Unknown column 'id' in 'order clause'" since no such
+// column exists on this table.
 exports.getMouldChanges = async (productionEntryId) => {
   const [rows] = await db.query(
     `
         SELECT *
 
-        FROM mould_change_entries
+        FROM mould_changes
 
-        WHERE production_entry_id = ?
+        WHERE production_id = ?
 
-        ORDER BY id ASC
+        ORDER BY mould_change_id ASC
 
         `,
 

@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+// src/pages/Dashboard.jsx
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import {
   Users,
   Cog,
@@ -11,48 +13,94 @@ import {
   PackageX,
   Sun,
   ListChecks,
+  RefreshCw,
+  AlertCircle,
+  Factory,
 } from "lucide-react";
 
 import Sidebar from "./Sidebar";
-import {
-  dayTarget,
-  shiftData,
-  lossTimeReasons,
-  machineStatus,
-  userStatus,
-  lastDay,
-  currentMonth,
-  weeklyOee,
-  mouldChangeSummary,
-} from "../../data/dashboardDemoData";
 import { pct } from "../../utils/dashboardMath";
 
 // ============================================================
-// THEME TOKENS — kept consistent with AdminDashboard / Sidebar / Users / Machines / Parts / Employees
+// THEME TOKENS
 // ============================================================
 const NAVY = "#0F1D24";
 const GOLD = "#FDC94D";
 const BORDER = "#C6C6C6";
 const MUTED = "#9B9B9B";
 
+// ============================================================
+// DATA HOOK — fetches live dashboard data from backend
+// ============================================================
+const EMPTY = {
+  dayTarget: { target: 0, actual: 0, good: 0, reject: 0 },
+  shiftData: [],
+  lossTimeReasons: { todayLossMinutes: 0, todayPartsLost: 0, monthLossMinutes: 0, monthPartsLost: 0 },
+  machineStatus: { active: 0, total: 0 },
+  userStatus: { active: 0, label: "Active Users" },
+  lastDay: { dateLabel: "", target: 0, actual: 0, oee: 0 },
+  currentMonth: { target: 0, actual: 0 },
+  weeklyOee: [],
+  mouldChangeSummary: { planned: 0, unplanned: 0, completed: 0, pending: 0, avgChangeTime: 0 },
+};
+
+function useDashboardOverview(hall = null, pollMs = 60000) {
+  const [data, setData] = useState(EMPTY);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await axios.get("/api/dashboard/overview", {
+        params: hall ? { hall } : {},
+        withCredentials: true,
+      });
+      setData(res.data?.data || EMPTY);
+      setLastUpdated(new Date());
+    } catch (err) {
+      setError(err?.response?.data?.message || "Backend se connect nahi ho paya");
+      setData(EMPTY);
+    } finally {
+      setLoading(false);
+    }
+  }, [hall]);
+
+  useEffect(() => {
+    fetchData();
+    if (!pollMs) return;
+    const id = setInterval(fetchData, pollMs);
+    return () => clearInterval(id);
+  }, [fetchData, pollMs]);
+
+  return { ...data, loading, error, lastUpdated, refresh: fetchData };
+}
+
 /* ==========================================================
-   CARD PRIMITIVES — shared flat shell + label used by every KPI card
+   CARD PRIMITIVES
 ========================================================== */
 const CardShell = ({ className = "", children }) => (
-  <div className={`flex min-h-0 flex-col rounded-sm border border-[#C6C6C6]/70 bg-white p-2 shadow-sm ${className}`}>
+  <div
+    className={`flex min-h-0 flex-col rounded-none border border-[#C6C6C6]/70 bg-white p-2.5 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-3 ${className}`}
+  >
     {children}
   </div>
 );
 
 const CardLabel = ({ icon: Icon, children, tone = "text-[#9B9B9B]" }) => (
-  <div className={`flex flex-shrink-0 items-center gap-1 text-[9px] font-semibold uppercase tracking-wide ${tone}`}>
-    {Icon && <Icon size={11} />}
+  <div className={`flex flex-shrink-0 items-center gap-1.5 text-[9px] font-bold uppercase tracking-wide ${tone}`}>
+    {Icon && (
+      <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-none bg-[#0F1D24]/[0.06]">
+        <Icon size={10} />
+      </span>
+    )}
     {children}
   </div>
 );
 
 /* ==========================================================
-   HERO TARGET CARD — today's target vs actual + monthly summary
+   HERO TARGET CARD
 ========================================================== */
 const HeroTargetCard = ({ className, date, target, actual, good, reject, monthTarget = 0, monthActual = 0 }) => {
   const achievement = pct(actual, target);
@@ -67,24 +115,26 @@ const HeroTargetCard = ({ className, date, target, actual, good, reject, monthTa
     : new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
   return (
-    <div className={`flex h-full min-h-0 flex-col rounded-sm bg-[#0F1D24] p-3 text-white shadow-sm [container-type:inline-size] ${className}`}>
+    <div
+      className={`flex h-full min-h-0 flex-col rounded-none bg-gradient-to-br from-[#0F1D24] to-[#152834] p-3 text-white shadow-md ring-1 ring-white/5 [container-type:inline-size] sm:p-4 ${className}`}
+    >
       <div className="flex flex-shrink-0 items-center justify-between">
         <CardLabel icon={Target} tone="text-[#FDC94D]/90">
-          <span className="text-[clamp(11px,3.8cqw,15px)]">Today&apos;s Overall Target</span>
+          <span className="text-[clamp(11px,3.8cqw,15px)] text-white/80">Today&apos;s Overall Target</span>
         </CardLabel>
-        <span className="rounded-sm border border-white/15 bg-white/5 px-2 py-0.5 text-[clamp(9px,2.8cqw,12px)] font-semibold text-white/70">
+        <span className="rounded-none border border-white/15 bg-white/5 px-2 py-0.5 text-[clamp(9px,2.8cqw,12px)] font-semibold text-white/70">
           {formattedDate}
         </span>
       </div>
 
-      <div className="mt-2 grid flex-1 grid-cols-2 gap-2">
-        <div className="flex flex-col justify-center rounded-sm border border-white/10 bg-white/5 px-2.5 py-2">
+      <div className="mt-2.5 grid flex-1 grid-cols-2 gap-2">
+        <div className="flex flex-col justify-center rounded-none border border-white/10 bg-white/5 px-2.5 py-2">
           <p className="text-[clamp(9px,2.8cqw,12px)] font-semibold uppercase tracking-wide text-white/50">Target</p>
           <p className="mt-0.5 text-[clamp(20px,8cqw,30px)] font-extrabold leading-none text-white">
             {target.toLocaleString("en-IN")}
           </p>
         </div>
-        <div className="flex flex-col justify-center rounded-sm border border-[#FDC94D]/30 bg-[#FDC94D]/10 px-2.5 py-2">
+        <div className="flex flex-col justify-center rounded-none border border-[#FDC94D]/30 bg-[#FDC94D]/10 px-2.5 py-2">
           <p className="text-[clamp(9px,2.8cqw,12px)] font-semibold uppercase tracking-wide text-[#FDC94D]/80">Actual</p>
           <p className="mt-0.5 text-[clamp(20px,8cqw,30px)] font-extrabold leading-none text-[#FDC94D]">
             {actual.toLocaleString("en-IN")}
@@ -92,15 +142,18 @@ const HeroTargetCard = ({ className, date, target, actual, good, reject, monthTa
         </div>
       </div>
 
-      <div className="mt-2.5 flex-shrink-0">
+      <div className="mt-3 flex-shrink-0">
         <div className="flex items-baseline justify-between">
           <span className="flex items-center gap-1 text-[clamp(10px,3cqw,13px)] font-medium text-white/60">
             <TrendingUp size={13} className="flex-shrink-0 text-[#FDC94D]" /> Today's Achievement
           </span>
           <span className="text-[clamp(16px,5.5cqw,22px)] font-extrabold text-[#FDC94D]">{achievement}%</span>
         </div>
-        <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-white/15">
-          <div className="h-full rounded-full bg-[#FDC94D] transition-all" style={{ width: `${Math.min(achievement, 100)}%` }} />
+        <div className="mt-1.5 h-2 w-full overflow-hidden rounded-none bg-white/15">
+          <div
+            className="h-full rounded-none bg-gradient-to-r from-[#FDC94D] to-[#ffdd7a] transition-all duration-500"
+            style={{ width: `${Math.min(achievement, 100)}%` }}
+          />
         </div>
         <div className="mt-1 flex items-center justify-between text-[clamp(9px,2.7cqw,12px)] font-semibold text-white/70">
           <span>Good {goodPct}%</span>
@@ -108,7 +161,7 @@ const HeroTargetCard = ({ className, date, target, actual, good, reject, monthTa
         </div>
       </div>
 
-      <div className="my-2.5 flex-shrink-0 border-t border-white/10" />
+      <div className="my-3 flex-shrink-0 border-t border-white/10" />
 
       <div className="flex flex-1 flex-col justify-center">
         <p className="flex items-center gap-1 text-[clamp(10px,3cqw,13px)] font-semibold uppercase tracking-wide text-white/50">
@@ -116,22 +169,25 @@ const HeroTargetCard = ({ className, date, target, actual, good, reject, monthTa
         </p>
 
         <div className="mt-1.5 grid flex-1 grid-cols-3 gap-1.5">
-          <div className="flex flex-col justify-center rounded-sm bg-white/5 px-2 py-1.5">
+          <div className="flex flex-col justify-center rounded-none bg-white/5 px-2 py-1.5">
             <p className="text-[clamp(7px,2.2cqw,10px)] font-medium text-white/50">TARGET</p>
             <p className="text-[clamp(13px,4.5cqw,18px)] font-bold text-white">{monthTarget.toLocaleString("en-IN")}</p>
           </div>
-          <div className="flex flex-col justify-center rounded-sm bg-[#FDC94D]/10 px-2 py-1.5">
+          <div className="flex flex-col justify-center rounded-none bg-[#FDC94D]/10 px-2 py-1.5">
             <p className="text-[clamp(7px,2.2cqw,10px)] font-medium text-[#FDC94D]/80">ACHIEVED</p>
             <p className="text-[clamp(13px,4.5cqw,18px)] font-bold text-[#FDC94D]">{monthActual.toLocaleString("en-IN")}</p>
           </div>
-          <div className="flex flex-col justify-center rounded-sm bg-white/5 px-2 py-1.5">
+          <div className="flex flex-col justify-center rounded-none bg-white/5 px-2 py-1.5">
             <p className="text-[clamp(7px,2.2cqw,10px)] font-medium text-white/50">REMAINING</p>
             <p className="text-[clamp(13px,4.5cqw,18px)] font-bold text-white">{monthRemaining.toLocaleString("en-IN")}</p>
           </div>
         </div>
 
-        <div className="mt-1.5 h-2 w-full flex-shrink-0 overflow-hidden rounded-full bg-white/15">
-          <div className="h-full rounded-full bg-[#FDC94D] transition-all" style={{ width: `${Math.min(monthAchievement, 100)}%` }} />
+        <div className="mt-1.5 h-2 w-full flex-shrink-0 overflow-hidden rounded-none bg-white/15">
+          <div
+            className="h-full rounded-none bg-gradient-to-r from-[#FDC94D] to-[#ffdd7a] transition-all duration-500"
+            style={{ width: `${Math.min(monthAchievement, 100)}%` }}
+          />
         </div>
         <p className="mt-1 flex-shrink-0 text-right text-[clamp(9px,2.7cqw,12px)] font-semibold text-white/60">
           {monthAchievement}% of monthly target
@@ -142,11 +198,11 @@ const HeroTargetCard = ({ className, date, target, actual, good, reject, monthTa
 };
 
 /* ==========================================================
-   SHIFT WISE CARD — per-shift target/actual/remaining
+   SHIFT WISE CARD
 ========================================================== */
 const achievementColor = (achievement) => {
   if (achievement >= 100) return { text: "text-emerald-600", bar: "bg-emerald-500", bg: "bg-emerald-50", border: "border-emerald-200" };
-  if (achievement >= 75) return { text: "text-[#FDC94D]", bar: "bg-[#FDC94D]", bg: "bg-[#FDC94D]/10", border: "border-[#FDC94D]/30" };
+  if (achievement >= 75) return { text: "text-[#B8860B]", bar: "bg-[#FDC94D]", bg: "bg-[#FDC94D]/10", border: "border-[#FDC94D]/30" };
   return { text: "text-red-500", bar: "bg-red-500", bg: "bg-red-50", border: "border-red-200" };
 };
 
@@ -156,50 +212,56 @@ const ShiftWiseCard = ({ className, shifts = [] }) => (
       <span className="text-[clamp(11px,3.8cqw,15px)]">Shift-wise Target</span>
     </CardLabel>
 
-    <div className="mt-2 flex min-h-0 flex-1 flex-col justify-center gap-2 overflow-y-auto">
-      {shifts.map((s) => {
-        const achievement = pct(s.actual, s.target);
-        const remaining = Math.max(s.target - s.actual, 0);
-        const colors = achievementColor(achievement);
-        const TrendIcon = achievement >= 100 ? TrendingUp : TrendingDown;
+    {shifts.length === 0 ? (
+      <div className="flex flex-1 items-center justify-center py-4 text-center text-[10px] font-medium text-[#9B9B9B]">
+        No shift data recorded yet today.
+      </div>
+    ) : (
+      <div className="mt-2 flex min-h-0 flex-1 flex-col justify-center gap-2 overflow-y-auto">
+        {shifts.map((s) => {
+          const achievement = pct(s.actual, s.target);
+          const remaining = Math.max(s.target - s.actual, 0);
+          const colors = achievementColor(achievement);
+          const TrendIcon = achievement >= 100 ? TrendingUp : TrendingDown;
 
-        return (
-          <div key={s.label} className={`flex-shrink-0 rounded-sm border ${colors.border} ${colors.bg} px-2.5 py-1.5`}>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-[clamp(10px,3.2cqw,13px)] font-bold text-[#0F1D24]">{s.label}</span>
-              <span className={`flex items-center gap-1 text-[clamp(12px,4cqw,16px)] font-extrabold ${colors.text}`}>
-                <TrendIcon size={12} className="flex-shrink-0" />
-                {achievement}%
-              </span>
-            </div>
+          return (
+            <div key={s.label} className={`flex-shrink-0 rounded-none border ${colors.border} ${colors.bg} px-2.5 py-1.5`}>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1 text-[clamp(10px,3.2cqw,13px)] font-bold text-[#0F1D24]">{s.label}</span>
+                <span className={`flex items-center gap-1 text-[clamp(12px,4cqw,16px)] font-extrabold ${colors.text}`}>
+                  <TrendIcon size={12} className="flex-shrink-0" />
+                  {achievement}%
+                </span>
+              </div>
 
-            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white">
-              <div className={`h-full rounded-full ${colors.bar} transition-all`} style={{ width: `${Math.min(achievement, 100)}%` }} />
-            </div>
+              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-none bg-white">
+                <div className={`h-full rounded-none ${colors.bar} transition-all duration-500`} style={{ width: `${Math.min(achievement, 100)}%` }} />
+              </div>
 
-            <div className="mt-1 grid grid-cols-3 gap-1 text-center">
-              <div>
-                <p className="text-[clamp(6.5px,2cqw,8.5px)] font-medium uppercase tracking-wide text-[#9B9B9B]">Target</p>
-                <p className="text-[clamp(9px,3cqw,12px)] font-bold text-[#0F1D24]">{s.target.toLocaleString("en-IN")}</p>
-              </div>
-              <div>
-                <p className="text-[clamp(6.5px,2cqw,8.5px)] font-medium uppercase tracking-wide text-[#9B9B9B]">Actual</p>
-                <p className={`text-[clamp(9px,3cqw,12px)] font-bold ${colors.text}`}>{s.actual.toLocaleString("en-IN")}</p>
-              </div>
-              <div>
-                <p className="text-[clamp(6.5px,2cqw,8.5px)] font-medium uppercase tracking-wide text-[#9B9B9B]">Remaining</p>
-                <p className="text-[clamp(9px,3cqw,12px)] font-bold text-[#0F1D24]">{remaining.toLocaleString("en-IN")}</p>
+              <div className="mt-1 grid grid-cols-3 gap-1 text-center">
+                <div>
+                  <p className="text-[clamp(6.5px,2cqw,8.5px)] font-medium uppercase tracking-wide text-[#9B9B9B]">Target</p>
+                  <p className="text-[clamp(9px,3cqw,12px)] font-bold text-[#0F1D24]">{s.target.toLocaleString("en-IN")}</p>
+                </div>
+                <div>
+                  <p className="text-[clamp(6.5px,2cqw,8.5px)] font-medium uppercase tracking-wide text-[#9B9B9B]">Actual</p>
+                  <p className={`text-[clamp(9px,3cqw,12px)] font-bold ${colors.text}`}>{s.actual.toLocaleString("en-IN")}</p>
+                </div>
+                <div>
+                  <p className="text-[clamp(6.5px,2cqw,8.5px)] font-medium uppercase tracking-wide text-[#9B9B9B]">Remaining</p>
+                  <p className="text-[clamp(9px,3cqw,12px)] font-bold text-[#0F1D24]">{remaining.toLocaleString("en-IN")}</p>
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    )}
   </CardShell>
 );
 
 /* ==========================================================
-   QUANTITY CARD — good / reject quantity tile
+   QUANTITY CARD
 ========================================================== */
 const QuantityCard = ({ className, tone, label, value, sub, TrendIcon, trendLabel }) => {
   const palette =
@@ -213,7 +275,7 @@ const QuantityCard = ({ className, tone, label, value, sub, TrendIcon, trendLabe
         <span className="text-[clamp(11px,3.8cqw,15px)]">{label}</span>
       </CardLabel>
 
-      <div className={`mt-2 flex flex-1 flex-col justify-center rounded-sm border ${palette.border} ${palette.bg} px-2.5 py-2`}>
+      <div className={`mt-2 flex flex-1 flex-col justify-center rounded-none border ${palette.border} ${palette.bg} px-2.5 py-2`}>
         <div className="flex items-center justify-between">
           <span className={`text-[clamp(20px,9cqw,30px)] font-extrabold leading-none ${palette.text}`}>
             {value.toLocaleString("en-IN")}
@@ -223,8 +285,8 @@ const QuantityCard = ({ className, tone, label, value, sub, TrendIcon, trendLabe
             {trendLabel}
           </span>
         </div>
-        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white">
-          <div className={`h-full w-full rounded-full ${palette.bar}`} />
+        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-none bg-white">
+          <div className={`h-full w-full rounded-none ${palette.bar}`} />
         </div>
       </div>
 
@@ -234,18 +296,20 @@ const QuantityCard = ({ className, tone, label, value, sub, TrendIcon, trendLabe
 };
 
 /* ==========================================================
-   STAT TILE — compact icon + value + label tile
+   STAT TILE
 ========================================================== */
 const StatTile = ({ className, icon: Icon, value, label, accent = "text-[#0F1D24]" }) => (
   <CardShell className={`flex min-h-0 flex-col items-center justify-center gap-1 text-center [container-type:inline-size] ${className || ""}`}>
-    <Icon size={16} className={`flex-shrink-0 ${accent}`} />
+    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-none bg-[#0F1D24]/[0.06]">
+      <Icon size={14} className={`flex-shrink-0 ${accent}`} />
+    </span>
     <span className={`text-[clamp(16px,7cqw,24px)] font-extrabold leading-none ${accent}`}>{value}</span>
     <span className="text-[clamp(7.5px,2.4cqw,9.5px)] font-medium leading-tight text-[#9B9B9B]">{label}</span>
   </CardShell>
 );
 
 /* ==========================================================
-   LOSS TIME CARD — today / month loss-time + qty lost
+   LOSS TIME CARD
 ========================================================== */
 const formatMinutes = (mins) => {
   const h = Math.floor(mins / 60);
@@ -270,7 +334,7 @@ const StatBox = ({ tone, label, icon: Icon, value, valueSize }) => {
         : { border: "border-[#C6C6C6]", bg: "bg-[#F5F5F5]", label: "text-[#6B7280]", value: "text-[#0F1D24]" };
 
   return (
-    <div className={`flex flex-col justify-center rounded-sm border ${palette.border} ${palette.bg} px-[clamp(6px,2cqw,9px)] py-[clamp(5px,1.6cqw,8px)]`}>
+    <div className={`flex flex-col justify-center rounded-none border ${palette.border} ${palette.bg} px-[clamp(6px,2cqw,9px)] py-[clamp(5px,1.6cqw,8px)]`}>
       <span className={`flex items-center gap-1 text-[clamp(7.5px,2.3cqw,9.5px)] font-semibold uppercase tracking-wide ${palette.label}`}>
         {Icon && <Icon size={9} className="flex-shrink-0" />}
         {label}
@@ -307,7 +371,7 @@ const LossTimeCard = ({ className, todayLossMinutes = 0, todayPartsLost = 0, mon
 );
 
 /* ==========================================================
-   SUMMARY CARD — generic icon + title + row list (used for "Yesterday")
+   SUMMARY CARD
 ========================================================== */
 const SummaryCard = ({ className, icon = CalendarDays, title = "Summary", rows = [], footer }) => (
   <CardShell className={`flex min-h-0 flex-col gap-[clamp(8px,2.6cqw,12px)] [container-type:inline-size] ${className || ""}`}>
@@ -319,7 +383,7 @@ const SummaryCard = ({ className, icon = CalendarDays, title = "Summary", rows =
       {rows.map((row) => (
         <div
           key={row.label}
-          className="flex flex-col justify-center rounded-sm border border-[#C6C6C6] bg-[#F5F5F5] px-[clamp(6px,2cqw,9px)] py-[clamp(5px,1.6cqw,8px)]"
+          className="flex flex-col justify-center rounded-none border border-[#C6C6C6] bg-[#F5F5F5] px-[clamp(6px,2cqw,9px)] py-[clamp(5px,1.6cqw,8px)]"
         >
           <span className="text-[clamp(7.5px,2.3cqw,9.5px)] font-semibold uppercase tracking-wide text-[#6B7280]">
             {row.label}
@@ -332,7 +396,7 @@ const SummaryCard = ({ className, icon = CalendarDays, title = "Summary", rows =
     </div>
 
     {footer && (
-      <div className="flex flex-shrink-0 items-center gap-1 rounded-sm bg-[#FDC94D]/15 px-[clamp(6px,2cqw,9px)] py-[clamp(4px,1.4cqw,7px)] text-[clamp(8px,2.5cqw,10px)] font-semibold text-[#0F1D24]">
+      <div className="flex flex-shrink-0 items-center gap-1 rounded-none bg-[#FDC94D]/15 px-[clamp(6px,2cqw,9px)] py-[clamp(4px,1.4cqw,7px)] text-[clamp(8px,2.5cqw,10px)] font-semibold text-[#0F1D24]">
         {footer}
       </div>
     )}
@@ -340,7 +404,7 @@ const SummaryCard = ({ className, icon = CalendarDays, title = "Summary", rows =
 );
 
 /* ==========================================================
-   MOULD CHANGE SUMMARY CARD — planned/unplanned + completion split
+   MOULD CHANGE SUMMARY CARD
 ========================================================== */
 const MouldChangeSummaryCard = ({
   className,
@@ -358,7 +422,7 @@ const MouldChangeSummaryCard = ({
   const unplannedPct = pct(unplanned, total);
   const completedPct = pct(completed, total);
 
-  const unplannedTone = unplannedPct <= 20 ? "text-emerald-600" : unplannedPct <= 40 ? "text-[#FDC94D]" : "text-red-500";
+  const unplannedTone = unplannedPct <= 20 ? "text-emerald-600" : unplannedPct <= 40 ? "text-[#B8860B]" : "text-red-500";
 
   return (
     <CardShell className={`flex min-h-0 flex-col gap-[clamp(8px,2.6cqw,12px)] [container-type:inline-size] ${className || ""}`}>
@@ -367,14 +431,14 @@ const MouldChangeSummaryCard = ({
       </CardLabel>
 
       <div className="grid flex-shrink-0 grid-cols-2 gap-[clamp(6px,2cqw,9px)]">
-        <div className="flex flex-col justify-center rounded-sm border border-[#C6C6C6] bg-[#F5F5F5] px-[clamp(6px,2cqw,9px)] py-[clamp(5px,1.6cqw,8px)]">
+        <div className="flex flex-col justify-center rounded-none border border-[#C6C6C6] bg-[#F5F5F5] px-[clamp(6px,2cqw,9px)] py-[clamp(5px,1.6cqw,8px)]">
           <span className="text-[clamp(7.5px,2.3cqw,9.5px)] font-semibold uppercase tracking-wide text-[#6B7280]">Planned</span>
           <span className="mt-[clamp(2px,0.8cqw,4px)] text-[clamp(15px,5.5cqw,20px)] font-extrabold leading-none text-[#0F1D24]">
             {planned.toLocaleString("en-IN")}
           </span>
           <span className="mt-0.5 text-[clamp(7px,2.1cqw,8.5px)] font-medium text-[#6B7280]">{plannedPct}% of total</span>
         </div>
-        <div className="flex flex-col justify-center rounded-sm border border-red-300 bg-red-50 px-[clamp(6px,2cqw,9px)] py-[clamp(5px,1.6cqw,8px)]">
+        <div className="flex flex-col justify-center rounded-none border border-red-300 bg-red-50 px-[clamp(6px,2cqw,9px)] py-[clamp(5px,1.6cqw,8px)]">
           <span className="text-[clamp(7.5px,2.3cqw,9.5px)] font-semibold uppercase tracking-wide text-red-600">Unplanned</span>
           <span className="mt-[clamp(2px,0.8cqw,4px)] text-[clamp(15px,5.5cqw,20px)] font-extrabold leading-none text-red-600">
             {unplanned.toLocaleString("en-IN")}
@@ -388,30 +452,30 @@ const MouldChangeSummaryCard = ({
           <span className="text-[clamp(9px,2.8cqw,11px)] font-medium text-[#9B9B9B]">Planned / Unplanned Split</span>
           <span className="text-[clamp(11px,3.6cqw,14px)] font-extrabold text-[#0F1D24]">{total.toLocaleString("en-IN")} total</span>
         </div>
-        <div className="mt-1 flex h-1.5 w-full overflow-hidden rounded-full bg-[#F5F5F5]">
-          <div className="h-full bg-[#0F1D24] transition-all" style={{ width: `${plannedPct}%` }} />
-          <div className="h-full bg-red-500 transition-all" style={{ width: `${unplannedPct}%` }} />
+        <div className="mt-1 flex h-1.5 w-full overflow-hidden rounded-none bg-[#F5F5F5]">
+          <div className="h-full bg-[#0F1D24] transition-all duration-500" style={{ width: `${plannedPct}%` }} />
+          <div className="h-full bg-red-500 transition-all duration-500" style={{ width: `${unplannedPct}%` }} />
         </div>
       </div>
 
       <div className="grid flex-shrink-0 grid-cols-3 gap-[clamp(5px,1.6cqw,8px)] text-center">
-        <div className="rounded-sm border border-emerald-200 bg-emerald-50 px-1.5 py-[clamp(4px,1.4cqw,7px)]">
+        <div className="rounded-none border border-emerald-200 bg-emerald-50 px-1.5 py-[clamp(4px,1.4cqw,7px)]">
           <p className="text-[clamp(7px,2.1cqw,8.5px)] font-semibold uppercase tracking-wide text-emerald-700/80">Completed</p>
           <p className="mt-0.5 text-[clamp(11px,3.8cqw,14px)] font-extrabold text-emerald-600">{completed.toLocaleString("en-IN")}</p>
           <p className="text-[clamp(6.5px,2cqw,8px)] font-medium text-emerald-600/70">{completedPct}%</p>
         </div>
-        <div className="rounded-sm border border-[#FDC94D]/40 bg-[#FDC94D]/10 px-1.5 py-[clamp(4px,1.4cqw,7px)]">
+        <div className="rounded-none border border-[#FDC94D]/40 bg-[#FDC94D]/10 px-1.5 py-[clamp(4px,1.4cqw,7px)]">
           <p className="text-[clamp(7px,2.1cqw,8.5px)] font-semibold uppercase tracking-wide text-[#8A6D1A]">Pending</p>
           <p className="mt-0.5 text-[clamp(11px,3.8cqw,14px)] font-extrabold text-[#0F1D24]">{pending.toLocaleString("en-IN")}</p>
         </div>
-        <div className="rounded-sm border border-[#C6C6C6] bg-[#0F1D24] px-1.5 py-[clamp(4px,1.4cqw,7px)]">
+        <div className="rounded-none border border-[#C6C6C6] bg-[#0F1D24] px-1.5 py-[clamp(4px,1.4cqw,7px)]">
           <p className="text-[clamp(7px,2.1cqw,8.5px)] font-semibold uppercase tracking-wide text-white/50">Avg Time</p>
           <p className="mt-0.5 text-[clamp(11px,3.8cqw,14px)] font-extrabold text-[#FDC94D]">{avgChangeTime}m</p>
         </div>
       </div>
 
       {footer && (
-        <div className="flex flex-shrink-0 items-center gap-1 rounded-sm bg-[#FDC94D]/15 px-[clamp(6px,2cqw,9px)] py-[clamp(4px,1.4cqw,7px)] text-[clamp(8px,2.5cqw,10px)] font-semibold text-[#0F1D24]">
+        <div className="flex flex-shrink-0 items-center gap-1 rounded-none bg-[#FDC94D]/15 px-[clamp(6px,2cqw,9px)] py-[clamp(4px,1.4cqw,7px)] text-[clamp(8px,2.5cqw,10px)] font-semibold text-[#0F1D24]">
           <ListChecks size={11} className="flex-shrink-0 text-[#FDC94D]" />
           {footer}
         </div>
@@ -421,12 +485,12 @@ const MouldChangeSummaryCard = ({
 };
 
 /* ==========================================================
-   CHART CARD — flat shell wrapper for the weekly OEE chart
+   CHART CARD
 ========================================================== */
 const ChartCard = ({ icon, iconBg, title, subtitle, full, children }) => (
-  <div className={`flex min-h-0 flex-col rounded-sm border border-[#C6C6C6]/70 bg-white p-2.5 shadow-sm ${full ? "h-full" : ""}`}>
+  <div className={`flex min-h-0 flex-col rounded-none border border-[#C6C6C6]/70 bg-white p-2.5 shadow-sm transition-shadow duration-200 hover:shadow-md sm:p-3 ${full ? "h-full" : ""}`}>
     <div className="flex flex-shrink-0 items-center gap-2">
-      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-sm" style={{ background: iconBg }}>
+      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-none" style={{ background: iconBg }}>
         {icon}
       </div>
       <div className="min-w-0 leading-tight">
@@ -439,7 +503,7 @@ const ChartCard = ({ icon, iconBg, title, subtitle, full, children }) => (
 );
 
 /* ==========================================================
-   WEEKLY OEE CHART — bar chart + zoom overlay
+   WEEKLY OEE CHART
 ========================================================== */
 const MIN_HEIGHT = 200;
 const MAX_VALUE = 100;
@@ -594,7 +658,7 @@ const Chart = ({ chartData }) => {
 
       {hovered && (
         <div
-          className="pointer-events-none absolute z-10 rounded-md border border-[#C6C6C6] bg-white px-3 py-2 text-xs shadow-lg"
+          className="pointer-events-none absolute z-10 rounded-none border border-[#C6C6C6] bg-white px-3 py-2 text-xs shadow-lg"
           style={{ left: `${Math.min(Math.max((hovered.centerX / width) * 100, 14), 86)}%`, top: 4, transform: "translateX(-50%)" }}
         >
           <div className="font-bold text-[#0F1D24]">{hovered.day}</div>
@@ -625,8 +689,8 @@ const WeeklyOeeChart = ({ className, data = [], loading }) => {
         ) : (
           <div className="flex h-full min-h-0 flex-col">
             <div className="mb-2 flex flex-shrink-0 flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 rounded-full border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-2.5 py-1">
-                <span className="h-2.5 w-2.5 rounded-sm" style={{ background: OEE_COLOR }} />
+              <div className="flex items-center gap-1.5 rounded-none border border-[#0F1D24]/20 bg-[#0F1D24]/5 px-2.5 py-1">
+                <span className="h-2.5 w-2.5 rounded-none" style={{ background: OEE_COLOR }} />
                 <span className="text-[11px] font-semibold text-[#0F1D24]">OEE</span>
               </div>
 
@@ -640,7 +704,7 @@ const WeeklyOeeChart = ({ className, data = [], loading }) => {
                 </div>
                 <button
                   onClick={() => setIsZoomed(true)}
-                  className="flex h-6 items-center gap-1 rounded bg-[#0F1D24] px-2 text-[9px] font-semibold text-[#FDC94D] transition hover:bg-[#1a2e38]"
+                  className="flex h-6 items-center gap-1 rounded-none bg-[#0F1D24] px-2 text-[9px] font-semibold text-[#FDC94D] transition hover:bg-[#1a2e38] active:scale-95"
                 >
                   <ExpandIcon className="h-2.5 w-2.5" />
                   Zoom
@@ -649,7 +713,8 @@ const WeeklyOeeChart = ({ className, data = [], loading }) => {
             </div>
 
             {!hasData && (
-              <div className="mb-1 flex-shrink-0 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-700">
+              <div className="mb-1 flex flex-shrink-0 items-center gap-1.5 rounded-none border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-700">
+                <AlertCircle size={11} className="flex-shrink-0" />
                 No performance data recorded yet — showing 0% for every day.
               </div>
             )}
@@ -669,42 +734,42 @@ const WeeklyOeeChart = ({ className, data = [], loading }) => {
 
       {isZoomed && (
         <div className="fixed inset-0 z-50 flex flex-col bg-white">
-          <div className="flex flex-shrink-0 items-center justify-between border-b border-[#C6C6C6]/50 px-5 py-3">
+          <div className="flex flex-shrink-0 items-center justify-between border-b border-[#C6C6C6]/50 px-4 py-3 sm:px-5">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded shadow-sm" style={{ background: "#0F1D24" }}>
+              <div className="flex h-8 w-8 items-center justify-center rounded-none shadow-sm" style={{ background: "#0F1D24" }}>
                 <ChartIcon className="h-3.5 w-3.5 text-[#FDC94D]" />
               </div>
               <div>
                 <h2 className="text-sm font-bold text-[#0F1D24]">Weekly OEE · Expanded View</h2>
-                <p className="text-[10px] text-[#9B9B9B]">OEE = Availability × Performance × Quality — last 7 days</p>
+                <p className="hidden text-[10px] text-[#9B9B9B] sm:block">OEE = Availability × Performance × Quality — last 7 days</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div className="text-right">
                 <p className="text-[9px] font-semibold uppercase tracking-wide text-[#9B9B9B]">Best Day</p>
-                <p className="text-lg font-extrabold text-[#0F1D24]">
+                <p className="text-base font-extrabold text-[#0F1D24] sm:text-lg">
                   {bestDay ? bestDay.day : "-"}
                   <span className="ml-1 text-[10px] font-semibold text-[#9B9B9B]">({bestDay?.oee || 0}%)</span>
                 </p>
               </div>
-              <button onClick={() => setIsZoomed(false)} className="flex h-8 w-8 items-center justify-center rounded text-[#9B9B9B] transition hover:bg-[#0F1D24]/5">
+              <button onClick={() => setIsZoomed(false)} className="flex h-8 w-8 items-center justify-center rounded-none text-[#9B9B9B] transition hover:bg-[#0F1D24]/5">
                 <CloseIcon className="h-4 w-4" />
               </button>
             </div>
           </div>
 
           {!hasData && (
-            <div className="flex-shrink-0 border-b border-amber-100 bg-amber-50 px-5 py-1.5 text-[10px] font-medium text-amber-700">
+            <div className="flex-shrink-0 border-b border-amber-100 bg-amber-50 px-4 py-1.5 text-[10px] font-medium text-amber-700 sm:px-5">
               No performance data recorded yet — showing 0% for every day.
             </div>
           )}
 
-          <div className="min-h-0 flex-1 px-6 py-4">
+          <div className="min-h-0 flex-1 px-4 py-4 sm:px-6">
             <Chart chartData={data} />
           </div>
 
-          <div className="flex flex-shrink-0 items-center justify-end border-t border-[#C6C6C6]/40 bg-[#0F1D24]/[0.02] px-5 py-2">
+          <div className="flex flex-shrink-0 items-center justify-end border-t border-[#C6C6C6]/40 bg-[#0F1D24]/[0.02] px-4 py-2 sm:px-5">
             <span className="text-[10px] font-semibold text-[#9B9B9B]">
               Avg OEE: <span className="text-[#0F1D24]">{avgOee}%</span>
             </span>
@@ -716,9 +781,37 @@ const WeeklyOeeChart = ({ className, data = [], loading }) => {
 };
 
 /* ==========================================================
-   DASHBOARD PAGE — single screen, no page-level scrollbar
+   DASHBOARD PAGE
 ========================================================== */
 const Dashboard = () => {
+  const {
+    dayTarget,
+    shiftData,
+    lossTimeReasons,
+    machineStatus,
+    userStatus,
+    lastDay,
+    currentMonth,
+    weeklyOee,
+    mouldChangeSummary,
+    loading,
+    error,
+    lastUpdated,
+    refresh,
+  } = useDashboardOverview();
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  };
+
+  const lastUpdatedLabel = lastUpdated
+    ? lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
+    : "—";
+
   return (
     <div className="flex h-screen min-h-0 overflow-hidden bg-[#F5F5F5]">
       <Sidebar />
@@ -727,7 +820,7 @@ const Dashboard = () => {
         @media (min-width: 1024px) {
           .mc-kpi-grid {
             grid-template-columns: repeat(12, minmax(0, 1fr));
-            grid-template-rows: repeat(2, minmax(0, 1fr));
+            grid-template-rows: minmax(200px, auto) minmax(215px, auto);
             grid-template-areas:
               "hero hero hero shift shift shift good good reject reject machines users"
               "hero hero hero loss loss loss lastday lastday lastday month month month";
@@ -745,68 +838,124 @@ const Dashboard = () => {
       `}</style>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden p-1.5">
-          <div className="mc-kpi-grid grid min-h-0 flex-[1.35] grid-cols-2 auto-rows-fr gap-1.5 sm:grid-cols-4">
-            <HeroTargetCard
-              className="mc-hero col-span-2 sm:col-span-4"
-              target={dayTarget.target}
-              actual={dayTarget.actual}
-              good={dayTarget.good}
-              reject={dayTarget.reject}
-            />
-
-            <ShiftWiseCard className="mc-shift col-span-2 sm:col-span-2" shifts={shiftData} />
-
-            <QuantityCard
-              className="mc-good col-span-1"
-              tone="good"
-              label="Good Quantity"
-              value={dayTarget.good}
-              sub={`${pct(dayTarget.good, dayTarget.actual)}% of actual output`}
-              TrendIcon={TrendingUp}
-              trendLabel="0% vs yday"
-            />
-
-            <QuantityCard
-              className="mc-reject col-span-1"
-              tone="reject"
-              label="Reject Quantity"
-              value={dayTarget.reject}
-              sub={`${pct(dayTarget.reject, dayTarget.actual)}% of actual output`}
-              TrendIcon={TrendingDown}
-              trendLabel="0% vs yday"
-            />
-
-            <StatTile className="mc-machines col-span-1" icon={Cog} value={`${machineStatus.active}/${machineStatus.total}`} label="Active Machines" />
-
-            <StatTile className="mc-users col-span-1" icon={Users} value={userStatus.active} label={userStatus.label} />
-
-            <LossTimeCard className="mc-loss col-span-2 sm:col-span-2" reasons={lossTimeReasons} />
-
-            <SummaryCard
-              className="mc-lastday col-span-2 sm:col-span-2"
-              icon={CalendarDays}
-              title={lastDay.dateLabel}
-              rows={[
-                { label: "Target", value: lastDay.target.toLocaleString("en-IN") },
-                { label: "Actual", value: lastDay.actual.toLocaleString("en-IN") },
-                { label: "OEE", value: `${lastDay.oee}%` },
-              ]}
-            />
-
-            <MouldChangeSummaryCard
-              className="mc-month col-span-2 sm:col-span-2"
-              icon={Wrench}
-              title="Mould Change Summary"
-              planned={mouldChangeSummary.planned}
-              unplanned={mouldChangeSummary.unplanned}
-              completed={mouldChangeSummary.completed}
-              pending={mouldChangeSummary.pending}
-              avgChangeTime={mouldChangeSummary.avgChangeTime}
-            />
+        {/* ===================== HEADER ===================== */}
+        <header className="flex flex-shrink-0 flex-col gap-2 border-b border-[#C6C6C6]/70 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-2.5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-none bg-[#0F1D24]">
+              <Factory size={15} className="text-[#FDC94D]" />
+            </span>
+            <div className="leading-tight">
+              <h1 className="text-[13px] font-extrabold tracking-tight text-[#0F1D24] sm:text-sm">Production Overview</h1>
+              <p className="text-[10px] font-medium text-[#9B9B9B]">Real-time shop floor performance</p>
+            </div>
           </div>
 
-          <WeeklyOeeChart className="min-h-0 flex-1" data={weeklyOee} />
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {error ? (
+              <span className="flex items-center gap-1 rounded-none border border-red-200 bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-500">
+                <AlertCircle size={11} className="flex-shrink-0" />
+                {error}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 rounded-none border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-600">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </span>
+                Live · updated {lastUpdatedLabel}
+              </span>
+            )}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-1.5 rounded-none border border-[#C6C6C6] bg-[#F5F5F5] px-2.5 py-1.5 text-[10px] font-semibold text-[#0F1D24] transition hover:bg-white hover:shadow-sm active:scale-95 disabled:opacity-60"
+            >
+              <RefreshCw size={11} className={`flex-shrink-0 ${refreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
+        </header>
+
+        {/* ===================== MAIN CONTENT ===================== */}
+        <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2 sm:gap-2.5 sm:p-3 lg:gap-3 lg:p-4">
+          {loading ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 text-[13px] font-semibold text-[#9B9B9B]">
+              <RefreshCw size={18} className="animate-spin text-[#0F1D24]/40" />
+              Loading dashboard...
+            </div>
+          ) : (
+            <>
+              <div className="mc-kpi-grid grid flex-shrink-0 grid-cols-2 auto-rows-fr gap-1.5 sm:grid-cols-4 sm:gap-2 lg:gap-3">
+                <HeroTargetCard
+                  className="mc-hero col-span-2 sm:col-span-4"
+                  target={dayTarget.target}
+                  actual={dayTarget.actual}
+                  good={dayTarget.good}
+                  reject={dayTarget.reject}
+                  monthTarget={currentMonth.target}
+                  monthActual={currentMonth.actual}
+                />
+
+                <ShiftWiseCard className="mc-shift col-span-2 sm:col-span-2" shifts={shiftData} />
+
+                <QuantityCard
+                  className="mc-good col-span-1"
+                  tone="good"
+                  label="Good Quantity"
+                  value={dayTarget.good}
+                  sub={`${pct(dayTarget.good, dayTarget.actual)}% of actual output`}
+                  TrendIcon={TrendingUp}
+                  trendLabel="0% vs yday"
+                />
+
+                <QuantityCard
+                  className="mc-reject col-span-1"
+                  tone="reject"
+                  label="Reject Quantity"
+                  value={dayTarget.reject}
+                  sub={`${pct(dayTarget.reject, dayTarget.actual)}% of actual output`}
+                  TrendIcon={TrendingDown}
+                  trendLabel="0% vs yday"
+                />
+
+                <StatTile className="mc-machines col-span-1" icon={Cog} value={`${machineStatus.active}/${machineStatus.total}`} label="Active Machines" />
+
+                <StatTile className="mc-users col-span-1" icon={Users} value={userStatus.active} label={userStatus.label} />
+
+                <LossTimeCard
+                  className="mc-loss col-span-2 sm:col-span-2"
+                  todayLossMinutes={lossTimeReasons.todayLossMinutes}
+                  todayPartsLost={lossTimeReasons.todayPartsLost}
+                  monthLossMinutes={lossTimeReasons.monthLossMinutes}
+                  monthPartsLost={lossTimeReasons.monthPartsLost}
+                />
+
+                <SummaryCard
+                  className="mc-lastday col-span-2 sm:col-span-2"
+                  icon={CalendarDays}
+                  title={lastDay.dateLabel || "Previous Day"}
+                  rows={[
+                    { label: "Target", value: lastDay.target.toLocaleString("en-IN") },
+                    { label: "Actual", value: lastDay.actual.toLocaleString("en-IN") },
+                    { label: "OEE", value: `${lastDay.oee}%` },
+                  ]}
+                />
+
+                <MouldChangeSummaryCard
+                  className="mc-month col-span-2 sm:col-span-2"
+                  icon={Wrench}
+                  title="Mould Change Summary"
+                  planned={mouldChangeSummary.planned}
+                  unplanned={mouldChangeSummary.unplanned}
+                  completed={mouldChangeSummary.completed}
+                  pending={mouldChangeSummary.pending}
+                  avgChangeTime={mouldChangeSummary.avgChangeTime}
+                />
+              </div>
+
+              <WeeklyOeeChart className="min-h-[300px] flex-1" data={weeklyOee} loading={loading} />
+            </>
+          )}
         </main>
       </div>
     </div>

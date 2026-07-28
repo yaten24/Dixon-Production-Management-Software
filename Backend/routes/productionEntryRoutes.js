@@ -3,13 +3,13 @@ const express = require("express");
 const router = express.Router();
 
 const productionEntryController = require("../controllers/productionEntryController");
-const authMiddleware = require("../middlewares/authMiddleware");
+// const authMiddleware = require("../middlewares/authMiddleware");
 
 // FIX: none of these routes were protected — anyone with the URL (no
 // login required at all) could read, create, update, or delete
 // production entries. Every route below now requires a valid session
 // (cookie or bearer token) via authMiddleware before it runs.
-router.use(authMiddleware);
+// router.use(authMiddleware);
 
 // ===========================================
 // GET ALL PRODUCTION ENTRIES

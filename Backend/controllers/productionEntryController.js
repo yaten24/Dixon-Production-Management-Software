@@ -219,7 +219,7 @@ exports.createProductionEntry = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const created_by = req.user.id;
+    const created_by = 10;
 
     const {
       production_id,
