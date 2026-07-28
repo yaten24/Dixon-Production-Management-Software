@@ -1,12 +1,4 @@
-// src/api/productionRejectDetailsApi.js
-
 import api from "./axios";
-
-// ==========================================
-// Production Reject Details API
-// Table: production_reject_details
-// Matches: /api/production-reject-details (adjust base path if different)
-// ==========================================
 
 const BASE = "/production-reject-details";
 

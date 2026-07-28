@@ -27,9 +27,9 @@ const app = express();
 app.use(cookieParser());
 
 const allowedOrigins = [
-  "http://localhost:5173",
   "http://localhost:3000",
   "http://192.168.3.87:3000",
+  "http://localhost:5173",
 ];
 
 app.use(
@@ -45,8 +45,15 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
 
+// app.use(
+//   cors({
+//     origin: "http://localhost:3000",
+//     credentials: true,
+//   })
+// );
+
+app.use(express.json());
 app.use("/api/machines", machineRoutes);
 app.use('/api/production', require('./routes/productionHeatMapRoutes'));
 app.use("/api/parts", partRoutes);

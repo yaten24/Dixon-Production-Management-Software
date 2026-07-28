@@ -13,18 +13,13 @@ const isProduction = process.env.NODE_ENV === "production";
 const AUTH_COOKIE_NAME = "token";
 
 const cookieOptions = {
-  httpOnly: true, // Prevent JavaScript from accessing the cookie
-  secure: false, // false for localhost (HTTP)
-  sameSite: "lax", // Works well for same-site requests during development
+  httpOnly: true,
+  secure: false,
+  sameSite: "lax",
   path: "/",
-  maxAge: 24 * 60 * 60 * 1000, // 1 day
+  maxAge: 24 * 60 * 60 * 1000,
 };
 
-// A pre-computed dummy hash used when no user is found, so bcrypt.compare
-// still runs and takes the same amount of time as a real comparison.
-// FIX: without this, a failed lookup returns instantly while a wrong
-// password takes ~100ms for bcrypt — that timing difference lets an
-// attacker enumerate valid employee IDs. This closes that gap.
 const DUMMY_HASH =
   "$2b$10$CwTycUXWue0Thq9StjUM0uJ8mMYYX8/L4WgKzC2FGDh0v6d2hOdLK";
 
@@ -112,6 +107,7 @@ exports.login = async (req, res) => {
 
 exports.profile = async (req, res) => {
   try {
+    console.log(req.user.id)
     const user = await Login.getById(req.user.id);
 
     if (!user) {
