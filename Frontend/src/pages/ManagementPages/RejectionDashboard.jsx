@@ -563,11 +563,8 @@ function KpiStatus({ label = "Active", color = "#22C55E" }) {
 
 function KpiTile({ label, value, subtitle, icon: Icon, footer }) {
   return (
-    <div className="flex flex-col justify-between rounded-[3px] border border-white/10 bg-[#0F1D24] p-2">
-      {/* <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-[#FDC94D]">
-        <Icon className="h-4 w-4 text-[#0F1D24]" />
-      </div> */}
-      <div className="mt-2.5">
+    <div className="flex flex-col justify-between rounded-[2px] border border-white/10 bg-[#0F1D24] p-2">
+      <div className="mt-2">
         <p className="text-[10.5px] font-bold uppercase tracking-wide text-white/50">
           {label}
         </p>
@@ -648,11 +645,11 @@ function HallWiseRejectionPanel({ rows, missingHalls, totalReject }) {
 
   return (
     <div
-      className={`flex min-h-0 h-full flex-1 flex-col overflow-hidden ${SURFACE}`}
+      className={`flex min-h-0 h-full flex-1 flex-col rounded-[2px] overflow-hidden ${SURFACE}`}
     >
       <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-[#C6C6C6] px-3 py-2">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
+          <div className="flex h-6 w-6 rounded-[2px] items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
             <HiOutlineChartBar className="h-3.5 w-3.5" />
           </div>
           <div>
@@ -778,11 +775,11 @@ function RejectionDistributionPanel({ rows, reasonsTracked, totalReject }) {
 
   return (
     <div
-      className={`flex min-h-0 h-full flex-1 flex-col overflow-hidden ${SURFACE}`}
+      className={`flex min-h-0 h-full flex-1 flex-col rounded-[2px] overflow-hidden ${SURFACE}`}
     >
       <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-[#C6C6C6] px-3 py-2">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
+          <div className="flex h-6 w-6 rounded-[2px] items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
             <HiOutlineChartPie className="h-3.5 w-3.5" />
           </div>
           <div>
@@ -913,10 +910,10 @@ function TopMachinesPanel({ rows }) {
 
   return (
     <div
-      className={`flex min-h-0 h-full flex-1 flex-col overflow-hidden ${SURFACE}`}
+      className={`flex min-h-0 h-full flex-1 flex-col rounded-[2px] overflow-hidden ${SURFACE}`}
     >
       <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#C6C6C6] px-3 py-2">
-        <div className="flex h-6 w-6 items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
+        <div className="flex h-6 w-6 rounded-[2px] items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
           <HiOutlineCog6Tooth className="h-3.5 w-3.5" />
         </div>
         <div>
@@ -1013,7 +1010,7 @@ function HourlyRejectionTrendPanel({ points }) {
 
   return (
     <div
-      className={`flex min-h-0 h-full flex-1 flex-col overflow-hidden ${SURFACE}`}
+      className={`flex min-h-0 h-full flex-1 flex-col rounded-[2px] overflow-hidden ${SURFACE}`}
     >
       <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[#C6C6C6] px-3 py-2">
         <div>
@@ -1034,7 +1031,7 @@ function HourlyRejectionTrendPanel({ points }) {
                   : "bg-white text-[#0F1D24] hover:bg-[#FFF9EA]"
               }`}
             >
-              <span className="h-1.5 w-1.5" style={{ background: GOLD }} />{" "}
+              <span className="h-1.5 w-1.5 rounded-[2px]" style={{ background: GOLD }} />{" "}
               Shift A · 08:00–20:00
             </button>
             <button
@@ -1045,7 +1042,7 @@ function HourlyRejectionTrendPanel({ points }) {
                   : "bg-white text-[#0F1D24] hover:bg-[#F4F4F5]"
               }`}
             >
-              <span className="h-1.5 w-1.5" style={{ background: NAVY }} />{" "}
+              <span className="h-1.5 w-1.5 rounded-[2px]" style={{ background: NAVY }} />{" "}
               Shift B · 20:00–08:00
             </button>
           </div>
@@ -1167,10 +1164,10 @@ function HourlyRejectionTrendPanel({ points }) {
       <div className="flex flex-shrink-0 items-center justify-between border-t border-[#C6C6C6] px-3 py-1.5">
         <div className="flex items-center gap-3 text-[9.5px] font-bold text-[#9B9B9B]">
           <span className="flex items-center gap-1">
-            <span className="h-2 w-2" style={{ background: GOLD }} /> Shift A
+            <span className="h-2 w-2 rounded-[2px]" style={{ background: GOLD }} /> Shift A
           </span>
           <span className="flex items-center gap-1">
-            <span className="h-2 w-2" style={{ background: NAVY }} /> Shift B
+            <span className="h-2 w-2 rounded-[2px]" style={{ background: NAVY }} /> Shift B
           </span>
         </div>
         <span className="text-[9.5px] font-semibold text-[#9B9B9B]">
@@ -1269,7 +1266,7 @@ const RejectionDashboard = ({
               loading={loading}
               dirty={dirty}
             />
-            <div className="grid min-h-0 flex-[2] grid-cols-1 gap-2 lg:grid-cols-[360px_1fr_1fr]">
+            <div className="grid min-h-0 flex-[2] grid-cols-1 gap-2 lg:grid-cols-[360px_1fr_1fr] p-1">
               <KpiGrid data={data} />
               <HallWiseRejectionPanel
                 rows={data.hallWise}
@@ -1283,7 +1280,7 @@ const RejectionDashboard = ({
               />
             </div>
 
-            <div className="grid min-h-0 flex-[3] grid-cols-1 gap-2 lg:grid-cols-[450px_1fr]">
+            <div className="grid min-h-0 flex-[3] grid-cols-1 gap-2 lg:grid-cols-[450px_1fr] p-1">
               <TopMachinesPanel rows={data.topMachines} />
               <HourlyRejectionTrendPanel points={data.hourlyTrend} />
             </div>

@@ -1,98 +1,100 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FaTachometerAlt,
-  FaUsers,
-  FaIndustry,
+  FaChartBar,
   FaClock,
+  FaExchangeAlt,
   FaCalendarAlt,
   FaSignOutAlt,
   FaUserCircle,
+  FaIndustry,
+  FaUsers,
 } from "react-icons/fa";
+
+import {
+  MdOutlineProductionQuantityLimits,
+  MdOutlineReportProblem,
+} from "react-icons/md";
+
+import {
+  HiOutlineChevronDoubleLeft,
+  HiOutlineChevronDoubleRight,
+  HiOutlineChevronDown,
+} from "react-icons/hi2";
+
 
 import { LuUserCog } from "react-icons/lu";
 import { RiFileList3Line } from "react-icons/ri";
 import { FaScrewdriverWrench } from "react-icons/fa6";
 
-import {
-  HiOutlineChevronDoubleLeft,
-  HiOutlineChevronDoubleRight,
-} from "react-icons/hi2";
-
 import { useAuth } from "../../context/AuthContext";
-import dixonLogo from "../../../public/Dixon_Technologies_Logo.png";
 
-/* ==========================================================
-                        THEME
-   Brand palette (client's color reference):
-     highlight #0F1D24  (deep navy)   — icons, titles, active states
-     gray      #9B9B9B                — secondary text
-     accent    #FDC94D  (warm gold)   — sparing highlight
-     darken    #C6C6C6                — borders, dividers, neutral surfaces
-========================================================== */
+const EXPANDED_WIDTH = 200;
+const COLLAPSED_WIDTH = 64;
 
-const THEME = {
-  highlight: "#0F1D24",
-  gray: "#9B9B9B",
-  accent: "#FDC94D",
-  darken: "#C6C6C6",
-};
-
-const FONT_IMPORT = `
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=Roboto+Mono:wght@500;600&display=swap');
-`;
-
-const EXPANDED_WIDTH = 176;
-const COLLAPSED_WIDTH = 52;
-
-const menuSections = [
+// Combined into a flat menu without section headers
+const menuItems = [
   {
-    label: "Overview",
-    items: [
-      { id: 1, title: "Dashboard", path: "/admin/dashboard", icon: <FaTachometerAlt size={13} /> },
-    ],
+    id: 1,
+    title: "Dashboard",
+    path: "/admin/dashboard",
+    icon: <FaTachometerAlt size={13} />,
+  },
+  { id: 6, title: "Users", path: "/admin/users", icon: <FaUsers size={13} /> },
+  {
+    id: 7,
+    title: "Machines",
+    path: "/admin/machines",
+    icon: <FaIndustry size={13} />,
   },
   {
-    label: "Resources",
-    items: [
-      { id: 6, title: "Users", path: "/admin/users", icon: <FaUsers size={13} /> },
-      { id: 7, title: "Machines", path: "/admin/machines", icon: <FaIndustry size={13} /> },
-      { id: 8, title: "Parts", path: "/admin/parts", icon: <FaScrewdriverWrench size={13} /> },
-      { id: 9, title: "Operators", path: "/admin/operators", icon: <LuUserCog size={13} /> },
-    ],
+    id: 8,
+    title: "Parts",
+    path: "/admin/parts",
+    icon: <FaScrewdriverWrench size={13} />,
   },
   {
-    label: "Insights",
-    items: [
-      { id: 11, title: "Logs", path: "/admin/logs", icon: <RiFileList3Line size={13} /> },
-    ],
+    id: 9,
+    title: "Operators",
+    path: "/admin/operators",
+    icon: <LuUserCog size={13} />,
+  },
+  {
+    id: 11,
+    title: "Logs",
+    path: "/admin/logs",
+    icon: <RiFileList3Line size={13} />,
   },
 ];
 
 const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.02, delayChildren: 0.05 } },
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.04, delayChildren: 0.05 },
+  },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, x: -10, filter: "blur(2px)" },
+  hidden: { opacity: 0, x: -10 },
   show: {
     opacity: 1,
     x: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-
   const [collapsed, setCollapsed] = useState(false);
 
-  /* ---------------- LIVE CLOCK ---------------- */
+  /* Live Clock */
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -100,17 +102,34 @@ const Sidebar = () => {
   }, []);
 
   const formattedDate = useMemo(
-    () => currentTime.toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
+    () =>
+      currentTime.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
     [currentTime],
   );
+
   const formattedTime = useMemo(
-    () => currentTime.toLocaleTimeString("en-IN", { hour12: true }),
+    () =>
+      currentTime.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      }),
     [currentTime],
   );
 
   const initials = useMemo(() => {
     if (!user?.name) return "";
-    return user.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+    return user.name
+      .split(" ")
+      .map((p) => p[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
   }, [user]);
 
   const handleLogout = async () => {
@@ -121,201 +140,242 @@ const Sidebar = () => {
   return (
     <motion.aside
       animate={{ width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
-      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      style={{
-        flex: `0 0 auto`,
-        height: "100vh",
-        fontFamily: "'Inter', sans-serif",
-      }}
-      className="sticky top-0 hidden flex-shrink-0 flex-col overflow-hidden border-r border-[#C6C6C6]/50 bg-white shadow-sm lg:flex"
+      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      className="sticky top-0 hidden flex-shrink-0 flex-col h-screen overflow-hidden border-r border-slate-200 bg-white shadow-sm lg:flex select-none z-30"
     >
-      <style>{FONT_IMPORT}</style>
+      {/* Accent Header Line */}
+      <div className="h-[3px] w-full bg-gradient-to-r from-[#0F1D24] via-[#9B9B9B] to-[#FDC94D] shrink-0" />
 
-      {/* TOP GRADIENT LINE */}
-      <div
-        style={{
-          background: `linear-gradient(90deg, ${THEME.highlight} 0%, ${THEME.darken} 45%, ${THEME.accent} 100%)`,
-        }}
-        className="h-[2px] w-full flex-shrink-0"
-      />
-
-      {/* LOGO */}
-      <div className="flex flex-shrink-0 items-center justify-center border-b border-[#C6C6C6]/50 px-2 py-1.5">
-        {collapsed ? (
-          <div className="flex h-7 w-7 items-center justify-center bg-[#0F1D24]">
-            <span className="font-mono text-[9px] font-extrabold text-[#FDC94D]">DT</span>
+      {/* Logo Header */}
+      <div className="flex flex-shrink-0 items-center justify-center gap-2 border-b border-[#C6C6C6]/50 px-2 py-1.5">
+        {!collapsed ? (
+          <div className="min-w-0 flex-1 bg-[#0F1D24] p-2 rounded-[2px] leading-none">
+            <p className="truncate text-[16px] font-bold tracking-tight text-[#FDC94D]">
+              PMS Dixon Dehradun
+            </p>
+            {/* <p className="truncate text-[8px] font-medium text-slate-300">
+              Production Management System
+            </p> */}
           </div>
         ) : (
-          <img src={dixonLogo} alt="Dixon" className="h-7 w-auto object-contain" />
+          <div className="flex h-7 w-7 flex-shrink-0 items-center rounded-[2px] justify-center bg-[#0F1D24]">
+            <span className="font-mono text-[10px] font-extrabold text-[#FDC94D]">
+              PMS
+            </span>
+          </div>
         )}
       </div>
 
-      {/* DATE & TIME */}
-      {!collapsed ? (
-        <div className="flex flex-shrink-0 items-center justify-center gap-1.5 border-b border-[#C6C6C6]/50 bg-[#FAFAFA] px-2 py-1">
-          <FaCalendarAlt className="text-[9px] text-[#FDC94D]" />
-          <span className="text-[9px] font-medium text-[#0F1D24]">{formattedDate}</span>
-          <span className="h-2.5 w-px bg-[#C6C6C6]" />
-          <FaClock className="text-[9px] text-[#FDC94D]" />
-          <AnimatePresence mode="wait">
-            <motion.span
-              key={formattedTime}
-              initial={{ opacity: 0, y: -2 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 2 }}
-              transition={{ duration: 0.12 }}
-              className="font-mono text-[9px] font-semibold tabular-nums text-[#0F1D24]"
-            >
-              {formattedTime}
-            </motion.span>
-          </AnimatePresence>
-        </div>
-      ) : (
-        <div
-          className="flex flex-shrink-0 items-center justify-center border-b border-[#C6C6C6]/50 bg-[#FAFAFA] py-1"
-          title={`${formattedDate} · ${formattedTime}`}
+      {/* Highlighted Live Date & Time Section */}
+      <div className="shrink-0 p-2 border-b border-slate-100">
+        <motion.div
+          layout
+          className="relative overflow-hidden rounded-[2px] bg-[#0F1D24] p-2 text-white shadow-sm border border-slate-800"
         >
-          <FaClock className="text-[10px] text-[#FDC94D]" />
-        </div>
-      )}
+          {/* Subtle Ambient Glow */}
+          <div className="absolute -right-4 -top-4 h-12 w-12 rounded-full bg-[#FDC94D]/10 blur-xl pointer-events-none" />
 
-      {/* MENU SECTIONS */}
-      <div className="flex-1 space-y-2.5 overflow-y-auto overflow-x-hidden px-1.5 py-2">
-        {menuSections.map((section) => (
-          <div key={section.label}>
-            {!collapsed && (
-              <p className="mb-1 px-1.5 text-[8.5px] font-semibold uppercase tracking-[1.5px] text-[#9B9B9B]">
-                {section.label}
-              </p>
-            )}
+          {!collapsed ? (
+            <div className="space-y-1">
+              {/* Date */}
+              <div className="flex items-center justify-between text-[10px] font-semibold text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <FaCalendarAlt className="text-[#FDC94D] text-[11px]" />
+                  <span>{formattedDate}</span>
+                </span>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+              </div>
 
-            <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-0.5">
-              {section.items.map((item) => (
-                <motion.div key={item.id} variants={itemVariants}>
-                  <NavLink
-                    to={item.path}
-                    end
-                    title={collapsed ? item.title : undefined}
-                    className={({ isActive }) =>
-                      `block relative overflow-hidden rounded transition-colors duration-150 ${
-                        isActive ? "bg-[#0F1D24]/[0.06]" : "hover:bg-[#F5F5F5]"
-                      }`
-                    }
+              {/* Time */}
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#FDC94D] pt-0.5 border-t border-slate-800">
+                <FaClock className="text-[11px] shrink-0" />
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={formattedTime}
+                    initial={{ opacity: 0, y: -2 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 2 }}
+                    transition={{ duration: 0.15 }}
+                    className="font-mono tracking-wider"
                   >
-                    {({ isActive }) => (
-                      <div
-                        className={`relative flex cursor-pointer select-none items-center gap-2 px-2 py-1.5 ${
-                          collapsed ? "justify-center px-0" : ""
-                        }`}
-                      >
-                        {isActive && (
-                          <motion.div
-                            layoutId="adminSidebarIndicator"
-                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                            className="absolute left-0 top-0 h-full w-[2px] rounded"
-                            style={{ background: THEME.accent }}
-                          />
-                        )}
-
-                        <span
-                          className={`relative z-10 flex min-w-[14px] items-center justify-center transition-colors duration-150 ${
-                            isActive ? "text-[#0F1D24]" : "text-[#9B9B9B]"
-                          }`}
-                        >
-                          {item.icon}
-                        </span>
-
-                        {!collapsed && (
-                          <span
-                            className={`relative z-10 flex-1 truncate text-[11px] font-medium tracking-wide transition-colors duration-150 ${
-                              isActive ? "text-[#0F1D24]" : "text-[#0F1D24]/70"
-                            }`}
-                          >
-                            {item.title}
-                          </span>
-                        )}
-
-                        {isActive && !collapsed && (
-                          <span className="relative z-10 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: THEME.accent }} />
-                        )}
-                      </div>
-                    )}
-                  </NavLink>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        ))}
-      </div>
-
-      {/* USER PROFILE + LOGOUT */}
-      <div className="flex-shrink-0 space-y-1 border-t border-[#C6C6C6]/50 px-1.5 py-1.5">
-        <div
-          className={`flex items-center gap-2 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] px-2 py-1 ${
-            collapsed ? "justify-center px-0" : ""
-          }`}
-          title={collapsed ? user?.name || "Account" : undefined}
-        >
-          {initials ? (
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0F1D24] text-[9px] font-bold text-[#FDC94D]">
-              {initials}
-            </span>
+                    {formattedTime}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+            </div>
           ) : (
-            <FaUserCircle className="shrink-0 text-lg text-[#9B9B9B]" />
-          )}
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="truncate text-[10px] font-bold leading-none text-[#0F1D24]">
-                {user?.name || "—"}
-              </p>
-              <p className="mt-0.5 truncate text-[8.5px] font-semibold leading-none text-[#FDC94D]">
-                {user?.role || ""}
-              </p>
+            <div
+              className="flex flex-col items-center justify-center py-1 gap-1"
+              title={`${formattedDate} · ${formattedTime}`}
+            >
+              <FaClock className="text-[14px] text-[#FDC94D] animate-pulse" />
             </div>
           )}
-        </div>
+        </motion.div>
+      </div>
+
+      {/* Navigation Links */}
+      <div className="flex-1 overflow-y-auto px-2 py-3 custom-scrollbar">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="space-y-1"
+        >
+          {menuItems.map((item) => (
+            <motion.div key={item.id} variants={itemVariants}>
+              <NavLink
+                to={item.path}
+                end
+                title={collapsed ? item.title : undefined}
+                className={({ isActive }) =>
+                  `group relative flex items-center h-9 rounded-[2px] transition-all duration-150 ${
+                    collapsed ? "justify-center px-0" : "px-2.5"
+                  } ${
+                    isActive
+                      ? "bg-[#0F1D24] text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-[#0F1D24]"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {/* Left Active Line Marker */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="sidebarActiveIndicator"
+                        className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[#FDC94D]"
+                        transition={{
+                          type: "spring",
+                          stiffness: 350,
+                          damping: 30,
+                        }}
+                      />
+                    )}
+
+                    {/* Icon */}
+                    <span
+                      className={`flex items-center justify-center shrink-0 transition-colors ${
+                        isActive
+                          ? "text-[#FDC94D]"
+                          : "text-slate-500 group-hover:text-[#0F1D24]"
+                      }`}
+                    >
+                      {item.icon}
+                    </span>
+
+                    {/* Label */}
+                    {!collapsed && (
+                      <span
+                        className={`ml-2.5 truncate text-[12px] font-semibold tracking-wide flex-1 ${
+                          isActive
+                            ? "text-white"
+                            : "text-slate-700 group-hover:text-[#0F1D24]"
+                        }`}
+                      >
+                        {item.title}
+                      </span>
+                    )}
+
+                    {/* Active Dot indicator when expanded */}
+                    {isActive && !collapsed && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#FDC94D] shrink-0" />
+                    )}
+                  </>
+                )}
+              </NavLink>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+
+      {/* User Profile & Logout Section */}
+      <div
+        ref={profileRef}
+        className="relative flex-shrink-0 border-t border-[#C6C6C6]/50 px-1.5 py-1.5"
+      >
+        {profileOpen && (
+          <div
+            className={`absolute bottom-full z-30 mb-1.5 w-44 rounded border border-[#C6C6C6]/60 bg-white shadow-[0_-4px_10px_rgba(15,29,36,0.12)] ${
+              collapsed ? "left-full ml-1.5" : "left-1.5"
+            }`}
+          >
+            <div className="rounded-t border-b border-[#C6C6C6]/60 bg-[#FAFAFA] px-2.5 py-1.5">
+              <p className="text-[10px] font-bold leading-none text-[#0F1D24]">
+                {user?.name || "—"}
+              </p>
+              <p className="mt-0.5 text-[8.5px] leading-none text-[#9B9B9B]">
+                {user?.employee_id || ""}
+              </p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-1.5 rounded-b px-2.5 py-1.5 text-[10px] font-semibold text-red-600 transition-colors duration-150 hover:bg-red-50"
+            >
+              <FaSignOutAlt size={9} />
+              Sign out
+            </button>
+          </div>
+        )}
 
         <button
           type="button"
-          onClick={handleLogout}
-          title={collapsed ? "Logout" : undefined}
-          className={`flex h-7 w-full items-center justify-center gap-1.5 rounded border border-red-200 bg-red-50 text-[10px] font-semibold text-red-600 transition-colors hover:bg-red-500 hover:text-white ${
-            collapsed ? "px-0" : ""
+          onClick={() => setProfileOpen((v) => !v)}
+          title={collapsed ? user?.name || "Account" : undefined}
+          className={`flex w-full items-center gap-2 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] px-2 py-1 text-left transition-colors duration-150 hover:bg-[#F0F0F0] ${
+            collapsed ? "justify-center px-0" : ""
           }`}
         >
-          <FaSignOutAlt size={10} />
-          {!collapsed && "Logout"}
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0F1D24] text-[9px] font-bold text-[#FDC94D]">
+            {initials || <FaUserCircle className="text-sm" />}
+          </span>
+          {!collapsed && (
+            <>
+              <div className="min-w-0 flex-1 leading-none">
+                <p className="truncate text-[10px] font-bold leading-none text-[#0F1D24]">
+                  {user?.name || "—"}
+                </p>
+                <p className="mt-0.5 truncate text-[8.5px] font-semibold leading-none text-[#FDC94D]">
+                  {user?.role || ""}
+                </p>
+              </div>
+              <HiOutlineChevronDown
+                className={`h-3 w-3 flex-shrink-0 text-[#9B9B9B] transition-transform ${profileOpen ? "rotate-180" : ""}`}
+              />
+            </>
+          )}
         </button>
       </div>
 
-      {/* FOOTER */}
-      {!collapsed && (
-        <div className="flex-shrink-0 border-t border-[#C6C6C6]/50 bg-white px-2.5 py-1.5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[9px] font-semibold leading-none text-[#0F1D24]">PMS-Dehradun</p>
-              <p className="mt-0.5 font-mono text-[8px] leading-none text-[#9B9B9B]">v1.0.0</p>
-            </div>
-            <span className="flex items-center gap-1 rounded-sm border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[7px] font-semibold tracking-widest text-emerald-600">
-              <span className="h-1 w-1 animate-pulse rounded-full bg-emerald-500" />
-              LIVE
-            </span>
+      {/* System Status Footer */}
+      {/* {!collapsed && (
+        <div className="shrink-0 border-t border-slate-100 bg-white px-3 py-1.5 flex items-center justify-between text-[9px]">
+          <div>
+            <p className="font-bold text-[#0F1D24]">PMS-Dehradun</p>
+            <p className="font-mono text-slate-400 text-[8px]">v1.0.0</p>
           </div>
+          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 font-bold text-[8px] text-emerald-600 border border-emerald-200">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+            LIVE
+          </span>
         </div>
-      )}
+      )} */}
 
-      {/* HIDE / COLLAPSE TOGGLE */}
+      {/* Collapse Toggle Button */}
       <button
         type="button"
         onClick={() => setCollapsed((v) => !v)}
-        className="flex h-7 flex-shrink-0 items-center justify-center gap-1.5 border-t border-[#C6C6C6]/50 bg-[#FAFAFA] text-[9px] font-bold text-[#0F1D24] transition-colors duration-150 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+        className="flex h-8 shrink-0 items-center justify-center gap-1.5 border-t border-slate-200 bg-slate-100/70 text-[10px] font-bold text-slate-700 hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-all duration-150"
       >
         {collapsed ? (
-          <HiOutlineChevronDoubleRight className="h-3.5 w-3.5" />
+          <HiOutlineChevronDoubleRight className="h-4 w-4" />
         ) : (
           <>
-            <HiOutlineChevronDoubleLeft className="h-3.5 w-3.5" />
-            Hide
+            <HiOutlineChevronDoubleLeft className="h-4 w-4" />
+            <span>Collapse</span>
           </>
         )}
       </button>
