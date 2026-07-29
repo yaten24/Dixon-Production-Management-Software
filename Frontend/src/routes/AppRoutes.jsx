@@ -50,6 +50,18 @@ import PublicRoute from "./PublicRoute";
 import Unauthorized from "../pages/CommanPages/Unauthorized";
 import ManagementHallDashboard from "../pages/ManagementPages/HallDashBoard";
 import ManagementHourlyMachineTracking from "../pages/ManagementPages/HourlyMachineTracking";
+import AdminProductionDashboard from "../pages/AdminPages/ProductionDashboard";
+import AdminRejectionDashboard from "../pages/AdminPages/RejectionDashboard";
+import AdminLossTimeDashboard from "../pages/AdminPages/LossTimeDashboard";
+import AdminMouldChangeDashboard from "../pages/AdminPages/MouldChangeDashboard";
+import AdminDailyPlanPageForOperatorAllocation from "../pages/AdminPages/DailyPlanPageForOperatorAllocation";
+import AdminAdvProductionEntry from "../pages/AdminPages/advProductionEnrty";
+import AdminProductionHistoryPage from "../pages/AdminPages/ProductionHistoryPage";
+import AdminDailyProductionPlan from "../pages/AdminPages/CreateDailyPlan";
+import AdminCreateMonthlyPlan from "../pages/AdminPages/CreateMonthlyPlan";
+import AdminMonthlyPlanPage from "../pages/AdminPages/MonthlyPlanPage";
+import AdminDailyPlanPage from "../pages/AdminPages/DailyPlanPage";
+import AdminReportsPage from "../pages/AdminPages/ReportsPage";
 
 const AppRoutes = () => {
   return (
@@ -171,6 +183,42 @@ const AppRoutes = () => {
       />
 
       <Route
+        path="/admin/production-dashboard"
+        element={
+          <AdminRoute>
+            <AdminProductionDashboard />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/rejection-dashboard"
+        element={
+          <AdminRoute>
+            <AdminRejectionDashboard />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/loss-time-dashboard"
+        element={
+          <AdminRoute>
+            <AdminLossTimeDashboard />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/mold-change-dashboard"
+        element={
+          <AdminRoute>
+            <AdminMouldChangeDashboard />
+          </AdminRoute>
+        }
+      />
+
+      <Route
         path="/admin/logs"
         element={
           <AdminRoute>
@@ -220,6 +268,60 @@ const AppRoutes = () => {
         element={
           <AdminRoute>
             <HallDashboard />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/machine-allocation"
+        element={
+          <AdminRoute>
+            <AdminDailyPlanPageForOperatorAllocation />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/production-entry"
+        element={
+          <AdminRoute>
+            <AdminAdvProductionEntry />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/production-history"
+        element={
+          <AdminRoute>
+            <AdminProductionHistoryPage />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/daily-plan"
+        element={
+          <AdminRoute>
+            <AdminDailyPlanPage />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/monthly-plan"
+        element={
+          <AdminRoute>
+            <AdminMonthlyPlanPage />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/reports"
+        element={
+          <AdminRoute>
+            <AdminReportsPage />
           </AdminRoute>
         }
       />

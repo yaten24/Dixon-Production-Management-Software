@@ -1,7 +1,7 @@
 import React from 'react'
 import Sidebar from './Sidebar'
 
-const MouldChangeDashboard = () => {
+const AdminMouldChangeDashboard = () => {
   return (
     <div>
       <Sidebar />
@@ -10,4 +10,4 @@ const MouldChangeDashboard = () => {
   )
 }
 
-export default MouldChangeDashboard
+export default AdminMouldChangeDashboard

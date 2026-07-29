@@ -26,8 +26,10 @@ import {
 
 
 import { LuUserCog } from "react-icons/lu";
-import { RiFileList3Line } from "react-icons/ri";
+import { RiFileList3Line, RiFileHistoryLine } from "react-icons/ri";
 import { FaScrewdriverWrench } from "react-icons/fa6";
+import { MdOutlineTimerOff, MdOutlineEventNote } from "react-icons/md";
+import { FaFileAlt, FaCalendarDay, FaCalendarWeek, FaTasks, FaClipboardList } from "react-icons/fa";
 
 import { useAuth } from "../../context/AuthContext";
 
@@ -41,6 +43,30 @@ const menuItems = [
     title: "Dashboard",
     path: "/admin/dashboard",
     icon: <FaTachometerAlt size={13} />,
+  },
+  {
+    id: 2,
+    title: "Production Dashboard",
+    path: "/admin/production-dashboard",
+    icon: <FaChartBar size={13} />,
+  },
+  {
+    id: 3,
+    title: "Rejection Dashboard",
+    path: "/admin/rejection-dashboard",
+    icon: <MdOutlineReportProblem size={13} />,
+  },
+  {
+    id: 4,
+    title: "Loss Time Dashboard",
+    path: "/admin/loss-time-dashboard",
+    icon: <MdOutlineTimerOff size={13} />,
+  },
+  {
+    id: 5,
+    title: "Mold Change Dashboard",
+    path: "/admin/mold-change-dashboard",
+    icon: <FaExchangeAlt size={13} />,
   },
   { id: 6, title: "Users", path: "/admin/users", icon: <FaUsers size={13} /> },
   {
@@ -62,7 +88,43 @@ const menuItems = [
     icon: <LuUserCog size={13} />,
   },
   {
+    id: 10,
+    title: "Machine Allocation",
+    path: "/admin/machine-allocation",
+    icon: <FaTasks size={13} />,
+  },
+  {
     id: 11,
+    title: "Production Entry",
+    path: "/admin/production-entry",
+    icon: <MdOutlineProductionQuantityLimits size={13} />,
+  },
+  {
+    id: 12,
+    title: "Production History",
+    path: "/admin/production-history",
+    icon: <RiFileHistoryLine size={13} />,
+  },
+  {
+    id: 13,
+    title: "Daily Plan",
+    path: "/admin/daily-plan",
+    icon: <FaCalendarDay size={13} />,
+  },
+  {
+    id: 14,
+    title: "Monthly Plan",
+    path: "/admin/monthly-plan",
+    icon: <FaCalendarWeek size={13} />,
+  },
+  {
+    id: 15,
+    title: "Reports",
+    path: "/admin/reports",
+    icon: <FaFileAlt size={13} />,
+  },
+  {
+    id: 16,
     title: "Logs",
     path: "/admin/logs",
     icon: <RiFileList3Line size={13} />,
@@ -349,20 +411,6 @@ const Sidebar = () => {
           )}
         </button>
       </div>
-
-      {/* System Status Footer */}
-      {/* {!collapsed && (
-        <div className="shrink-0 border-t border-slate-100 bg-white px-3 py-1.5 flex items-center justify-between text-[9px]">
-          <div>
-            <p className="font-bold text-[#0F1D24]">PMS-Dehradun</p>
-            <p className="font-mono text-slate-400 text-[8px]">v1.0.0</p>
-          </div>
-          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 font-bold text-[8px] text-emerald-600 border border-emerald-200">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-            LIVE
-          </span>
-        </div>
-      )} */}
 
       {/* Collapse Toggle Button */}
       <button
