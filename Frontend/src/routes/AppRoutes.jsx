@@ -11,7 +11,6 @@ import Login from "../pages/CommanPages/Login";
 
 // Management
 import Dashboard from "../pages/ManagementPages/Dashboard";
-import ProductionDashboard from "../pages/ManagementPages/ProductionDashboard";
 import MouldChangeDashboard from "../pages/ManagementPages/MouldChangeDashboard";
 import AllRejectionReasons from "../pages/ManagementPages/RejectionDashboard";
 import LossAnalysisDashboard from "../pages/ManagementPages/LossTimeDashboard";
@@ -27,7 +26,7 @@ import ActivityLogs from "../pages/AdminPages/Activitylogs";
 
 // Production
 import UserHome from "../pages/ProductionPages/UserHome";
-import UserDashboard from "../pages/ProductionPages/UserDashboard";
+import UserDashboard from "../pages/ProductionPages/ProductionDashboard";
 import AdvProductionEntry from "../pages/ProductionPages/advProductionEnrty";
 import ProductionHistoryPage from "../pages/ProductionPages/ProductionHistoryPage";
 import ReportsPage from "../pages/ProductionPages/ReportsPage";
@@ -65,6 +64,8 @@ import AdminReportsPage from "../pages/AdminPages/ReportsPage";
 import AdminViewDailyPlanPage from "../pages/AdminPages/DailyPlanView";
 import AdminMonthlyPlanView from "../pages/AdminPages/MonthlyPlanView";
 import ManagementMouldChangeDashboard from "../pages/ManagementPages/MouldChangeDashboard";
+import ManagementProductionDashboard from "../pages/ManagementPages/ProductionDashboard";
+import ProductionDashboard from "../pages/ProductionPages/ProductionDashboard";
 
 const AppRoutes = () => {
   return (
@@ -97,7 +98,7 @@ const AppRoutes = () => {
         path="/management/dashboard"
         element={
           <ManagementRoute>
-            <ProductionDashboard />
+            <ManagementProductionDashboard />
           </ManagementRoute>
         }
       />
@@ -379,7 +380,7 @@ const AppRoutes = () => {
         path="/production/dashboard"
         element={
           <ProductionRoute>
-            <UserDashboard />
+            <ProductionDashboard />
           </ProductionRoute>
         }
       />

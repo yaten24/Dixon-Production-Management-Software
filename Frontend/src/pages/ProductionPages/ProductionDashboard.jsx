@@ -806,7 +806,7 @@ function AnalyticsSidebar({ halls, hallSummary, downtimeReasons }) {
 // ============================================================
 // PAGE
 // ============================================================
-const ManagementProductionDashboard = () => {
+const ProductionDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -821,7 +821,7 @@ const ManagementProductionDashboard = () => {
   const handleViewHallData = useCallback(
     (hall) => {
       if (hall === "All") {
-        navigate("/management/dashboard");
+        navigate("/production/dashboard");
         return;
       }
       const hallId = HALL_CODE_TO_ID[hall];
@@ -831,7 +831,7 @@ const ManagementProductionDashboard = () => {
         );
         return;
       }
-      navigate(`/management/halls/${hallId}`);
+      navigate(`/production/halls/${hallId}`);
     },
     [navigate],
   );
@@ -922,4 +922,4 @@ const ManagementProductionDashboard = () => {
   );
 };
 
-export default ManagementProductionDashboard;
+export default ProductionDashboard;
