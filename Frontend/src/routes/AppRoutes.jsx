@@ -13,7 +13,7 @@ import Login from "../pages/CommanPages/Login";
 import Dashboard from "../pages/ManagementPages/Dashboard";
 import ProductionDashboard from "../pages/ManagementPages/ProductionDashboard";
 import MouldChangeDashboard from "../pages/ManagementPages/MouldChangeDashboard";
-import AllRejectionReasons from "../pages/ManagementPages/RejectionReasons";
+import AllRejectionReasons from "../pages/ManagementPages/RejectionDashboard";
 import LossAnalysisDashboard from "../pages/ManagementPages/LossTimeDashboard";
 import ManagerReportsPage from "../pages/ManagementPages/ReportsPage";
 
