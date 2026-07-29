@@ -593,7 +593,7 @@ const ProductionDashboard = () => {
   const handleViewHallData = useCallback(
     (hall) => {
       if (hall === "All") {
-        navigate("/production/dashboard");
+        navigate("/management/dashboard");
         return;
       }
       const hallId = HALL_CODE_TO_ID[hall];
@@ -601,7 +601,7 @@ const ProductionDashboard = () => {
         console.warn(`No route id found for hall "${hall}" — check HALL_CODE_TO_ID / halls list match`);
         return;
       }
-      navigate(`/production/halls/${hallId}`);
+      navigate(`/management/halls/${hallId}`);
     },
     [navigate]
   );

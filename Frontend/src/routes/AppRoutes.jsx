@@ -48,6 +48,8 @@ import DailyPlanOperatorAssignment from "../pages/PlanningPage/DailyPlanOperator
 import DailyPlanPageForOperatorAllocation from "../pages/PlanningPage/DailyPlanPageForOperatorAllocation";
 import PublicRoute from "./PublicRoute";
 import Unauthorized from "../pages/CommanPages/Unauthorized";
+import ManagementHallDashboard from "../pages/ManagementPages/HallDashBoard";
+import ManagementHourlyMachineTracking from "../pages/ManagementPages/HourlyMachineTracking";
 
 const AppRoutes = () => {
   return (
@@ -116,7 +118,7 @@ const AppRoutes = () => {
         path="/management/halls/:hallId"
         element={
           <ManagementRoute>
-            <HallDashboard />
+            <ManagementHallDashboard />
           </ManagementRoute>
         }
       />
@@ -125,7 +127,7 @@ const AppRoutes = () => {
         path="/management/halls/:hallId/heatmap"
         element={
           <ManagementRoute>
-            <HourlyMachineTracking />
+            <ManagementHourlyMachineTracking />
           </ManagementRoute>
         }
       />

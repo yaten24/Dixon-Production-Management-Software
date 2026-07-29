@@ -20,7 +20,7 @@ const getTodayDate = () => {
   return `${year}-${month}-${day}`;
 };
 
-// ⭐ Safely pull an array out of any common API response shape:
+// Safely pull an array out of any common API response shape:
 // - [...]                         (plain array)
 // - { data: [...] }               (axios-style wrapper)
 // - { data: { data: [...] } }     (double-wrapped)
@@ -40,6 +40,11 @@ const asArray = (res) => {
   return [];
 };
 
+// Sums `rejectQty` grouped by keyFn — for use ONLY with `rejectionData` rows
+// (dashboard rows), which have a `rejectQty` field. Do NOT use this on
+// `trendData` rows — those come from the hourly-trend endpoint and use a
+// different field name (`qty`), which was the actual bug: reusing this
+// helper on trend rows silently summed `undefined` → always 0.
 const sumBy = (rows, keyFn) => {
   const map = {};
   rows.forEach((row) => {
@@ -221,8 +226,16 @@ export const useRejectionDashboard = () => {
     return Object.entries(map).map(([reason, qty]) => ({ reason, qty }));
   }, [rejectionData]);
 
+  // FIX: trend rows come back as { hour, qty } from /hourly-trend — NOT
+  // { hour, rejectQty } like the dashboard rows. Summing with the shared
+  // `sumBy` helper (which reads `rejectQty`) silently produced 0 for every
+  // hour. Aggregate directly off `row.qty` instead.
   const trendChartData = useMemo(() => {
-    const map = sumBy(trendData, (row) => row.hour);
+    const map = {};
+    trendData.forEach((row) => {
+      const key = row.hour;
+      map[key] = (map[key] || 0) + Number(row.qty || 0);
+    });
     return Object.entries(map)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([hour, qty]) => ({ hour, qty }));
