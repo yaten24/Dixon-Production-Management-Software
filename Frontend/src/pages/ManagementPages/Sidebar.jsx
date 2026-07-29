@@ -147,19 +147,20 @@ const Sidebar = () => {
 
       {/* Logo Header */}
       <div className="flex flex-shrink-0 items-center justify-center gap-2 border-b border-[#C6C6C6]/50 px-2 py-1.5">
-        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center bg-[#0F1D24]">
-          <span className="font-mono text-[9px] font-extrabold text-[#FDC94D]">
-            DT
-          </span>
-        </div>
-        {!collapsed && (
-          <div className="min-w-0 flex-1 leading-none">
-            <p className="truncate text-[11px] font-bold tracking-tight text-[#0F1D24]">
-              PMS-Dehradun
+        {!collapsed ? (
+          <div className="min-w-0 flex-1 bg-[#0F1D24] p-2 rounded-[2px] leading-none">
+            <p className="truncate text-[16px] font-bold tracking-tight text-[#FDC94D]">
+              PMS Dixon Dehradun
             </p>
-            <p className="truncate text-[8px] font-medium text-[#9B9B9B]">
+            {/* <p className="truncate text-[8px] font-medium text-slate-300">
               Production Management System
-            </p>
+            </p> */}
+          </div>
+        ) : (
+          <div className="flex h-7 w-7 flex-shrink-0 items-center rounded-[2px] justify-center bg-[#0F1D24]">
+            <span className="font-mono text-[10px] font-extrabold text-[#FDC94D]">
+              PMS
+            </span>
           </div>
         )}
       </div>
