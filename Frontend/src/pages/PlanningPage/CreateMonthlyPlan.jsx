@@ -12,7 +12,7 @@ import {
 } from "react-icons/hi2";
 import { searchParts } from "../../api/partApi";
 import useCreateMonthlyPlan from "../../hooks/useCreateMonthlyPlan";
-import Sidebar from "../TeamMemberPages/Sidebar";
+import Sidebar from "../ProductionPages/Sidebar";
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 

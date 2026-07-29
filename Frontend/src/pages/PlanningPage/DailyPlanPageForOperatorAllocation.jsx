@@ -12,7 +12,7 @@ import {
   HiOutlineXMark,
 } from "react-icons/hi2";
 import { listDailyPlans, deleteDailyPlan } from "../../api/dailyPlanApi";
-import Sidebar from "../TeamMemberPages/Sidebar";
+import Sidebar from "../ProductionPages/Sidebar";
 
 // Backend sends a full ISO datetime (e.g. "2026-07-19T18:30:00.000Z"), so we
 // parse it directly instead of re-appending a time part (which produced an

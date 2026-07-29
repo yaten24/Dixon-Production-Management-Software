@@ -12,7 +12,7 @@ import {
   HiOutlineCheckCircle,
 } from "react-icons/hi2";
 import { listDailyPlans, deleteDailyPlan } from "../../api/dailyPlanApi";
-import Sidebar from "../TeamMemberPages/Sidebar";
+import Sidebar from "../ProductionPages/Sidebar";
 
 // ============================================================
 // THEME TOKENS — kept consistent with Sidebar.jsx / dashboard pages

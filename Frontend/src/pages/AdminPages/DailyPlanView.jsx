@@ -14,7 +14,7 @@ import {
 } from "react-icons/hi2";
 import { getDailyPlan, getDailyPlanDetails } from "../../api/dailyPlanApi";
 import PageTitleStrip from "./PageTitleStrip";
-import Sidebar from "../TeamMemberPages/Sidebar";
+import Sidebar from "../ProductionPages/Sidebar";
 
 const STATUS_STYLES = {
   Draft: "bg-[#F5F5F5] text-[#9B9B9B]",

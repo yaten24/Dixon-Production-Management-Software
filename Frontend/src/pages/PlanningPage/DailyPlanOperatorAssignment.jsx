@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Search, X, Loader2, Check, AlertTriangle, Lock, Users } from "lucide-react";
 import useDailyPlanOperatorAssignment from "../../hooks/useDailyPlanOperatorAssignment";
 import { searchOperators } from "../../api/operatorApi";
-import Sidebar from "../TeamMemberPages/Sidebar";
+import Sidebar from "../ProductionPages/Sidebar";
 
 const STATUS_COLORS = {
   Draft: "bg-[#9B9B9B]/15 text-[#0F1D24]",

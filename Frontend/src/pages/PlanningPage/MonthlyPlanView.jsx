@@ -18,7 +18,7 @@ import { searchParts } from "../../api/partApi";
 import useMonthlyPlanView from "../../hooks/useMonthlyPlanView";
 // NOTE: adjust this import to wherever PageTitleStrip actually lives relative to this file.
 import PageTitleStrip from "./PageTitleStrip";
-import Sidebar from "../TeamMemberPages/Sidebar";
+import Sidebar from "../ProductionPages/Sidebar";
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 

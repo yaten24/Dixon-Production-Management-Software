@@ -20,7 +20,7 @@ import useDailyProductionPlan from "../../hooks/useDailyProductionPlan";
 import { listMonthlyPlans, generatePlanNumber as generateMonthlyNumber } from "../../api/monthlyPlanApi";
 import { generateDailyPlanNumber } from "../../api/dailyPlanApi";
 import api from "../../api/partApi";
-import Sidebar from "../TeamMemberPages/Sidebar";
+import Sidebar from "../ProductionPages/Sidebar";
 
 const HALLS = ["Hall 1", "Hall 2", "Hall 3", "Hall 4", "C-8"];
 const SHIFTS = ["A", "B"];

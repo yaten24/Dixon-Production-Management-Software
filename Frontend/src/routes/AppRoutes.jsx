@@ -26,15 +26,15 @@ import PartsPage from "../pages/AdminPages/PartsPage";
 import ActivityLogs from "../pages/AdminPages/Activitylogs";
 
 // Production
-import UserHome from "../pages/TeamMemberPages/UserHome";
-import UserDashboard from "../pages/TeamMemberPages/UserDashboard";
-import AdvProductionEntry from "../pages/TeamMemberPages/advProductionEnrty";
-import ProductionHistoryPage from "../pages/TeamMemberPages/ProductionHistoryPage";
-import ReportsPage from "../pages/TeamMemberPages/ReportsPage";
-import UpdateMachineOperator from "../pages/TeamMemberPages/UpdateMachineOperator";
+import UserHome from "../pages/ProductionPages/UserHome";
+import UserDashboard from "../pages/ProductionPages/UserDashboard";
+import AdvProductionEntry from "../pages/ProductionPages/advProductionEnrty";
+import ProductionHistoryPage from "../pages/ProductionPages/ProductionHistoryPage";
+import ReportsPage from "../pages/ProductionPages/ReportsPage";
+import UpdateMachineOperator from "../pages/ProductionPages/UpdateMachineOperator";
 
 // Common
-import HallDashboard from "../pages/TeamMemberPages/HallDashboard";
+import HallDashboard from "../pages/ProductionPages/HallDashboard";
 import HourlyMachineTracking from "../pages/CommanPages/HourlyMachineTracking";
 
 // Planning
