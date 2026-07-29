@@ -5,18 +5,11 @@ import {
   FaTachometerAlt,
   FaChartBar,
   FaClock,
-  FaExchangeAlt,
   FaCalendarAlt,
   FaSignOutAlt,
   FaUserCircle,
   FaIndustry,
-  FaUsers,
 } from "react-icons/fa";
-
-import {
-  MdOutlineProductionQuantityLimits,
-  MdOutlineReportProblem,
-} from "react-icons/md";
 
 import {
   HiOutlineChevronDoubleLeft,
@@ -24,110 +17,63 @@ import {
   HiOutlineChevronDown,
 } from "react-icons/hi2";
 
-
-import { LuUserCog } from "react-icons/lu";
-import { RiFileList3Line, RiFileHistoryLine } from "react-icons/ri";
-import { FaScrewdriverWrench } from "react-icons/fa6";
-import { MdOutlineTimerOff, MdOutlineEventNote } from "react-icons/md";
-import { FaFileAlt, FaCalendarDay, FaCalendarWeek, FaTasks, FaClipboardList } from "react-icons/fa";
+import { RiFileHistoryLine } from "react-icons/ri";
+import { FaFileAlt, FaCalendarDay, FaCalendarWeek, FaTasks } from "react-icons/fa";
 
 import { useAuth } from "../../context/AuthContext";
 
 const EXPANDED_WIDTH = 250;
 const COLLAPSED_WIDTH = 64;
 
-// Combined into a flat menu without section headers
+// Planning Manager menu — scoped to planning-related routes only
 const menuItems = [
   {
     id: 1,
     title: "Dashboard",
-    path: "/admin/dashboard",
+    path: "/planning/dashboard",
     icon: <FaTachometerAlt size={13} />,
   },
   {
     id: 2,
     title: "Production Dashboard",
-    path: "/admin/production-dashboard",
+    path: "/planning/production-dashboard",
     icon: <FaChartBar size={13} />,
   },
   {
     id: 3,
-    title: "Rejection Dashboard",
-    path: "/admin/rejection-dashboard",
-    icon: <MdOutlineReportProblem size={13} />,
-  },
-  {
-    id: 4,
-    title: "Loss Time Dashboard",
-    path: "/admin/loss-time-dashboard",
-    icon: <MdOutlineTimerOff size={13} />,
-  },
-  {
-    id: 5,
-    title: "Mold Change Dashboard",
-    path: "/admin/mold-change-dashboard",
-    icon: <FaExchangeAlt size={13} />,
-  },
-  { id: 6, title: "Users", path: "/admin/users", icon: <FaUsers size={13} /> },
-  {
-    id: 7,
     title: "Machines",
-    path: "/admin/machines",
+    path: "/planning/machines",
     icon: <FaIndustry size={13} />,
   },
   {
-    id: 8,
-    title: "Parts",
-    path: "/admin/parts",
-    icon: <FaScrewdriverWrench size={13} />,
-  },
-  {
-    id: 9,
-    title: "Operators",
-    path: "/admin/operators",
-    icon: <LuUserCog size={13} />,
-  },
-  {
-    id: 10,
+    id: 4,
     title: "Machine Allocation",
-    path: "/admin/machine-allocation",
+    path: "/planning/machine-allocation",
     icon: <FaTasks size={13} />,
   },
   {
-    id: 11,
-    title: "Production Entry",
-    path: "/admin/production-entry",
-    icon: <MdOutlineProductionQuantityLimits size={13} />,
-  },
-  {
-    id: 12,
-    title: "Production History",
-    path: "/admin/production-history",
-    icon: <RiFileHistoryLine size={13} />,
-  },
-  {
-    id: 13,
+    id: 5,
     title: "Daily Plan",
-    path: "/admin/daily-plan",
+    path: "/planning/daily-plan",
     icon: <FaCalendarDay size={13} />,
   },
   {
-    id: 14,
+    id: 6,
     title: "Monthly Plan",
-    path: "/admin/monthly-plan",
+    path: "/planning/monthly-plan",
     icon: <FaCalendarWeek size={13} />,
   },
   {
-    id: 15,
-    title: "Reports",
-    path: "/admin/reports",
-    icon: <FaFileAlt size={13} />,
+    id: 7,
+    title: "Production History",
+    path: "/planning/production-history",
+    icon: <RiFileHistoryLine size={13} />,
   },
   {
-    id: 16,
-    title: "Logs",
-    path: "/admin/logs",
-    icon: <RiFileList3Line size={13} />,
+    id: 8,
+    title: "Reports",
+    path: "/planning/reports",
+    icon: <FaFileAlt size={13} />,
   },
 ];
 
@@ -203,21 +149,21 @@ const Sidebar = () => {
     <motion.aside
       animate={{ width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
       transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-      className="sticky top-0 hidden flex-shrink-0 flex-col h-screen overflow-hidden border-r-2 border-slate-300 bg-slate-100 shadow-sm lg:flex select-none z-30"
+      className="sticky top-0 hidden flex-shrink-0 flex-col h-screen overflow-hidden border-r border-slate-200 bg-white shadow-sm lg:flex select-none z-30"
     >
       {/* Accent Header Line */}
       <div className="h-[3px] w-full bg-gradient-to-r from-[#0F1D24] via-[#9B9B9B] to-[#FDC94D] shrink-0" />
 
       {/* Logo Header */}
-      <div className="flex flex-shrink-0 items-center justify-center gap-2 border-b-2 border-slate-300 bg-slate-100 px-2 py-1.5">
+      <div className="flex flex-shrink-0 items-center justify-center gap-2 border-b border-[#C6C6C6]/50 px-2 py-1.5">
         {!collapsed ? (
           <div className="min-w-0 flex-1 bg-[#0F1D24] p-2 rounded-[2px] leading-none">
             <p className="truncate text-[16px] font-bold tracking-tight text-[#FDC94D]">
               PMS Dixon Dehradun
             </p>
-            {/* <p className="truncate text-[8px] font-medium text-slate-300">
-              Production Management System
-            </p> */}
+            <p className="truncate text-[8px] font-semibold text-slate-300 mt-0.5">
+              Planning Manager
+            </p>
           </div>
         ) : (
           <div className="flex h-7 w-7 flex-shrink-0 items-center rounded-[2px] justify-center bg-[#0F1D24]">
@@ -229,13 +175,13 @@ const Sidebar = () => {
       </div>
 
       {/* Highlighted Live Date & Time Section */}
-      <div className="shrink-0 p-2 border-b-2 border-slate-300 bg-slate-100">
+      <div className="shrink-0 p-2 border-b border-slate-100">
         <motion.div
           layout
-          className="relative overflow-hidden rounded-[2px] bg-[#0F1D24] p-2 text-white shadow-sm border-2 border-slate-800"
+          className="relative overflow-hidden rounded-[2px] bg-[#0F1D24] p-2 text-white shadow-sm border border-slate-800"
         >
           {/* Subtle Ambient Glow */}
-          <div className="absolute -right-4 -top-4 h-12 w-12 rounded-[2px] bg-[#FDC94D]/10 blur-xl pointer-events-none" />
+          <div className="absolute -right-4 -top-4 h-12 w-12 rounded-full bg-[#FDC94D]/10 blur-xl pointer-events-none" />
 
           {!collapsed ? (
             <div className="space-y-1">
@@ -246,8 +192,8 @@ const Sidebar = () => {
                   <span>{formattedDate}</span>
                 </span>
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-[2px]  bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-[2px]  h-2 w-2 bg-emerald-500" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
               </div>
 
@@ -280,12 +226,12 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation Links */}
-      <div className="flex-1 overflow-y-auto px-2 py-3 custom-scrollbar bg-slate-100">
+      <div className="flex-1 overflow-y-auto px-2 py-3 custom-scrollbar">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="space-y-1.5"
+          className="space-y-1"
         >
           {menuItems.map((item) => (
             <motion.div key={item.id} variants={itemVariants}>
@@ -294,12 +240,12 @@ const Sidebar = () => {
                 end
                 title={collapsed ? item.title : undefined}
                 className={({ isActive }) =>
-                  `group relative flex items-center h-9 rounded-md border-2 transition-all duration-150 ${
+                  `group relative flex items-center h-9 rounded-[2px] transition-all duration-150 ${
                     collapsed ? "justify-center px-0" : "px-2.5"
                   } ${
                     isActive
-                      ? "border-[#0F1D24] bg-[#0F1D24] text-white shadow-sm"
-                      : "border-slate-300 bg-white text-slate-600 hover:border-[#0F1D24] hover:bg-slate-50 hover:text-[#0F1D24]"
+                      ? "bg-[#0F1D24] text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-[#0F1D24]"
                   }`
                 }
               >
@@ -308,7 +254,7 @@ const Sidebar = () => {
                     {/* Left Active Line Marker */}
                     {isActive && (
                       <motion.div
-                        layoutId="sidebarActiveIndicator"
+                        layoutId="planningSidebarActiveIndicator"
                         className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[#FDC94D]"
                         transition={{
                           type: "spring",
@@ -344,7 +290,7 @@ const Sidebar = () => {
 
                     {/* Active Dot indicator when expanded */}
                     {isActive && !collapsed && (
-                      <span className="h-1.5 w-1.5 rounded-[2px]  bg-[#FDC94D] shrink-0" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#FDC94D] shrink-0" />
                     )}
                   </>
                 )}
@@ -357,15 +303,15 @@ const Sidebar = () => {
       {/* User Profile & Logout Section */}
       <div
         ref={profileRef}
-        className="relative flex-shrink-0 border-t-2 border-slate-300 bg-slate-100 px-1.5 py-1.5"
+        className="relative flex-shrink-0 border-t border-[#C6C6C6]/50 px-1.5 py-1.5"
       >
         {profileOpen && (
           <div
-            className={`absolute bottom-full z-30 mb-1.5 w-44 rounded-md border-2 border-slate-300 bg-white shadow-[0_-4px_10px_rgba(15,29,36,0.12)] ${
+            className={`absolute bottom-full z-30 mb-1.5 w-44 rounded border border-[#C6C6C6]/60 bg-white shadow-[0_-4px_10px_rgba(15,29,36,0.12)] ${
               collapsed ? "left-full ml-1.5" : "left-1.5"
             }`}
           >
-            <div className="rounded-t-md border-b-2 border-slate-300 bg-[#FAFAFA] px-2.5 py-1.5">
+            <div className="rounded-t border-b border-[#C6C6C6]/60 bg-[#FAFAFA] px-2.5 py-1.5">
               <p className="text-[10px] font-bold leading-none text-[#0F1D24]">
                 {user?.name || "—"}
               </p>
@@ -375,7 +321,7 @@ const Sidebar = () => {
             </div>
             <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-1.5 rounded-b-md px-2.5 py-1.5 text-[10px] font-semibold text-red-600 transition-colors duration-150 hover:bg-red-50"
+              className="flex w-full items-center gap-1.5 rounded-b px-2.5 py-1.5 text-[10px] font-semibold text-red-600 transition-colors duration-150 hover:bg-red-50"
             >
               <FaSignOutAlt size={9} />
               Sign out
@@ -387,11 +333,11 @@ const Sidebar = () => {
           type="button"
           onClick={() => setProfileOpen((v) => !v)}
           title={collapsed ? user?.name || "Account" : undefined}
-          className={`flex w-full items-center gap-2 rounded-md border-2 border-slate-300 bg-white px-2 py-1 text-left transition-colors duration-150 hover:border-[#0F1D24] hover:bg-slate-50 ${
+          className={`flex w-full items-center gap-2 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] px-2 py-1 text-left transition-colors duration-150 hover:bg-[#F0F0F0] ${
             collapsed ? "justify-center px-0" : ""
           }`}
         >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-[#0F1D24] text-[9px] font-bold text-[#FDC94D]">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0F1D24] text-[9px] font-bold text-[#FDC94D]">
             {initials || <FaUserCircle className="text-sm" />}
           </span>
           {!collapsed && (
@@ -401,7 +347,7 @@ const Sidebar = () => {
                   {user?.name || "—"}
                 </p>
                 <p className="mt-0.5 truncate text-[8.5px] font-semibold leading-none text-[#FDC94D]">
-                  {user?.role || ""}
+                  {user?.role || "Planning Manager"}
                 </p>
               </div>
               <HiOutlineChevronDown
@@ -416,7 +362,7 @@ const Sidebar = () => {
       <button
         type="button"
         onClick={() => setCollapsed((v) => !v)}
-        className="flex h-8 shrink-0 items-center justify-center gap-1.5 border-t-2 border-slate-300 bg-slate-200 text-[10px] font-bold text-slate-700 hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-all duration-150"
+        className="flex h-8 shrink-0 items-center justify-center gap-1.5 border-t border-slate-200 bg-slate-100/70 text-[10px] font-bold text-slate-700 hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-all duration-150"
       >
         {collapsed ? (
           <HiOutlineChevronDoubleRight className="h-4 w-4" />
