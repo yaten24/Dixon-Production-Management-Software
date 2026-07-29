@@ -16,8 +16,18 @@ import Sidebar from "../ProductionPages/Sidebar";
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
+// Safe UUID generator — crypto.randomUUID() only exists in secure
+// contexts (HTTPS or localhost). This falls back to a random string
+// so the app doesn't crash when served over plain HTTP / a LAN IP.
+const generateId = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+};
+
 const emptyRow = () => ({
-  key: crypto.randomUUID(), partQuery: "", part: null, results: [],
+  key: generateId(), partQuery: "", part: null, results: [],
   targetQty: "", plannedCycleTime: "", searching: false,
 });
 

@@ -119,7 +119,7 @@ function SummaryCard({
           </p>
         </div>
         <div
-          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md"
+          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[2px]"
           style={{
             background: highlighted ? "#DBEAFE" : `${badgeColor}1A`,
             color: highlighted ? ACCENT_BLUE : badgeColor,
