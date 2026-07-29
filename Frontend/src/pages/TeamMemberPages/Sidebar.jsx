@@ -1,218 +1,302 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { FaCalendarAlt, FaClock, FaSignOutAlt, FaUserCircle } from "react-icons/fa";
-import { HiOutlineChevronDown, HiOutlineChevronDoubleLeft, HiOutlineChevronDoubleRight, HiOutlineSquares2X2 } from "react-icons/hi2";
-import { HiOfficeBuilding, HiCalendar, HiUserGroup, HiDocumentAdd, HiClipboardList, HiDocumentReport } from "react-icons/hi";
-import { useAuth } from "../../context/AuthContext";
+import { NavLink, useNavigate } from "react-router-dom";
 
-// ============================================================
-// THEME TOKENS
-// ============================================================
+import {
+  MdOutlineProductionQuantityLimits,
+  MdOutlineReportProblem,
+} from "react-icons/md";
+
+import { useAuth } from "../../context/AuthContext";
+import { HiCalendar, HiClipboardList, HiDocumentAdd, HiDocumentReport, HiOfficeBuilding, HiOutlineChevronDoubleLeft, HiOutlineChevronDoubleRight, HiOutlineChevronDown, HiOutlineClipboardList, HiOutlineDocumentAdd, HiOutlineDocumentReport, HiOutlineOfficeBuilding, HiUserGroup } from "react-icons/hi";
+import { FaCalendarAlt, FaClock, FaSignOutAlt } from "react-icons/fa";
+
+const EXPANDED_WIDTH = 200;
+const COLLAPSED_WIDTH = 64;
+
+// Combined into a flat menu without section headers
+export const QUICK_ACCESS_ITEMS = [
+  {
+    id: "hall-dashboard",
+    title: "Hall Dashboard",
+    icon: HiOutlineOfficeBuilding,
+    color: "#2563EB",
+    path: "/production/dashboard",
+  },
+  {
+    id: "daily-plan",
+    title: "Daily Plan",
+    icon: HiCalendar,
+    color: "#2563EB",
+    path: "/production/plans/daily",
+  },
+  {
+    id: "monthly-plan",
+    title: "Monthly Plan",
+    icon: HiCalendar,
+    color: "#2563EB",
+    path: "/production/plans/monthly",
+  },
+  {
+    id: "machine-allocation",
+    title: "Machine Allocation",
+    icon: HiUserGroup,
+    color: "#9333EA",
+    path: "/production/plans/operator/allocation",
+  },
+  {
+    id: "production-entry",
+    title: "Production Entry",
+    icon: HiOutlineDocumentAdd,
+    color: "#16A34A",
+    path: "/production/entry",
+  },
+  {
+    id: "production-history",
+    title: "Production History",
+    icon: HiOutlineClipboardList,
+    color: "#EA580C",
+    path: "/production/history",
+  },
+  {
+    id: "reports",
+    title: "Reports",
+    icon: HiOutlineDocumentReport,
+    color: "#16A34A",
+    path: "/production/reports",
+  },
+];
 export const NAVY = "#0F1D24";
 export const GOLD = "#FDC94D";
 export const BORDER = "#C6C6C6";
-
-const EXPANDED_WIDTH = 172;
-const COLLAPSED_WIDTH = 52;
-
-// ============================================================
-// STATIC NAV DATA — export QUICK_ACCESS_ITEMS too, so pages that render
-// a "Quick Access" grid (like the dashboard) can reuse the same list
-// and stay in sync with the sidebar automatically.
-// ============================================================
-export const QUICK_ACCESS_ITEMS = [
-  { id: "hall-dashboard", title: "Hall Dashboard", icon: HiOfficeBuilding, color: "#2563EB", path: "/production/dashboard" },
-  { id: "daily-plan", title: "Daily Plan", icon: HiCalendar, color: "#2563EB", path: "/production/plans/daily" },
-  { id: "monthly-plan", title: "Monthly Plan", icon: HiCalendar, color: "#2563EB", path: "/production/plans/monthly" },
-  { id: "machine-allocation", title: "Machine Allocation", icon: HiUserGroup, color: "#9333EA", path: "/production/plans/operator/allocation" },
-  { id: "production-entry", title: "Production Entry", icon: HiDocumentAdd, color: "#16A34A", path: "/production/entry" },
-  { id: "production-history", title: "Production History", icon: HiClipboardList, color: "#EA580C", path: "/production/history" },
-  { id: "reports", title: "Reports", icon: HiDocumentReport, color: "#16A34A", path: "/production/reports" },
-];
-
-const NAV_ITEMS = [
-  { id: "dashboard", title: "Dashboard", icon: HiOutlineSquares2X2, color: NAVY, path: "/production/home" },
-  ...QUICK_ACCESS_ITEMS,
-];
-
 const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.025, delayChildren: 0.06 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, x: -10, filter: "blur(2px)" },
+  hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    x: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
+    transition: { staggerChildren: 0.04, delayChildren: 0.05 },
   },
 };
 
-// ============================================================
-// SIDEBAR
-// ============================================================
-export default function Sidebar({ collapsed, onToggleCollapse, activePath }) {
+const itemVariants = {
+  hidden: { opacity: 0, x: -10 },
+  show: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+const Sidebar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
 
-  const [now, setNow] = useState(new Date());
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  const formattedDate = useMemo(
-    () => now.toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
-    [now]
-  );
-  const formattedTime = useMemo(
-    () => now.toLocaleTimeString("en-IN", { hour12: true }),
-    [now]
-  );
-
-  const initials = useMemo(() => {
-    if (!user?.name) return "";
-    return user.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
-  }, [user]);
-
+  /* Live Clock */
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
   useEffect(() => {
-    const h = (e) => { if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
+
+  const formattedDate = useMemo(
+    () =>
+      currentTime.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+    [currentTime],
+  );
+
+  const formattedTime = useMemo(
+    () =>
+      currentTime.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      }),
+    [currentTime],
+  );
+
+  const initials = useMemo(() => {
+    if (!user?.name) return "";
+    return user.name
+      .split(" ")
+      .map((p) => p[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
     navigate("/");
   };
 
-  const isActive = (path) => activePath === path || activePath?.startsWith(`${path}/`);
-
   return (
     <motion.aside
       animate={{ width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
-      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      style={{ flex: "0 0 auto", fontFamily: "'Inter', sans-serif" }}
-      className="flex h-full flex-shrink-0 flex-col overflow-hidden border-r border-[#C6C6C6]/50 bg-white shadow-sm"
+      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      className="sticky top-0 hidden flex-shrink-0 flex-col h-screen overflow-hidden border-r border-slate-200 bg-white shadow-sm lg:flex select-none z-30"
     >
-      {/* TOP GRADIENT LINE */}
-      <div
-        className="h-[2px] w-full flex-shrink-0"
-        style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${BORDER} 45%, ${GOLD} 100%)` }}
-      />
+      {/* Accent Header Line */}
+      <div className="h-[3px] w-full bg-gradient-to-r from-[#0F1D24] via-[#9B9B9B] to-[#FDC94D] shrink-0" />
 
-      {/* brand block */}
+      {/* Logo Header */}
       <div className="flex flex-shrink-0 items-center justify-center gap-2 border-b border-[#C6C6C6]/50 px-2 py-1.5">
-        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center bg-[#0F1D24]">
-          <span className="font-mono text-[9px] font-extrabold text-[#FDC94D]">DT</span>
-        </div>
-        {!collapsed && (
-          <div className="min-w-0 flex-1 leading-none">
-            <p className="truncate text-[11px] font-bold tracking-tight text-[#0F1D24]">PMS-Dehradun</p>
-            <p className="truncate text-[8px] font-medium text-[#9B9B9B]">Production Management System</p>
+        {!collapsed ? (
+          <div className="min-w-0 flex-1 bg-[#0F1D24] p-2 rounded-[2px] leading-none">
+            <p className="truncate text-[16px] font-bold tracking-tight text-[#FDC94D]">
+              PMS Dixon Dehradun
+            </p>
+            {/* <p className="truncate text-[8px] font-medium text-slate-300">
+              Production Management System
+            </p> */}
+          </div>
+        ) : (
+          <div className="flex h-7 w-7 flex-shrink-0 items-center rounded-[2px] justify-center bg-[#0F1D24]">
+            <span className="font-mono text-[10px] font-extrabold text-[#FDC94D]">
+              PMS
+            </span>
           </div>
         )}
       </div>
 
-      {/* live date / time */}
-      {!collapsed ? (
-        <div className="flex flex-shrink-0 items-center justify-center gap-1.5 border-b border-[#C6C6C6]/50 bg-[#FAFAFA] px-2 py-1">
-          <FaCalendarAlt className="text-[9px] text-[#FDC94D]" />
-          <span className="text-[9px] font-medium text-[#0F1D24]">{formattedDate}</span>
-          <span className="h-2.5 w-px bg-[#C6C6C6]" />
-          <FaClock className="text-[9px] text-[#FDC94D]" />
-          <AnimatePresence mode="wait">
-            <motion.span
-              key={formattedTime}
-              initial={{ opacity: 0, y: -2 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 2 }}
-              transition={{ duration: 0.12 }}
-              className="font-mono text-[9px] font-semibold tabular-nums text-[#0F1D24]"
-            >
-              {formattedTime}
-            </motion.span>
-          </AnimatePresence>
-        </div>
-      ) : (
-        <div
-          className="flex flex-shrink-0 items-center justify-center border-b border-[#C6C6C6]/50 bg-[#FAFAFA] py-1"
-          title={`${formattedDate} · ${formattedTime}`}
+      {/* Highlighted Live Date & Time Section */}
+      <div className="shrink-0 p-2 border-b border-slate-100">
+        <motion.div
+          layout
+          className="relative overflow-hidden rounded-[2px] bg-[#0F1D24] p-2 text-white shadow-sm border border-slate-800"
         >
-          <FaClock className="text-[10px] text-[#FDC94D]" />
-        </div>
-      )}
+          {/* Subtle Ambient Glow */}
+          <div className="absolute -right-4 -top-4 h-12 w-12 rounded-full bg-[#FDC94D]/10 blur-xl pointer-events-none" />
 
-      {/* nav list */}
-      <div className="flex-1 space-y-2.5 overflow-y-auto overflow-x-hidden px-1.5 py-2">
-        {!collapsed && (
-          <p className="mb-1 px-1.5 text-[8.5px] font-semibold uppercase tracking-[1.5px] text-[#9B9B9B]">Navigation</p>
-        )}
+          {!collapsed ? (
+            <div className="space-y-1">
+              {/* Date */}
+              <div className="flex items-center justify-between text-[10px] font-semibold text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <FaCalendarAlt className="text-[#FDC94D] text-[11px]" />
+                  <span>{formattedDate}</span>
+                </span>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+              </div>
 
-        <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-0.5">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            return (
-              <motion.div key={item.id} variants={itemVariants}>
-                <button
-                  type="button"
-                  title={collapsed ? item.title : undefined}
-                  onClick={() => navigate(item.path)}
-                  className={`block relative w-full overflow-hidden rounded transition-colors duration-150 ${
-                    active ? "bg-[#0F1D24]/[0.06]" : "hover:bg-[#F5F5F5]"
-                  }`}
-                >
-                  <div
-                    className={`relative flex cursor-pointer select-none items-center gap-2 px-2 py-1.5 ${
-                      collapsed ? "justify-center px-0" : ""
-                    }`}
+              {/* Time */}
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#FDC94D] pt-0.5 border-t border-slate-800">
+                <FaClock className="text-[11px] shrink-0" />
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={formattedTime}
+                    initial={{ opacity: 0, y: -2 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 2 }}
+                    transition={{ duration: 0.15 }}
+                    className="font-mono tracking-wider"
                   >
-                    {active && (
+                    {formattedTime}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="flex flex-col items-center justify-center py-1 gap-1"
+              title={`${formattedDate} · ${formattedTime}`}
+            >
+              <FaClock className="text-[14px] text-[#FDC94D] animate-pulse" />
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Navigation Links */}
+      <div className="flex-1 overflow-y-auto px-2 py-3 custom-scrollbar">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="space-y-1"
+        >
+          {QUICK_ACCESS_ITEMS.map((item) => (
+            <motion.div key={item.id} variants={itemVariants}>
+              <NavLink
+                to={item.path}
+                end
+                title={collapsed ? item.title : undefined}
+                className={({ isActive }) =>
+                  `group relative flex items-center h-9 rounded-[2px] transition-all duration-150 ${
+                    collapsed ? "justify-center px-0" : "px-2.5"
+                  } ${
+                    isActive
+                      ? "bg-[#0F1D24] text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-[#0F1D24]"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {/* Left Active Line Marker */}
+                    {isActive && (
                       <motion.div
-                        layoutId="employeeSidebarIndicator"
-                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        className="absolute left-0 top-0 h-full w-[2px] rounded"
-                        style={{ background: GOLD }}
+                        layoutId="sidebarActiveIndicator"
+                        className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[#FDC94D]"
+                        transition={{
+                          type: "spring",
+                          stiffness: 350,
+                          damping: 30,
+                        }}
                       />
                     )}
 
+                    {/* Icon */}
                     <span
-                      className="relative z-10 flex min-w-[14px] items-center justify-center transition-colors duration-150"
-                      style={{ color: item.color }}
+                      className={`flex items-center justify-center shrink-0 transition-colors ${
+                        isActive
+                          ? "text-[#FDC94D]"
+                          : "text-slate-500 group-hover:text-[#0F1D24]"
+                      }`}
                     >
-                      <Icon className="h-3.5 w-3.5" />
+                      {item.icon}
                     </span>
 
+                    {/* Label */}
                     {!collapsed && (
                       <span
-                        className={`relative z-10 flex-1 truncate text-left text-[11px] font-medium tracking-wide transition-colors duration-150 ${
-                          active ? "text-[#0F1D24]" : "text-[#0F1D24]/70"
+                        className={`ml-2.5 truncate text-[12px] font-semibold tracking-wide flex-1 ${
+                          isActive
+                            ? "text-white"
+                            : "text-slate-700 group-hover:text-[#0F1D24]"
                         }`}
                       >
                         {item.title}
                       </span>
                     )}
 
-                    {active && !collapsed && (
-                      <span className="relative z-10 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: GOLD }} />
+                    {/* Active Dot indicator when expanded */}
+                    {isActive && !collapsed && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#FDC94D] shrink-0" />
                     )}
-                  </div>
-                </button>
-              </motion.div>
-            );
-          })}
+                  </>
+                )}
+              </NavLink>
+            </motion.div>
+          ))}
         </motion.div>
       </div>
 
-      {/* user account panel */}
-      <div ref={profileRef} className="relative flex-shrink-0 border-t border-[#C6C6C6]/50 px-1.5 py-1.5">
+      {/* User Profile & Logout Section */}
+      <div
+        ref={profileRef}
+        className="relative flex-shrink-0 border-t border-[#C6C6C6]/50 px-1.5 py-1.5"
+      >
         {profileOpen && (
           <div
             className={`absolute bottom-full z-30 mb-1.5 w-44 rounded border border-[#C6C6C6]/60 bg-white shadow-[0_-4px_10px_rgba(15,29,36,0.12)] ${
@@ -220,8 +304,12 @@ export default function Sidebar({ collapsed, onToggleCollapse, activePath }) {
             }`}
           >
             <div className="rounded-t border-b border-[#C6C6C6]/60 bg-[#FAFAFA] px-2.5 py-1.5">
-              <p className="text-[10px] font-bold leading-none text-[#0F1D24]">{user?.name || "—"}</p>
-              <p className="mt-0.5 text-[8.5px] leading-none text-[#9B9B9B]">{user?.employee_id || ""}</p>
+              <p className="text-[10px] font-bold leading-none text-[#0F1D24]">
+                {user?.name || "—"}
+              </p>
+              <p className="mt-0.5 text-[8.5px] leading-none text-[#9B9B9B]">
+                {user?.employee_id || ""}
+              </p>
             </div>
             <button
               onClick={handleLogout}
@@ -247,46 +335,52 @@ export default function Sidebar({ collapsed, onToggleCollapse, activePath }) {
           {!collapsed && (
             <>
               <div className="min-w-0 flex-1 leading-none">
-                <p className="truncate text-[10px] font-bold leading-none text-[#0F1D24]">{user?.name || "—"}</p>
-                <p className="mt-0.5 truncate text-[8.5px] font-semibold leading-none text-[#FDC94D]">{user?.role || ""}</p>
+                <p className="truncate text-[10px] font-bold leading-none text-[#0F1D24]">
+                  {user?.name || "—"}
+                </p>
+                <p className="mt-0.5 truncate text-[8.5px] font-semibold leading-none text-[#FDC94D]">
+                  {user?.role || ""}
+                </p>
               </div>
-              <HiOutlineChevronDown className={`h-3 w-3 flex-shrink-0 text-[#9B9B9B] transition-transform ${profileOpen ? "rotate-180" : ""}`} />
+              <HiOutlineChevronDown
+                className={`h-3 w-3 flex-shrink-0 text-[#9B9B9B] transition-transform ${profileOpen ? "rotate-180" : ""}`}
+              />
             </>
           )}
         </button>
       </div>
 
-      {/* footer */}
-      {!collapsed && (
-        <div className="flex-shrink-0 border-t border-[#C6C6C6]/50 bg-white px-2.5 py-1.5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[9px] font-semibold leading-none text-[#0F1D24]">PMS-Dehradun</p>
-              <p className="mt-0.5 font-mono text-[8px] leading-none text-[#9B9B9B]">v1.0.0</p>
-            </div>
-            <span className="flex items-center gap-1 rounded-sm border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[7px] font-semibold tracking-widest text-emerald-600">
-              <span className="h-1 w-1 animate-pulse rounded-full bg-emerald-500" />
-              LIVE
-            </span>
+      {/* System Status Footer */}
+      {/* {!collapsed && (
+        <div className="shrink-0 border-t border-slate-100 bg-white px-3 py-1.5 flex items-center justify-between text-[12px]">
+          <div>
+            <p className="font-bold text-[#0F1D24]">PMS Dixon Dehradun</p>
+            <p className="font-mono text-slate-600 text-[10px]">v1.0.0</p>
           </div>
+          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 font-bold text-[8px] text-emerald-600 border border-emerald-200">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+            LIVE
+          </span>
         </div>
-      )}
+      )} */}
 
-      {/* collapse toggle */}
+      {/* Collapse Toggle Button */}
       <button
         type="button"
-        onClick={onToggleCollapse}
-        className="flex h-7 flex-shrink-0 items-center justify-center gap-1.5 border-t border-[#C6C6C6]/50 bg-[#FAFAFA] text-[9px] font-bold text-[#0F1D24] transition-colors duration-150 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+        onClick={() => setCollapsed((v) => !v)}
+        className="flex h-8 shrink-0 items-center justify-center gap-1.5 border-t border-slate-200 bg-slate-100/70 text-[10px] font-bold text-slate-700 hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-all duration-150"
       >
         {collapsed ? (
-          <HiOutlineChevronDoubleRight className="h-3.5 w-3.5" />
+          <HiOutlineChevronDoubleRight className="h-4 w-4" />
         ) : (
           <>
-            <HiOutlineChevronDoubleLeft className="h-3.5 w-3.5" />
-            Hide
+            <HiOutlineChevronDoubleLeft className="h-4 w-4" />
+            <span>Collapse</span>
           </>
         )}
       </button>
     </motion.aside>
   );
-}
+};
+
+export default Sidebar;

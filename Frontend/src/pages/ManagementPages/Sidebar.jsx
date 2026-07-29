@@ -23,7 +23,6 @@ import {
 } from "react-icons/hi2";
 
 import { useAuth } from "../../context/AuthContext";
-import dixonLogo from "../../../public/Dixon_Technologies_Logo.png";
 
 const EXPANDED_WIDTH = 200;
 const COLLAPSED_WIDTH = 64;
@@ -350,7 +349,7 @@ const Sidebar = () => {
       </div>
 
       {/* System Status Footer */}
-      {!collapsed && (
+      {/* {!collapsed && (
         <div className="shrink-0 border-t border-slate-100 bg-white px-3 py-1.5 flex items-center justify-between text-[9px]">
           <div>
             <p className="font-bold text-[#0F1D24]">PMS-Dehradun</p>
@@ -361,7 +360,7 @@ const Sidebar = () => {
             LIVE
           </span>
         </div>
-      )}
+      )} */}
 
       {/* Collapse Toggle Button */}
       <button
