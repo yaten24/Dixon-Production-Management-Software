@@ -14,7 +14,6 @@ import { FaCalendarAlt, FaClock, FaSignOutAlt, FaUserCircle } from "react-icons/
 const EXPANDED_WIDTH = 200;
 const COLLAPSED_WIDTH = 64;
 
-// Combined into a flat menu without section headers
 export const QUICK_ACCESS_ITEMS = [
   {
     id: "hall-dashboard",
@@ -69,6 +68,7 @@ export const QUICK_ACCESS_ITEMS = [
 export const NAVY = "#0F1D24";
 export const GOLD = "#FDC94D";
 export const BORDER = "#C6C6C6";
+
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
@@ -82,7 +82,7 @@ const itemVariants = {
   show: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.001, ease: [0.2, 1, 0.3, 1] },
   },
 };
 
@@ -141,21 +141,18 @@ const Sidebar = () => {
     <motion.aside
       animate={{ width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
       transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-      className="sticky top-0 hidden flex-shrink-0 flex-col h-screen overflow-hidden border-r border-slate-200 bg-white shadow-sm lg:flex select-none z-30"
+      className="sticky top-0 hidden flex-shrink-0 flex-col h-screen overflow-hidden border-r-2 border-slate-300 bg-slate-100 shadow-sm lg:flex select-none z-30"
     >
       {/* Accent Header Line */}
       <div className="h-[3px] w-full bg-gradient-to-r from-[#0F1D24] via-[#9B9B9B] to-[#FDC94D] shrink-0" />
 
       {/* Logo Header */}
-      <div className="flex flex-shrink-0 items-center justify-center gap-2 border-b border-[#C6C6C6]/50 px-2 py-1.5">
+      <div className="flex flex-shrink-0 items-center justify-center gap-2 border-b-2 border-slate-300 bg-slate-100 px-2 py-1.5">
         {!collapsed ? (
           <div className="min-w-0 flex-1 bg-[#0F1D24] p-2 rounded-[2px] leading-none">
             <p className="truncate text-[16px] font-bold tracking-tight text-[#FDC94D]">
               PMS Dixon Dehradun
             </p>
-            {/* <p className="truncate text-[8px] font-medium text-slate-300">
-              Production Management System
-            </p> */}
           </div>
         ) : (
           <div className="flex h-7 w-7 flex-shrink-0 items-center rounded-[2px] justify-center bg-[#0F1D24]">
@@ -167,17 +164,15 @@ const Sidebar = () => {
       </div>
 
       {/* Highlighted Live Date & Time Section */}
-      <div className="shrink-0 p-2 border-b border-slate-100">
+      <div className="shrink-0 p-2 border-b-2 border-slate-300 bg-slate-100">
         <motion.div
           layout
-          className="relative overflow-hidden rounded-[2px] bg-[#0F1D24] p-2 text-white shadow-sm border border-slate-800"
+          className="relative overflow-hidden rounded-[2px] bg-[#0F1D24] p-2 text-white shadow-sm border-2 border-slate-800"
         >
-          {/* Subtle Ambient Glow */}
           <div className="absolute -right-4 -top-4 h-12 w-12 rounded-[2px] bg-[#FDC94D]/10 blur-xl pointer-events-none" />
 
           {!collapsed ? (
             <div className="space-y-1">
-              {/* Date */}
               <div className="flex items-center justify-between text-[10px] font-semibold text-slate-300">
                 <span className="flex items-center gap-1.5">
                   <FaCalendarAlt className="text-[#FDC94D] text-[11px]" />
@@ -189,7 +184,6 @@ const Sidebar = () => {
                 </span>
               </div>
 
-              {/* Time */}
               <div className="flex items-center gap-1.5 text-xs font-bold text-[#FDC94D] pt-0.5 border-t border-slate-800">
                 <FaClock className="text-[11px] shrink-0" />
                 <AnimatePresence mode="wait">
@@ -218,92 +212,91 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation Links */}
-      <div className="flex-1 overflow-y-auto px-2 py-3 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-2 py-3 custom-scrollbar bg-slate-100">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="show"
           className="space-y-1"
         >
-          {QUICK_ACCESS_ITEMS.map((item) => (
-            <motion.div key={item.id} variants={itemVariants}>
-              <NavLink
-                to={item.path}
-                end
-                title={collapsed ? item.title : undefined}
-                className={({ isActive }) =>
-                  `group relative flex items-center h-8 rounded-[2px] border-1 transition-all duration-150 ${
-                    collapsed ? "justify-center px-0" : "px-2"
-                  } ${
-                    isActive
-                      ? "border-[#0F1D24] bg-[#0F1D24] text-white shadow-sm"
-                      : "border-transparent text-slate-600 hover:border-[#0F1D24] hover:bg-slate-50 hover:text-[#0F1D24]"
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    {/* Left Active Line Marker */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="sidebarActiveIndicator"
-                        className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[#FDC94D]"
-                        transition={{
-                          type: "spring",
-                          stiffness: 350,
-                          damping: 30,
-                        }}
-                      />
-                    )}
+          {QUICK_ACCESS_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <motion.div key={item.id} variants={itemVariants}>
+                <NavLink
+                  to={item.path}
+                  end
+                  title={collapsed ? item.title : undefined}
+                  className={({ isActive }) =>
+                    `group relative flex items-center h-8 rounded-[2px] border-1 transition-all duration-150 ${
+                      collapsed ? "justify-center px-0" : "px-2"
+                    } ${
+                      isActive
+                        ? "border-[#0F1D24] bg-[#0F1D24] text-white shadow-sm"
+                        : "border-slate-300 bg-white text-slate-600 hover:border-[#0F1D24] hover:bg-slate-50 hover:text-[#0F1D24]"
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <motion.div
+                          layoutId="sidebarActiveIndicator"
+                          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-[#FDC94D]"
+                          transition={{
+                            type: "spring",
+                            stiffness: 350,
+                            damping: 30,
+                          }}
+                        />
+                      )}
 
-                    {/* Icon */}
-                    <span
-                      className={`flex items-center justify-center shrink-0 transition-colors ${
-                        isActive
-                          ? "text-[#FDC94D]"
-                          : "text-slate-500 group-hover:text-[#0F1D24]"
-                      }`}
-                    >
-                      {item.icon}
-                    </span>
-
-                    {/* Label */}
-                    {!collapsed && (
                       <span
-                        className={`ml-2.5 truncate text-[12px] font-semibold tracking-wide flex-1 ${
+                        className={`flex items-center justify-center shrink-0 transition-colors ${
                           isActive
-                            ? "text-white"
-                            : "text-slate-700 group-hover:text-[#0F1D24]"
+                            ? "text-[#FDC94D]"
+                            : "text-slate-500 group-hover:text-[#0F1D24]"
                         }`}
                       >
-                        {item.title}
+                        <Icon size={13} />
                       </span>
-                    )}
 
-                    {/* Active Dot indicator when expanded */}
-                    {isActive && !collapsed && (
-                      <span className="h-1.5 w-1.5 rounded-[2px] bg-[#FDC94D] shrink-0" />
-                    )}
-                  </>
-                )}
-              </NavLink>
-            </motion.div>
-          ))}
+                      {!collapsed && (
+                        <span
+                          className={`ml-2.5 truncate text-[12px] font-semibold tracking-wide flex-1 ${
+                            isActive
+                              ? "text-white"
+                              : "text-slate-700 group-hover:text-[#0F1D24]"
+                          }`}
+                        >
+                          {item.title}
+                        </span>
+                      )}
+
+                      {isActive && !collapsed && (
+                        <span className="h-1.5 w-1.5 rounded-[2px] bg-[#FDC94D] shrink-0" />
+                      )}
+                    </>
+                  )}
+                </NavLink>
+              </motion.div>
+            );
+          })}
         </motion.div>
       </div>
 
       {/* User Profile & Logout Section */}
       <div
         ref={profileRef}
-        className="relative flex-shrink-0 border-t border-[#C6C6C6]/50 px-1.5 py-1.5"
+        className="relative flex-shrink-0 border-t-2 border-slate-300 bg-slate-100 px-1.5 py-1.5"
       >
         {profileOpen && (
           <div
-            className={`absolute bottom-full z-30 mb-1.5 w-44 rounded border border-[#C6C6C6]/60 bg-white shadow-[0_-4px_10px_rgba(15,29,36,0.12)] ${
+            className={`absolute bottom-full z-30 mb-1.5 w-44 rounded-md border-2 border-slate-300 bg-white shadow-[0_-4px_10px_rgba(15,29,36,0.12)] ${
               collapsed ? "left-full ml-1.5" : "left-1.5"
             }`}
           >
-            <div className="rounded-t border-b border-[#C6C6C6]/60 bg-[#FAFAFA] px-2.5 py-1.5">
+            <div className="rounded-t-md border-b-2 border-slate-300 bg-[#FAFAFA] px-2.5 py-1.5">
               <p className="text-[10px] font-bold leading-none text-[#0F1D24]">
                 {user?.name || "—"}
               </p>
@@ -313,7 +306,7 @@ const Sidebar = () => {
             </div>
             <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-1.5 rounded-b px-2.5 py-1.5 text-[10px] font-semibold text-red-600 transition-colors duration-150 hover:bg-red-50"
+              className="flex w-full items-center gap-1.5 rounded-b-md px-2.5 py-1.5 text-[10px] font-semibold text-red-600 transition-colors duration-150 hover:bg-red-50"
             >
               <FaSignOutAlt size={9} />
               Sign out
@@ -325,7 +318,7 @@ const Sidebar = () => {
           type="button"
           onClick={() => setProfileOpen((v) => !v)}
           title={collapsed ? user?.name || "Account" : undefined}
-          className={`flex w-full items-center gap-2 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] px-2 py-1 text-left transition-colors duration-150 hover:bg-[#F0F0F0] ${
+          className={`flex w-full items-center gap-2 rounded-md border-2 border-slate-300 bg-white px-2 py-1 text-left transition-colors duration-150 hover:border-[#0F1D24] hover:bg-slate-50 ${
             collapsed ? "justify-center px-0" : ""
           }`}
         >
@@ -350,25 +343,11 @@ const Sidebar = () => {
         </button>
       </div>
 
-      {/* System Status Footer */}
-      {/* {!collapsed && (
-        <div className="shrink-0 border-t border-slate-100 bg-white px-3 py-1.5 flex items-center justify-between text-[12px]">
-          <div>
-            <p className="font-bold text-[#0F1D24]">PMS Dixon Dehradun</p>
-            <p className="font-mono text-slate-600 text-[10px]">v1.0.0</p>
-          </div>
-          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 font-bold text-[8px] text-emerald-600 border border-emerald-200">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-            LIVE
-          </span>
-        </div>
-      )} */}
-
       {/* Collapse Toggle Button */}
       <button
         type="button"
         onClick={() => setCollapsed((v) => !v)}
-        className="flex h-8 shrink-0 items-center justify-center gap-1.5 border-t border-slate-200 bg-slate-100/70 text-[10px] font-bold text-slate-700 hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-all duration-150"
+        className="flex h-8 shrink-0 items-center justify-center gap-1.5 border-t-2 border-slate-300 bg-slate-200 text-[10px] font-bold text-slate-700 hover:bg-[#0F1D24] hover:text-[#FDC94D] transition-all duration-150"
       >
         {collapsed ? (
           <HiOutlineChevronDoubleRight className="h-4 w-4" />
