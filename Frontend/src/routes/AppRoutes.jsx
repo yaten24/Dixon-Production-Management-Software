@@ -25,15 +25,13 @@ import PartsPage from "../pages/AdminPages/PartsPage";
 import ActivityLogs from "../pages/AdminPages/Activitylogs";
 
 // Production
-import UserHome from "../pages/ProductionPages/UserHome";
 import UserDashboard from "../pages/ProductionPages/ProductionDashboard";
-import AdvProductionEntry from "../pages/ProductionPages/advProductionEnrty";
+import AdvProductionEntry from "../pages/ProductionPages/ProductionEnrty";
 import ProductionHistoryPage from "../pages/ProductionPages/ProductionHistoryPage";
-import ReportsPage from "../pages/ProductionPages/ReportsPage";
-import UpdateMachineOperator from "../pages/ProductionPages/UpdateMachineOperator";
+import ReportsPage from "../pages/ProductionPages/ProductionReportsPage";
 
 // Common
-import HallDashboard from "../pages/ProductionPages/HallDashboard";
+import HallDashboard from "../pages/ProductionPages/ProductionHallDashboard";
 import HourlyMachineTracking from "../pages/CommanPages/HourlyMachineTracking";
 
 // Planning
@@ -366,16 +364,6 @@ const AppRoutes = () => {
       />
 
       {/* ================= PRODUCTION ================= */}
-
-      <Route
-        path="/production/home"
-        element={
-          <ProductionRoute>
-            <UserHome />
-          </ProductionRoute>
-        }
-      />
-
       <Route
         path="/production/dashboard"
         element={
@@ -498,15 +486,6 @@ const AppRoutes = () => {
         element={
           <ProductionRoute>
             <MonthlyPlanView />
-          </ProductionRoute>
-        }
-      />
-
-      <Route
-        path="/production/machines/allocation/update"
-        element={
-          <ProductionRoute>
-            <UpdateMachineOperator />
           </ProductionRoute>
         }
       />

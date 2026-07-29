@@ -40,8 +40,8 @@ const getBusinessDateDefault = () => {
    QuickStat, so both pages read as one design system.
 --------------------------------------------------------- */
 const QuickStat = ({ label, value, icon: Icon, accent = NAVY, tone }) => (
-  <div className="flex flex-1 items-center gap-2.5 border border-[#C6C6C6] bg-white px-3 py-2" style={{ borderLeft: `3px solid ${accent}` }}>
-    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center border border-[#C6C6C6]" style={{ color: accent }}>
+  <div className="flex flex-1 items-center gap-2.5 border-2 border-[#C6C6C6] bg-white px-3 py-2" style={{ borderLeft: `4px solid ${accent}` }}>
+    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center border-2 border-[#C6C6C6]" style={{ color: accent }}>
       <Icon className="h-4 w-4" />
     </div>
     <div className="min-w-0 leading-tight">
@@ -131,7 +131,7 @@ const ReportsPage = () => {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <main className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pb-3">
           {/* control box header — same shape as MonthlyPlanPage's header */}
-          <div className="mx-3 mt-2 flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border border-[#C6C6C6] bg-white px-3 py-2">
+          <div className="mx-3 mt-2 flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border-2 border-[#C6C6C6] bg-white px-3 py-2">
             <div className="min-w-0 leading-tight">
               <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#9B9B9B]">Reports &amp; Analytics</p>
               <h1 className="truncate text-[15px] font-extrabold tracking-tight text-[#0F1D24]">Production Reports</h1>
@@ -140,7 +140,7 @@ const ReportsPage = () => {
             <div className="flex flex-shrink-0 items-stretch gap-1.5">
               <button
                 onClick={() => navigate("/employee/home")}
-                className="flex items-center gap-1.5 border border-[#C6C6C6] bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+                className="flex items-center gap-1.5 border-2 border-[#C6C6C6] bg-white px-2.5 text-[11px] font-semibold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D]"
               >
                 <HiOutlineSquares2X2 className="h-3.5 w-3.5" />
                 Dashboard
@@ -148,7 +148,7 @@ const ReportsPage = () => {
               <button
                 onClick={handleExport}
                 disabled={!data}
-                className="flex items-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-2.5 text-[11px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-1.5 border-2 border-[#0F1D24] bg-[#0F1D24] px-2.5 text-[11px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <FaDownload className="h-3 w-3" />
                 Export
@@ -157,7 +157,7 @@ const ReportsPage = () => {
           </div>
 
           {/* tabs — flat, same active treatment as MonthlyPlanPage range tabs */}
-          <div className="mx-3 flex flex-shrink-0 items-stretch gap-px bg-[#C6C6C6]">
+          <div className="mx-3 flex flex-shrink-0 items-stretch gap-0.5 border-2 border-[#C6C6C6] bg-[#C6C6C6]">
             {TABS.map((tab) => {
               const TabIcon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -178,7 +178,7 @@ const ReportsPage = () => {
 
           {/* error banner — flat, bordered, matches MonthlyPlanPage warnings */}
           {error && (
-            <div className="mx-3 flex flex-shrink-0 items-center gap-2 border border-red-300 bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700">
+            <div className="mx-3 flex flex-shrink-0 items-center gap-2 border-2 border-red-300 bg-red-50 px-3 py-2 text-[12px] font-semibold text-red-700">
               {error}
             </div>
           )}
@@ -193,9 +193,9 @@ const ReportsPage = () => {
           )}
 
           {/* filters — same bordered control-row shape as MonthlyPlanPage search+filter bar */}
-          <div className="mx-3 flex flex-shrink-0 flex-wrap items-center gap-2 border border-[#C6C6C6] bg-white px-2.5 py-1.5">
+          <div className="mx-3 flex flex-shrink-0 flex-wrap items-center gap-2 border-2 border-[#C6C6C6] bg-white px-2.5 py-1.5">
             {isDailyTab ? (
-              <div className="flex h-8 min-w-[150px] items-center gap-1.5 border border-[#C6C6C6] px-2">
+              <div className="flex h-8 min-w-[150px] items-center gap-1.5 border-2 border-[#C6C6C6] px-2">
                 <FaCalendarAlt className="h-3 w-3 flex-shrink-0 text-[#0F1D24]/70" />
                 <input
                   type="date"
@@ -223,7 +223,7 @@ const ReportsPage = () => {
             <button
               onClick={refresh}
               disabled={loading}
-              className="ml-auto flex h-8 items-center gap-1.5 border border-[#C6C6C6] bg-white px-3 text-[11px] font-bold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:cursor-not-allowed disabled:opacity-60"
+              className="ml-auto flex h-8 items-center gap-1.5 border-2 border-[#C6C6C6] bg-white px-3 text-[11px] font-bold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#0F1D24] hover:text-[#FDC94D] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Loading..." : "Refresh"}
             </button>
@@ -232,7 +232,7 @@ const ReportsPage = () => {
           {/* report body */}
           <div className="mx-3">
             {loading && !data ? (
-              <div className="flex h-40 items-center justify-center border border-[#C6C6C6] bg-white text-[11.5px] text-[#9B9B9B]">
+              <div className="flex h-40 items-center justify-center border-2 border-[#C6C6C6] bg-white text-[11.5px] text-[#9B9B9B]">
                 Loading report...
               </div>
             ) : !data ? null : activeTab === "daily" ? (
@@ -256,7 +256,7 @@ const ReportsPage = () => {
 // ==========================================================
 
 const Th = ({ children, align = "left" }) => (
-  <th className={`whitespace-nowrap border-b border-[#C6C6C6] bg-[#FAFAFA] px-2.5 py-1.5 text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B] text-${align}`}>
+  <th className={`whitespace-nowrap border-b-2 border-[#C6C6C6] bg-[#FAFAFA] px-2.5 py-1.5 text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B] text-${align}`}>
     {children}
   </th>
 );
@@ -265,14 +265,14 @@ const Td = ({ children, align = "left", className = "" }) => (
 );
 
 const TableShell = ({ children }) => (
-  <div className="overflow-x-auto border border-[#C6C6C6] bg-white">
+  <div className="overflow-x-auto border-2 border-[#C6C6C6] bg-white">
     <table className="w-full border-collapse">{children}</table>
   </div>
 );
 
 const DailyReportTable = ({ entries = [] }) => {
   if (!entries.length) {
-    return <div className="flex h-32 items-center justify-center border border-[#C6C6C6] bg-white text-[11.5px] text-[#9B9B9B]">No entries for this date.</div>;
+    return <div className="flex h-32 items-center justify-center border-2 border-[#C6C6C6] bg-white text-[11.5px] text-[#9B9B9B]">No entries for this date.</div>;
   }
   return (
     <TableShell>
@@ -283,7 +283,7 @@ const DailyReportTable = ({ entries = [] }) => {
           <Th align="right">Reject</Th><Th align="right">Loss (min)</Th><Th align="right">Eff. %</Th>
         </tr>
       </thead>
-      <tbody className="divide-y divide-[#C6C6C6]">
+      <tbody className="divide-y-2 divide-[#C6C6C6]">
         {entries.map((e) => (
           <tr key={e.production_id} className="hover:bg-[#FAFAFA]">
             <Td>{e.hall}</Td><Td>{e.shift}</Td><Td>{e.time_slot}</Td>
@@ -302,7 +302,7 @@ const DailyReportTable = ({ entries = [] }) => {
 const StatChip = ({ label, value, tone = "navy" }) => {
   const toneClass = tone === "navy" ? "text-[#0F1D24]" : tone === "red" ? "text-red-600" : "text-emerald-600";
   return (
-    <div className="border border-[#C6C6C6] bg-white px-3 py-2">
+    <div className="border-2 border-[#C6C6C6] bg-white px-3 py-2">
       <p className="text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">{label}</p>
       <p className={`mt-0.5 font-mono text-[17px] font-extrabold ${toneClass}`}>{value}</p>
     </div>
@@ -328,7 +328,7 @@ const DailySummaryView = ({ data }) => (
     <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
       <SubTable title="Hall-wise">
         <thead><tr><Th>Hall</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
-        <tbody className="divide-y divide-[#C6C6C6]">
+        <tbody className="divide-y-2 divide-[#C6C6C6]">
           {data.hallWise.map((h) => (
             <tr key={h.hall}><Td>{h.hall}</Td><Td align="right">{h.target}</Td><Td align="right">{h.actual}</Td><Td align="right" className="text-red-600">{h.reject}</Td><Td align="right">{h.achievement}%</Td></tr>
           ))}
@@ -336,7 +336,7 @@ const DailySummaryView = ({ data }) => (
       </SubTable>
       <SubTable title="Shift-wise">
         <thead><tr><Th>Shift</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
-        <tbody className="divide-y divide-[#C6C6C6]">
+        <tbody className="divide-y-2 divide-[#C6C6C6]">
           {data.shiftWise.map((s) => (
             <tr key={s.shift}><Td>{s.shift}</Td><Td align="right">{s.target}</Td><Td align="right">{s.actual}</Td><Td align="right" className="text-red-600">{s.reject}</Td><Td align="right">{s.achievement}%</Td></tr>
           ))}
@@ -346,7 +346,7 @@ const DailySummaryView = ({ data }) => (
 
     <SubTable title="Machine-wise">
       <thead><tr><Th>Machine</Th><Th>Hall</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Eff. %</Th></tr></thead>
-      <tbody className="divide-y divide-[#C6C6C6]">
+      <tbody className="divide-y-2 divide-[#C6C6C6]">
         {data.machineWise.map((m) => (
           <tr key={m.machine_code}><Td>{m.machine_code} — {m.machine_name}</Td><Td>{m.hall}</Td><Td align="right">{m.target}</Td><Td align="right">{m.actual}</Td><Td align="right" className="text-red-600">{m.reject}</Td><Td align="right">{m.efficiency}%</Td></tr>
         ))}
@@ -356,13 +356,13 @@ const DailySummaryView = ({ data }) => (
     <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
       <SubTable title="Top Reject Reasons">
         <thead><tr><Th>Reason</Th><Th align="right">Qty</Th></tr></thead>
-        <tbody className="divide-y divide-[#C6C6C6]">
+        <tbody className="divide-y-2 divide-[#C6C6C6]">
           {data.topRejects.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="font-semibold text-red-600">{r.qty}</Td></tr>))}
         </tbody>
       </SubTable>
       <SubTable title="Top Loss Reasons">
         <thead><tr><Th>Reason</Th><Th align="right">Minutes</Th></tr></thead>
-        <tbody className="divide-y divide-[#C6C6C6]">
+        <tbody className="divide-y-2 divide-[#C6C6C6]">
           {data.topLossReasons.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="font-semibold text-amber-600">{r.minutes}</Td></tr>))}
         </tbody>
       </SubTable>
@@ -372,14 +372,14 @@ const DailySummaryView = ({ data }) => (
 
 const MonthlyReportTable = ({ dayWise = [] }) => {
   if (!dayWise.length) {
-    return <div className="flex h-32 items-center justify-center border border-[#C6C6C6] bg-white text-[11.5px] text-[#9B9B9B]">No entries for this month.</div>;
+    return <div className="flex h-32 items-center justify-center border-2 border-[#C6C6C6] bg-white text-[11.5px] text-[#9B9B9B]">No entries for this month.</div>;
   }
   return (
     <TableShell>
       <thead>
         <tr><Th>Date</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Good</Th><Th align="right">Reject</Th><Th align="right">Loss (min)</Th><Th align="right">Eff. %</Th><Th align="right">Ach. %</Th></tr>
       </thead>
-      <tbody className="divide-y divide-[#C6C6C6]">
+      <tbody className="divide-y-2 divide-[#C6C6C6]">
         {dayWise.map((d) => (
           <tr key={d.entry_date} className="hover:bg-[#FAFAFA]">
             <Td>{new Date(d.entry_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</Td>
@@ -406,13 +406,13 @@ const MonthlySummaryView = ({ data }) => (
     <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
       <SubTable title="Hall-wise">
         <thead><tr><Th>Hall</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
-        <tbody className="divide-y divide-[#C6C6C6]">
+        <tbody className="divide-y-2 divide-[#C6C6C6]">
           {data.hallWise.map((h) => (<tr key={h.hall}><Td>{h.hall}</Td><Td align="right">{h.target}</Td><Td align="right">{h.actual}</Td><Td align="right" className="text-red-600">{h.reject}</Td><Td align="right">{h.achievement}%</Td></tr>))}
         </tbody>
       </SubTable>
       <SubTable title="Shift-wise">
         <thead><tr><Th>Shift</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Reject</Th><Th align="right">Ach. %</Th></tr></thead>
-        <tbody className="divide-y divide-[#C6C6C6]">
+        <tbody className="divide-y-2 divide-[#C6C6C6]">
           {data.shiftWise.map((s) => (<tr key={s.shift}><Td>{s.shift}</Td><Td align="right">{s.target}</Td><Td align="right">{s.actual}</Td><Td align="right" className="text-red-600">{s.reject}</Td><Td align="right">{s.achievement}%</Td></tr>))}
         </tbody>
       </SubTable>
@@ -421,13 +421,13 @@ const MonthlySummaryView = ({ data }) => (
     <div className="grid grid-cols-1 gap-2 xl:grid-cols-2">
       <SubTable title="Top Reject Reasons">
         <thead><tr><Th>Reason</Th><Th align="right">Qty</Th></tr></thead>
-        <tbody className="divide-y divide-[#C6C6C6]">
+        <tbody className="divide-y-2 divide-[#C6C6C6]">
           {data.topRejects.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="font-semibold text-red-600">{r.qty}</Td></tr>))}
         </tbody>
       </SubTable>
       <SubTable title="Top Loss Reasons">
         <thead><tr><Th>Reason</Th><Th align="right">Minutes</Th></tr></thead>
-        <tbody className="divide-y divide-[#C6C6C6]">
+        <tbody className="divide-y-2 divide-[#C6C6C6]">
           {data.topLossReasons.map((r) => (<tr key={r.reason}><Td>{r.reason}</Td><Td align="right" className="font-semibold text-amber-600">{r.minutes}</Td></tr>))}
         </tbody>
       </SubTable>
@@ -435,7 +435,7 @@ const MonthlySummaryView = ({ data }) => (
 
     <SubTable title="Daily Trend">
       <thead><tr><Th>Date</Th><Th align="right">Target</Th><Th align="right">Actual</Th><Th align="right">Ach. %</Th></tr></thead>
-      <tbody className="divide-y divide-[#C6C6C6]">
+      <tbody className="divide-y-2 divide-[#C6C6C6]">
         {data.dailyTrend.map((d) => (
           <tr key={d.entry_date}><Td>{new Date(d.entry_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</Td><Td align="right">{d.target}</Td><Td align="right">{d.actual}</Td><Td align="right">{d.achievement}%</Td></tr>
         ))}
