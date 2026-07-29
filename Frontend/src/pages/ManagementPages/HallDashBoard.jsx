@@ -501,10 +501,18 @@ const KpiCard = ({ title, subtitle, value, target, showBar, badgeColor, icon: Ic
     : null;
 
   return (
-    <div className={`flex min-w-[150px] flex-1 flex-col p-2.5 ${CARD}`}>
+    <div
+      className={`flex min-w-[150px] flex-1 flex-col p-2.5 ${CARD}`}
+      style={{ borderLeftWidth: 4, borderLeftColor: badgeColor, borderLeftStyle: "solid" }}
+    >
       <div className="mb-1 flex items-start justify-between gap-1">
         <div className="min-w-0">
-          <h3 className="truncate text-[11px] font-bold uppercase leading-tight text-[#0F172A]">{title}</h3>
+          <h3
+            className="inline-block truncate rounded-md px-1.5 py-0.5 text-[11px] font-bold uppercase leading-tight tracking-wide"
+            style={{ background: `${badgeColor}1A`, color: badgeColor }}
+          >
+            {title}
+          </h3>
         </div>
         {Icon && (
           <div
