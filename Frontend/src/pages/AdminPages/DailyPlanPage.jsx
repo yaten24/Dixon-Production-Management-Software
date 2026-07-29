@@ -192,8 +192,8 @@ const AdminDailyPlanPage = () => {
     }
   };
 
-  const handleOpen = (plan) => navigate(`/production/plans/detail/${plan.daily_plan_id}`);
-  const handleCreate = () => navigate("/production/plans/daily/create");
+  const handleOpen = (plan) => navigate(`/admin/production/plans/detail/${plan.daily_plan_id}`);
+  const handleCreate = () => navigate("/admin/production/plans/daily/create");
 
   const hasTodayPlan = plans.some((p) => toDateKey(new Date(p.planning_date)) === todayISO());
 

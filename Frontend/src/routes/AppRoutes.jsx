@@ -62,6 +62,8 @@ import AdminCreateMonthlyPlan from "../pages/AdminPages/CreateMonthlyPlan";
 import AdminMonthlyPlanPage from "../pages/AdminPages/MonthlyPlanPage";
 import AdminDailyPlanPage from "../pages/AdminPages/DailyPlanPage";
 import AdminReportsPage from "../pages/AdminPages/ReportsPage";
+import AdminViewDailyPlanPage from "../pages/AdminPages/DailyPlanView";
+import AdminMonthlyPlanView from "../pages/AdminPages/MonthlyPlanView";
 
 const AppRoutes = () => {
   return (
@@ -309,10 +311,45 @@ const AppRoutes = () => {
       />
 
       <Route
+        path="/admin/production/plans/daily/create"
+        element={
+          <AdminRoute>
+            <AdminDailyProductionPlan />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/production/plans/detail/:id"
+        element={
+          <AdminRoute>
+            <AdminViewDailyPlanPage />
+          </AdminRoute>
+        }
+      />
+
+      <Route
         path="/admin/monthly-plan"
         element={
           <AdminRoute>
             <AdminMonthlyPlanPage />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/admin/production/plans/monthly/create"
+        element={
+          <AdminRoute>
+            <AdminMonthlyPlanPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/production/plans/monthly/detail/:id"
+        element={
+          <AdminRoute>
+            <AdminMonthlyPlanView />
           </AdminRoute>
         }
       />

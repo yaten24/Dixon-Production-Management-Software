@@ -33,7 +33,7 @@ import { FaFileAlt, FaCalendarDay, FaCalendarWeek, FaTasks, FaClipboardList } fr
 
 import { useAuth } from "../../context/AuthContext";
 
-const EXPANDED_WIDTH = 200;
+const EXPANDED_WIDTH = 250;
 const COLLAPSED_WIDTH = 64;
 
 // Combined into a flat menu without section headers
@@ -144,7 +144,7 @@ const itemVariants = {
   show: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.001, ease: [0.2, 1, 0.3, 1] },
   },
 };
 
