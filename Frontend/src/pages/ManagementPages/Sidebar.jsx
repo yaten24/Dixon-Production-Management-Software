@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
@@ -17,84 +17,91 @@ import {
 } from "react-icons/md";
 
 import {
-  HiOutlineChevronDown,
-  HiOutlineChevronDoubleLeft,
-  HiOutlineChevronDoubleRight,
+  HiChevronLeft,
+  HiChevronRight,
 } from "react-icons/hi2";
 
 import { useAuth } from "../../context/AuthContext";
+import dixonLogo from "../../../public/Dixon_Technologies_Logo.png";
 
-/* ==========================================================
-                        THEME
-   Brand palette (client's color reference):
-     highlight #0F1D24  (deep navy)   — icons, titles, active states
-     gray      #9B9B9B                — secondary text
-     accent    #FDC94D  (warm gold)   — sparing highlight
-     darken    #C6C6C6                — borders, dividers, neutral surfaces
-========================================================== */
+const EXPANDED_WIDTH = 240;
+const COLLAPSED_WIDTH = 72;
 
-const THEME = {
-  highlight: "#0F1D24",
-  gray: "#9B9B9B",
-  accent: "#FDC94D",
-  darken: "#C6C6C6",
-};
-
-const FONT_IMPORT = `
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=Roboto+Mono:wght@500;600&display=swap');
-`;
-
-const EXPANDED_WIDTH = 172;
-const COLLAPSED_WIDTH = 52;
-
-// Same colored-icon convention as the reference sidebar: each item
-// carries its own accent color instead of toggling gray/navy on active.
 const menuSections = [
   {
     label: "Overview",
     items: [
-      { id: 1, title: "Dashboard", path: "/management/overall/dashboard", icon: FaTachometerAlt, color: THEME.highlight },
+      {
+        id: 1,
+        title: "Dashboard",
+        path: "/management/overall/dashboard",
+        icon: <FaTachometerAlt size={15} />,
+      },
     ],
   },
   {
     label: "Operations",
     items: [
-      { id: 2, title: "Production", path: "/management/dashboard", icon: MdOutlineProductionQuantityLimits, color: "#2563EB" },
-      { id: 3, title: "Rejection", path: "/management/rejection", icon: MdOutlineReportProblem, color: "#DC2626" },
-      { id: 4, title: "Loss Time", path: "/management/loss-time", icon: FaClock, color: "#EA580C" },
-      { id: 5, title: "Mould Change", path: "/management/mould-change", icon: FaExchangeAlt, color: "#9333EA" },
+      {
+        id: 2,
+        title: "Production",
+        path: "/management/dashboard",
+        icon: <MdOutlineProductionQuantityLimits size={16} />,
+      },
+      {
+        id: 3,
+        title: "Rejection",
+        path: "/management/rejection",
+        icon: <MdOutlineReportProblem size={16} />,
+      },
+      {
+        id: 4,
+        title: "Loss Time",
+        path: "/management/loss-time",
+        icon: <FaClock size={15} />,
+      },
+      {
+        id: 5,
+        title: "Mould Change",
+        path: "/management/mould-change",
+        icon: <FaExchangeAlt size={15} />,
+      },
     ],
   },
   {
     label: "Insights",
     items: [
-      { id: 9, title: "Reports", path: "/management/reports", icon: FaChartBar, color: "#16A34A" },
+      {
+        id: 9,
+        title: "Reports",
+        path: "/management/reports",
+        icon: <FaChartBar size={15} />,
+      },
     ],
   },
 ];
 
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.025, delayChildren: 0.06 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, x: -10, filter: "blur(2px)" },
-  show: {
-    opacity: 1,
-    x: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
-  },
+// Enhanced Tooltip Component for Collapsed State
+const Tooltip = ({ children, text, show }) => {
+  if (!show) return children;
+  return (
+    <div className="relative group flex items-center">
+      {children}
+      <div className="absolute left-full ml-3 px-3 py-1.5 bg-gradient-to-r from-[#0F1D24] to-[#1a2f3f] text-white text-[11px] font-medium rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none shadow-xl z-50 border border-white/10">
+        {text}
+        <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 border-[6px] border-transparent border-r-[#0F1D24]" />
+      </div>
+    </div>
+  );
 };
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-
   const [collapsed, setCollapsed] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState(null);
 
-  /* ---------------- LIVE CLOCK ---------------- */
+  /* Live Clock */
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -103,28 +110,34 @@ const Sidebar = () => {
   }, []);
 
   const formattedDate = useMemo(
-    () => currentTime.toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
-    [currentTime],
+    () =>
+      currentTime.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+      }),
+    [currentTime]
   );
+
   const formattedTime = useMemo(
-    () => currentTime.toLocaleTimeString("en-IN", { hour12: true }),
-    [currentTime],
+    () =>
+      currentTime.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      }),
+    [currentTime]
   );
 
   const initials = useMemo(() => {
     if (!user?.name) return "";
-    return user.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
+    return user.name
+      .split(" ")
+      .map((p) => p[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
   }, [user]);
-
-  /* ---------------- PROFILE DROPDOWN ---------------- */
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileRef = useRef(null);
-
-  useEffect(() => {
-    const h = (e) => { if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -133,214 +146,313 @@ const Sidebar = () => {
 
   return (
     <motion.aside
+      initial={false}
       animate={{ width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
-      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      style={{
-        flex: `0 0 auto`,
-        height: "100vh",
-        fontFamily: "'Inter', sans-serif",
-      }}
-      className="sticky top-0 hidden flex-shrink-0 flex-col overflow-hidden border-r border-[#C6C6C6]/50 bg-white shadow-sm lg:flex"
+      transition={{ type: "spring", stiffness: 300, damping: 28 }}
+      className="sticky top-0 hidden flex-shrink-0 flex-col h-screen overflow-hidden border-r-2 border-slate-200/80 bg-gradient-to-b from-white via-slate-50/95 to-white shadow-xl shadow-slate-200/30 lg:flex select-none z-30"
     >
-      <style>{FONT_IMPORT}</style>
-
-      {/* TOP GRADIENT LINE */}
-      <div
-        style={{
-          background: `linear-gradient(90deg, ${THEME.highlight} 0%, ${THEME.darken} 45%, ${THEME.accent} 100%)`,
-        }}
-        className="h-[2px] w-full flex-shrink-0"
-      />
-
-      {/* brand block — text logo only, no image */}
-      <div className="flex flex-shrink-0 items-center justify-center gap-2 border-b border-[#C6C6C6]/50 px-2 py-1.5">
-        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center bg-[#0F1D24]">
-          <span className="font-mono text-[9px] font-extrabold text-[#FDC94D]">DT</span>
-        </div>
-        {!collapsed && (
-          <div className="min-w-0 flex-1 leading-none">
-            <p className="truncate text-[11px] font-bold tracking-tight text-[#0F1D24]">PMS-Dehradun</p>
-            <p className="truncate text-[8px] font-medium text-[#9B9B9B]">Production Management System</p>
-          </div>
-        )}
+      {/* Top Accent Gradient Line - Enhanced */}
+      <div className="h-[3px] w-full bg-gradient-to-r from-[#0F1D24] via-[#FDC94D] to-[#0F1D24] shrink-0 relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FDC94D]/50 to-transparent blur-sm" />
       </div>
 
-      {/* DATE & TIME */}
-      {!collapsed ? (
-        <div className="flex flex-shrink-0 items-center justify-center gap-1.5 border-b border-[#C6C6C6]/50 bg-[#FAFAFA] px-2 py-1">
-          <FaCalendarAlt className="text-[9px] text-[#FDC94D]" />
-          <span className="text-[9px] font-medium text-[#0F1D24]">{formattedDate}</span>
-          <span className="h-2.5 w-px bg-[#C6C6C6]" />
-          <FaClock className="text-[9px] text-[#FDC94D]" />
-          <AnimatePresence mode="wait">
-            <motion.span
-              key={formattedTime}
-              initial={{ opacity: 0, y: -2 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 2 }}
-              transition={{ duration: 0.12 }}
-              className="font-mono text-[9px] font-semibold tabular-nums text-[#0F1D24]"
+      {/* Header / Brand Logo - Enhanced */}
+      <div className="flex shrink-0 items-center justify-center border-b-2 border-slate-200/60 px-3.5 h-16 bg-white/80 backdrop-blur-sm">
+        <AnimatePresence mode="wait">
+          {collapsed ? (
+            <motion.div
+              key="collapsed-logo"
+              initial={{ scale: 0.8, opacity: 0, rotate: -10 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              exit={{ scale: 0.8, opacity: 0, rotate: 10 }}
+              transition={{ duration: 0.25, type: "spring", stiffness: 400 }}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0F1D24] to-[#1a2f3f] shadow-lg shadow-[#0F1D24]/20 ring-2 ring-[#FDC94D]/20"
             >
-              {formattedTime}
-            </motion.span>
-          </AnimatePresence>
-        </div>
-      ) : (
-        <div
-          className="flex flex-shrink-0 items-center justify-center border-b border-[#C6C6C6]/50 bg-[#FAFAFA] py-1"
-          title={`${formattedDate} · ${formattedTime}`}
-        >
-          <FaClock className="text-[10px] text-[#FDC94D]" />
-        </div>
-      )}
+              <span className="font-mono text-xs font-black tracking-widest text-[#FDC94D]">
+                DT
+              </span>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="expanded-logo"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center justify-center h-8"
+            >
+              <img
+                src={dixonLogo}
+                alt="Dixon"
+                className="h-7 w-auto object-contain max-w-[150px] drop-shadow-sm"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-      {/* MENU SECTIONS */}
-      <div className="flex-1 space-y-2.5 overflow-y-auto overflow-x-hidden px-1.5 py-2">
+      {/* Date & Time Widget - Enhanced */}
+      <div className="shrink-0 border-b-2 border-slate-200/60 bg-gradient-to-r from-white/80 to-slate-50/80 py-2.5 px-3.5 backdrop-blur-sm">
+        <Tooltip text={`${formattedDate} · ${formattedTime}`} show={collapsed}>
+          {!collapsed ? (
+            <div className="flex items-center justify-between text-[10.5px] font-medium">
+              <div className="flex items-center gap-2 text-slate-600">
+                <FaCalendarAlt className="text-[#FDC94D] text-[11px] drop-shadow-sm" />
+                <span className="bg-gradient-to-r from-slate-700 to-slate-600 bg-clip-text text-transparent">
+                  {formattedDate}
+                </span>
+              </div>
+              <span className="h-4 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent" />
+              <div className="flex items-center gap-2 font-mono font-semibold">
+                <FaClock className="text-[#FDC94D] text-[11px] drop-shadow-sm" />
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={formattedTime}
+                    initial={{ opacity: 0, y: -2 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 2 }}
+                    transition={{ duration: 0.12 }}
+                    className="bg-gradient-to-r from-[#0F1D24] to-[#1a2f3f] bg-clip-text text-transparent"
+                  >
+                    {formattedTime}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-0.5">
+              <FaClock className="text-[14px] text-[#0F1D24] drop-shadow-sm" />
+            </div>
+          )}
+        </Tooltip>
+      </div>
+
+      {/* Menu Navigation - Enhanced */}
+      <div className="flex-1 space-y-4 overflow-y-auto px-2.5 py-4 custom-scrollbar">
         {menuSections.map((section) => (
-          <div key={section.label}>
-            {!collapsed && (
-              <p className="mb-1 px-1.5 text-[8.5px] font-semibold uppercase tracking-[1.5px] text-[#9B9B9B]">
-                {section.label}
-              </p>
-            )}
+          <div key={section.label} className="space-y-1.5">
+            <AnimatePresence>
+              {!collapsed ? (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="px-2.5 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-slate-400 to-slate-300 bg-clip-text text-transparent overflow-hidden"
+                >
+                  {section.label}
+                </motion.p>
+              ) : (
+                <div className="mx-auto w-6 border-t-2 border-slate-200/80 my-2.5" />
+              )}
+            </AnimatePresence>
 
-            <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-0.5">
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <motion.div key={item.id} variants={itemVariants}>
-                    <NavLink
-                      to={item.path}
-                      end
-                      title={collapsed ? item.title : undefined}
-                      className={({ isActive }) =>
-                        `block relative overflow-hidden rounded transition-colors duration-150 ${
-                          isActive ? "bg-[#0F1D24]/[0.06]" : "hover:bg-[#F5F5F5]"
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <div
-                          className={`relative flex cursor-pointer select-none items-center gap-2 px-2 py-1.5 ${
-                            collapsed ? "justify-center px-0" : ""
+            <div className="space-y-1">
+              {section.items.map((item) => (
+                <Tooltip key={item.id} text={item.title} show={collapsed}>
+                  <NavLink
+                    to={item.path}
+                    end
+                    onMouseEnter={() => setHoveredItem(item.id)}
+                    onMouseLeave={() => setHoveredItem(null)}
+                    className={({ isActive }) =>
+                      `group relative flex items-center h-10 rounded-2xl transition-all duration-300 ${
+                        collapsed ? "justify-center px-0" : "px-3.5"
+                      } ${
+                        isActive
+                          ? "text-white"
+                          : "text-slate-600 hover:bg-gradient-to-r hover:from-slate-200/60 hover:to-transparent hover:text-[#0F1D24]"
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {/* Active Item Motion Background - Enhanced */}
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeTabBackground"
+                            className="absolute inset-0 bg-gradient-to-r from-[#0F1D24] to-[#1a2f3f] rounded-2xl shadow-lg shadow-[#0F1D24]/20 border border-white/10"
+                            transition={{
+                              type: "spring",
+                              stiffness: 350,
+                              damping: 30,
+                            }}
+                          />
+                        )}
+
+                        {/* Hover Glow Effect */}
+                        {!isActive && hoveredItem === item.id && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="absolute inset-0 bg-gradient-to-r from-slate-200/40 to-transparent rounded-2xl"
+                          />
+                        )}
+
+                        {/* Icon with Enhanced Animation */}
+                        <motion.span
+                          whileHover={!collapsed ? { scale: 1.05, rotate: 2 } : {}}
+                          whileTap={{ scale: 0.95 }}
+                          className={`relative z-10 flex items-center justify-center shrink-0 transition-all duration-300 ${
+                            isActive
+                              ? "text-[#FDC94D] drop-shadow-lg"
+                              : "text-slate-500 group-hover:text-[#0F1D24]"
                           }`}
                         >
-                          {isActive && (
-                            <motion.div
-                              layoutId="sidebarIndicator"
-                              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                              className="absolute left-0 top-0 h-full w-[2px] rounded"
-                              style={{ background: THEME.accent }}
-                            />
-                          )}
+                          {item.icon}
+                        </motion.span>
 
-                          <span
-                            className="relative z-10 flex min-w-[14px] items-center justify-center transition-colors duration-150"
-                            style={{ color: item.color }}
-                          >
-                            <Icon className="h-3.5 w-3.5" />
-                          </span>
-
+                        {/* Title Label - Enhanced */}
+                        <AnimatePresence>
                           {!collapsed && (
-                            <span
-                              className={`relative z-10 flex-1 truncate text-left text-[11px] font-medium tracking-wide transition-colors duration-150 ${
-                                isActive ? "text-[#0F1D24]" : "text-[#0F1D24]/70"
+                            <motion.span
+                              initial={{ opacity: 0, x: -8 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: -8 }}
+                              transition={{ duration: 0.2 }}
+                              className={`relative z-10 ml-3.5 truncate text-[12.5px] font-medium tracking-wide flex-1 ${
+                                isActive
+                                  ? "text-white font-semibold"
+                                  : "text-slate-700 group-hover:text-[#0F1D24]"
                               }`}
                             >
                               {item.title}
-                            </span>
+                            </motion.span>
                           )}
+                        </AnimatePresence>
 
-                          {isActive && !collapsed && (
-                            <span className="relative z-10 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: THEME.accent }} />
-                          )}
-                        </div>
-                      )}
-                    </NavLink>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
+                        {/* Enhanced Gold Dot Indicator */}
+                        {isActive && !collapsed && (
+                          <motion.span
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 500 }}
+                            className="relative z-10 h-2 w-2 rounded-full bg-[#FDC94D] shrink-0 ml-auto shadow-lg shadow-[#FDC94D]/30"
+                          >
+                            <span className="absolute inset-0 rounded-full bg-[#FDC94D] animate-ping opacity-50" />
+                          </motion.span>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                </Tooltip>
+              ))}
+            </div>
           </div>
         ))}
       </div>
 
-      {/* user account panel — click avatar row to open a popup with Sign out */}
-      <div ref={profileRef} className="relative flex-shrink-0 border-t border-[#C6C6C6]/50 px-1.5 py-1.5">
-        {profileOpen && (
-          <div
-            className={`absolute bottom-full z-30 mb-1.5 w-44 rounded border border-[#C6C6C6]/60 bg-white shadow-[0_-4px_10px_rgba(15,29,36,0.12)] ${
-              collapsed ? "left-full ml-1.5" : "left-1.5"
+      {/* User Section - Enhanced */}
+      <div className="shrink-0 border-t-2 border-slate-200/70 p-2.5 bg-gradient-to-b from-white/60 to-slate-50/60 backdrop-blur-sm space-y-1.5">
+        <Tooltip text={user?.name || "Account"} show={collapsed}>
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            className={`flex items-center gap-3 rounded-2xl border-2 border-slate-200/80 bg-white/90 p-2.5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-[#FDC94D]/30 ${
+              collapsed ? "justify-center p-2" : ""
             }`}
           >
-            <div className="rounded-t border-b border-[#C6C6C6]/60 bg-[#FAFAFA] px-2.5 py-1.5">
-              <p className="text-[10px] font-bold leading-none text-[#0F1D24]">{user?.name || "—"}</p>
-              <p className="mt-0.5 text-[8.5px] leading-none text-[#9B9B9B]">{user?.employee_id || ""}</p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex w-full items-center gap-1.5 rounded-b px-2.5 py-1.5 text-[10px] font-semibold text-red-600 transition-colors duration-150 hover:bg-red-50"
-            >
-              <FaSignOutAlt size={9} />
-              Sign out
-            </button>
-          </div>
-        )}
+            {initials ? (
+              <motion.span
+                whileHover={{ scale: 1.05, rotate: -5 }}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0F1D24] to-[#1a2f3f] text-[11px] font-bold text-[#FDC94D] shadow-md shadow-[#0F1D24]/20 ring-2 ring-[#FDC94D]/20"
+              >
+                {initials}
+              </motion.span>
+            ) : (
+              <FaUserCircle className="h-9 w-9 shrink-0 text-slate-400" />
+            )}
 
-        <button
-          type="button"
-          onClick={() => setProfileOpen((v) => !v)}
-          title={collapsed ? user?.name || "Account" : undefined}
-          className={`flex w-full items-center gap-2 rounded border border-[#C6C6C6]/60 bg-[#F5F5F5] px-2 py-1 text-left transition-colors duration-150 hover:bg-[#F0F0F0] ${
-            collapsed ? "justify-center px-0" : ""
-          }`}
-        >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0F1D24] text-[9px] font-bold text-[#FDC94D]">
-            {initials || <FaUserCircle className="text-sm" />}
-          </span>
-          {!collapsed && (
-            <>
-              <div className="min-w-0 flex-1 leading-none">
-                <p className="truncate text-[10px] font-bold leading-none text-[#0F1D24]">{user?.name || "—"}</p>
-                <p className="mt-0.5 truncate text-[8.5px] font-semibold leading-none text-[#FDC94D]">{user?.role || ""}</p>
-              </div>
-              <HiOutlineChevronDown className={`h-3 w-3 flex-shrink-0 text-[#9B9B9B] transition-transform ${profileOpen ? "rotate-180" : ""}`} />
-            </>
-          )}
-        </button>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="min-w-0 flex-1"
+              >
+                <p className="truncate text-[11.5px] font-bold bg-gradient-to-r from-[#0F1D24] to-slate-700 bg-clip-text text-transparent">
+                  {user?.name || "Guest User"}
+                </p>
+                <p className="truncate text-[9.5px] font-semibold text-[#FDC94D] uppercase tracking-wider">
+                  {user?.role || "Operator"}
+                </p>
+              </motion.div>
+            )}
+          </motion.div>
+        </Tooltip>
+
+        <Tooltip text="Logout" show={collapsed}>
+          <motion.button
+            type="button"
+            onClick={handleLogout}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.97 }}
+            className={`flex h-9 w-full items-center justify-center gap-2 rounded-2xl border-2 border-red-200/60 bg-gradient-to-r from-red-50/50 to-red-100/50 text-[11px] font-semibold text-red-600 transition-all duration-300 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:border-transparent hover:shadow-lg hover:shadow-red-500/20 ${
+              collapsed ? "px-0" : "px-3.5"
+            }`}
+          >
+            <FaSignOutAlt size={12} />
+            {!collapsed && <span>Logout</span>}
+          </motion.button>
+        </Tooltip>
       </div>
 
-      {/* FOOTER */}
+      {/* Footer Info - Enhanced */}
       {!collapsed && (
-        <div className="flex-shrink-0 border-t border-[#C6C6C6]/50 bg-white px-2.5 py-1.5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[9px] font-semibold leading-none text-[#0F1D24]">PMS-Dehradun</p>
-              <p className="mt-0.5 font-mono text-[8px] leading-none text-[#9B9B9B]">v1.0.0</p>
-            </div>
-            <span className="flex items-center gap-1 rounded-sm border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[7px] font-semibold tracking-widest text-emerald-600">
-              <span className="h-1 w-1 animate-pulse rounded-full bg-emerald-500" />
-              LIVE
-            </span>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="shrink-0 border-t-2 border-slate-200/60 bg-white/80 px-3.5 py-2.5 flex items-center justify-between text-[9.5px] backdrop-blur-sm"
+        >
+          <div>
+            <p className="font-bold bg-gradient-to-r from-[#0F1D24] to-slate-600 bg-clip-text text-transparent">
+              PMS-Dehradun
+            </p>
+            <p className="font-mono text-slate-400 text-[8.5px]">v1.0.0</p>
           </div>
-        </div>
+          <motion.span
+            whileHover={{ scale: 1.05 }}
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-50 to-emerald-100/70 px-2.5 py-0.5 font-bold text-[8.5px] text-emerald-600 border-2 border-emerald-200/80 shadow-sm"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500">
+              <span className="absolute h-1.5 w-1.5 animate-ping rounded-full bg-emerald-500" />
+            </span>
+            LIVE
+          </motion.span>
+        </motion.div>
       )}
 
-      {/* HIDE / COLLAPSE TOGGLE */}
-      <button
+      {/* Collapse Toggle Switch - Enhanced */}
+      <motion.button
         type="button"
         onClick={() => setCollapsed((v) => !v)}
-        className="flex h-7 flex-shrink-0 items-center justify-center gap-1.5 border-t border-[#C6C6C6]/50 bg-[#FAFAFA] text-[9px] font-bold text-[#0F1D24] transition-colors duration-150 hover:bg-[#0F1D24] hover:text-[#FDC94D]"
+        whileHover={{ backgroundColor: "#0F1D24", color: "#FDC94D" }}
+        className="flex h-10 shrink-0 items-center justify-center gap-2 border-t-2 border-slate-200/80 bg-gradient-to-r from-slate-100/80 to-white text-[11px] font-semibold text-slate-600 transition-all duration-300"
       >
-        {collapsed ? (
-          <HiOutlineChevronDoubleRight className="h-3.5 w-3.5" />
-        ) : (
-          <>
-            <HiOutlineChevronDoubleLeft className="h-3.5 w-3.5" />
-            Hide
-          </>
+        <motion.div
+          animate={{ rotate: collapsed ? 180 : 0 }}
+          transition={{ duration: 0.3, type: "spring", stiffness: 400 }}
+        >
+          <HiChevronLeft className="h-4 w-4" />
+        </motion.div>
+        {!collapsed && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            Collapse
+          </motion.span>
         )}
-      </button>
+        {collapsed && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <HiChevronRight className="h-4 w-4" />
+          </motion.span>
+        )}
+      </motion.button>
     </motion.aside>
   );
 };
