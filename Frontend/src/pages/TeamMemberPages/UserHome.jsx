@@ -689,17 +689,6 @@ const UserHome = () => {
         <div className="flex-shrink-0" style={{ flexBasis: "16%" }}>
           <QuickAccessSection />
         </div>
-
-        {/* <div className="grid min-h-0 flex-1 grid-cols-1 gap-1.5 lg:grid-cols-3">
-          <ProductionTrendChart />
-          <MachineStatusPanel />
-          <TodaysSummaryPanel />
-        </div> */}
-{/* 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-1.5 lg:grid-cols-2">
-          <RecentActivityPanel />
-          <AlertsPanel />
-        </div> */}
       </main>
     </div>
   );
