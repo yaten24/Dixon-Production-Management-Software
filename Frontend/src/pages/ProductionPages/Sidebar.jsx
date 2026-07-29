@@ -9,7 +9,7 @@ import {
 
 import { useAuth } from "../../context/AuthContext";
 import { HiCalendar, HiClipboardList, HiDocumentAdd, HiDocumentReport, HiOfficeBuilding, HiOutlineChevronDoubleLeft, HiOutlineChevronDoubleRight, HiOutlineChevronDown, HiOutlineClipboardList, HiOutlineDocumentAdd, HiOutlineDocumentReport, HiOutlineOfficeBuilding, HiUserGroup } from "react-icons/hi";
-import { FaCalendarAlt, FaClock, FaSignOutAlt } from "react-icons/fa";
+import { FaCalendarAlt, FaClock, FaSignOutAlt, FaUserCircle } from "react-icons/fa";
 
 const EXPANDED_WIDTH = 200;
 const COLLAPSED_WIDTH = 64;
@@ -173,7 +173,7 @@ const Sidebar = () => {
           className="relative overflow-hidden rounded-[2px] bg-[#0F1D24] p-2 text-white shadow-sm border border-slate-800"
         >
           {/* Subtle Ambient Glow */}
-          <div className="absolute -right-4 -top-4 h-12 w-12 rounded-full bg-[#FDC94D]/10 blur-xl pointer-events-none" />
+          <div className="absolute -right-4 -top-4 h-12 w-12 rounded-[2px] bg-[#FDC94D]/10 blur-xl pointer-events-none" />
 
           {!collapsed ? (
             <div className="space-y-1">
@@ -184,8 +184,8 @@ const Sidebar = () => {
                   <span>{formattedDate}</span>
                 </span>
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-[2px] bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-[2px] h-2 w-2 bg-emerald-500" />
                 </span>
               </div>
 
@@ -232,12 +232,12 @@ const Sidebar = () => {
                 end
                 title={collapsed ? item.title : undefined}
                 className={({ isActive }) =>
-                  `group relative flex items-center h-9 rounded-[2px] transition-all duration-150 ${
-                    collapsed ? "justify-center px-0" : "px-2.5"
+                  `group relative flex items-center h-8 rounded-[2px] border-1 transition-all duration-150 ${
+                    collapsed ? "justify-center px-0" : "px-2"
                   } ${
                     isActive
-                      ? "bg-[#0F1D24] text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-[#0F1D24]"
+                      ? "border-[#0F1D24] bg-[#0F1D24] text-white shadow-sm"
+                      : "border-transparent text-slate-600 hover:border-[#0F1D24] hover:bg-slate-50 hover:text-[#0F1D24]"
                   }`
                 }
               >
@@ -282,7 +282,7 @@ const Sidebar = () => {
 
                     {/* Active Dot indicator when expanded */}
                     {isActive && !collapsed && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#FDC94D] shrink-0" />
+                      <span className="h-1.5 w-1.5 rounded-[2px] bg-[#FDC94D] shrink-0" />
                     )}
                   </>
                 )}
@@ -329,7 +329,7 @@ const Sidebar = () => {
             collapsed ? "justify-center px-0" : ""
           }`}
         >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0F1D24] text-[9px] font-bold text-[#FDC94D]">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-[#0F1D24] text-[9px] font-bold text-[#FDC94D]">
             {initials || <FaUserCircle className="text-sm" />}
           </span>
           {!collapsed && (

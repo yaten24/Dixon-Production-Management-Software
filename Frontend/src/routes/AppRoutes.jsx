@@ -64,6 +64,7 @@ import AdminDailyPlanPage from "../pages/AdminPages/DailyPlanPage";
 import AdminReportsPage from "../pages/AdminPages/ReportsPage";
 import AdminViewDailyPlanPage from "../pages/AdminPages/DailyPlanView";
 import AdminMonthlyPlanView from "../pages/AdminPages/MonthlyPlanView";
+import ManagementMouldChangeDashboard from "../pages/ManagementPages/MouldChangeDashboard";
 
 const AppRoutes = () => {
   return (
@@ -168,7 +169,7 @@ const AppRoutes = () => {
         path="/management/mould-change"
         element={
           <ManagementRoute>
-            <MouldChangeDashboard />
+            <ManagementMouldChangeDashboard />
           </ManagementRoute>
         }
       />

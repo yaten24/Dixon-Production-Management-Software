@@ -285,7 +285,7 @@ const Sidebar = () => {
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="space-y-1.5"
+          className="space-y-1"
         >
           {menuItems.map((item) => (
             <motion.div key={item.id} variants={itemVariants}>
@@ -294,8 +294,8 @@ const Sidebar = () => {
                 end
                 title={collapsed ? item.title : undefined}
                 className={({ isActive }) =>
-                  `group relative flex items-center h-9 rounded-md border-2 transition-all duration-150 ${
-                    collapsed ? "justify-center px-0" : "px-2.5"
+                  `group relative flex items-center h-8 rounded-[2px] border-1 transition-all duration-150 ${
+                    collapsed ? "justify-center px-0" : "px-2"
                   } ${
                     isActive
                       ? "border-[#0F1D24] bg-[#0F1D24] text-white shadow-sm"
