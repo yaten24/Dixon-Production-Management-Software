@@ -127,8 +127,11 @@ const Th = ({ children, span, align = "center", first = false, last = false }) =
   </th>
 );
 
-const Td = ({ children, className = "", first = false, last = false }) => (
+// NOTE: added `colSpan` support so "no data" rows can merge cells across
+// the numeric columns instead of leaving them all blank one by one.
+const Td = ({ children, className = "", first = false, last = false, colSpan }) => (
   <td
+    colSpan={colSpan}
     className={`px-2 py-1 ${className}`}
     style={{
       boxShadow: [
@@ -172,6 +175,7 @@ function exportToExcel({ rows, totals, month, year, hall, shift }) {
     "Target (Units)", "Actual (Units)", "Good (Units)", "Reject (Units)",
     "Achievement %", "Reject %", "Efficiency (%)",
     "Std Cycle Time (Sec)", "Actual Cycle Time (Sec)", "Loss (Min)",
+    "Has Data",
   ];
 
   const dataRows = rows.map((r) => [
@@ -179,13 +183,15 @@ function exportToExcel({ rows, totals, month, year, hall, shift }) {
     r.target, r.actual, r.good, r.reject,
     r.achievement, r.rejectPct, r.efficiency,
     r.stdCycleTime, r.actualCycleTime, r.lossMinutes,
+    r.hasData ? "Yes" : "No",
   ]);
 
   const totalsRow = [
-    "TOTAL / AVG", `${totals.machineCount || 0} Machines`,
+    "TOTAL / AVG", `${totals.machineCount || 0} Machines (${totals.machinesWithData || 0} with data)`,
     totals.target, totals.actual, totals.good, totals.reject,
     totals.achievement || 0, totals.rejectPct || 0, totals.avgEfficiency || 0,
-    "", "", "",
+    totals.avgStdCycleTime || 0, totals.avgActualCycleTime || 0, totals.totalLossMinutes || 0,
+    "",
   ];
 
   const sheetData = [header, ...dataRows, totalsRow];
@@ -298,7 +304,7 @@ const MachineWiseProduction = () => {
                   <KpiCard
                     icon={Target} accent={BLUE}
                     label="Target (Units)" value={fmt(totals.target)} sub="Total Monthly Target"
-                    stat1={{ label: "Machines", value: totals.machineCount || 0 }}
+                    stat1={{ label: "Machines", value: `${totals.machineCount || 0} (${totals.machinesWithData || 0} active)` }}
                   />
                   <KpiCard
                     icon={TrendingUp} accent={GREEN}
@@ -313,7 +319,7 @@ const MachineWiseProduction = () => {
                   />
                   <KpiCard
                     icon={Gauge} accent={PURPLE}
-                    label="Efficiency (%)" value={`${totals.avgEfficiency || 0}%`} sub="Average Across Machines"
+                    label="Efficiency (%)" value={`${totals.avgEfficiency || 0}%`} sub="Volume-Weighted Average"
                     stat1={{ label: "Best Machine", value: totals.bestMachine ? `${totals.bestMachine.machine} (${totals.bestMachine.efficiency}%)` : "-", tone: "text-emerald-400" }}
                     stat2={{ label: "Lowest Machine", value: totals.worstMachine ? `${totals.worstMachine.machine} (${totals.worstMachine.efficiency}%)` : "-", tone: "text-red-400" }}
                   />
@@ -358,7 +364,7 @@ const MachineWiseProduction = () => {
                             {rows.length === 0 ? (
                               <tr>
                                 <td colSpan={12} className="border-b-2 border-[#CBD5E1] px-2 py-4 text-center italic text-[#94A3B8]">
-                                  No machine data for this period.
+                                  No machines found.
                                 </td>
                               </tr>
                             ) : (
@@ -371,16 +377,24 @@ const MachineWiseProduction = () => {
                                 >
                                   <Td first className="truncate font-bold">{r.machine}</Td>
                                   <Td className="truncate">{r.hall}</Td>
-                                  <Td>{fmt(r.target)}</Td>
-                                  <Td>{fmt(r.actual)}</Td>
-                                  <Td>{fmt(r.good)}</Td>
-                                  <Td>{fmt(r.reject)}</Td>
-                                  <Td className={r.achievement >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.achievement}%</Td>
-                                  <Td className="text-red-500">{r.rejectPct}%</Td>
-                                  <Td className={r.efficiency >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.efficiency}%</Td>
-                                  <Td>{r.stdCycleTime}</Td>
-                                  <Td>{r.actualCycleTime}</Td>
-                                  <Td last>{r.lossMinutes}</Td>
+                                  {r.hasData ? (
+                                    <>
+                                      <Td>{fmt(r.target)}</Td>
+                                      <Td>{fmt(r.actual)}</Td>
+                                      <Td>{fmt(r.good)}</Td>
+                                      <Td>{fmt(r.reject)}</Td>
+                                      <Td className={r.achievement >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.achievement}%</Td>
+                                      <Td className="text-red-500">{r.rejectPct}%</Td>
+                                      <Td className={r.efficiency >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.efficiency}%</Td>
+                                      <Td>{r.stdCycleTime}</Td>
+                                      <Td>{r.actualCycleTime}</Td>
+                                      <Td last>{r.lossMinutes}</Td>
+                                    </>
+                                  ) : (
+                                    <Td colSpan={10} last className="text-center italic text-[#94A3B8]">
+                                      No production data available for this machine
+                                    </Td>
+                                  )}
                                 </tr>
                               ))
                             )}
@@ -393,19 +407,21 @@ const MachineWiseProduction = () => {
                         <table className="w-full min-w-[1215px] table-fixed border-separate border-spacing-0 text-left">
                           <ColGroup />
                           <tbody>
-                            <tr className="bg-[#FEF3C7] text-[10px] font-extrabold text-[#0F1D24]">
-                              <Td first className="truncate py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">TOTAL / AVG</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.machineCount)} Mc</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.target)}</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.actual)}</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.good)}</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.reject)}</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.achievement)}%</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-red-500">{fmt(totals.rejectPct)}%</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.avgEfficiency)}%</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">—</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">—</Td>
-                              <Td last className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">—</Td>
+                            <tr className="bg-[#FEF3C7] text-[14px] font-extrabold text-[#0F1D24]">
+                              <Td first className="truncate py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">TOTAL / AVG</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">
+                                {fmt(totals.machineCount)}
+                              </Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.target)}</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.actual)}</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.good)}</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.reject)}</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.achievement)}%</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7] text-red-500">{fmt(totals.rejectPct)}%</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.avgEfficiency)}%</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.avgStdCycleTime)}</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.avgActualCycleTime)}</Td>
+                              <Td last className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.totalLossMinutes)}</Td>
                             </tr>
                           </tbody>
                         </table>

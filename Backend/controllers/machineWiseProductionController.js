@@ -1,4 +1,4 @@
-// controllers/machineDashboardController.js
+// controllers/machineWiseProductionController.js
 const { getMachineWiseSummary } = require("../models/machineWiseProductionModel");
 
 const MONTHS = [
@@ -21,6 +21,7 @@ async function getMonthlyMachineWise(req, res) {
     const dbRows = await getMachineWiseSummary({ year, month, hall, shift });
 
     const rows = dbRows.map((r) => {
+      const hasData = Number(r.entry_count) > 0;
       const target = Number(r.target) || 0;
       const actual = Number(r.actual) || 0;
       const good = Number(r.good) || 0;
@@ -30,30 +31,54 @@ async function getMonthlyMachineWise(req, res) {
         machineId: r.machine_id,
         machine: r.machine_code || `Machine-${r.machine_id}`,
         hall: r.hall,
+        hasData,
         target,
         actual,
         good,
         reject,
-        achievement: target > 0 ? Math.round((actual / target) * 1000) / 10 : 0,
-        rejectPct: actual > 0 ? Math.round((reject / actual) * 1000) / 10 : 0,
-        efficiency: Number(r.avg_efficiency) || 0,
-        stdCycleTime: Number(r.std_cycle_time) || 0,
-        actualCycleTime: Number(r.actual_cycle_time) || 0,
+        // achievement/rejectPct/efficiency are meaningless with no data —
+        // keep them 0 instead of NaN/misleading numbers, UI shows the
+        // "no data" message for these rows instead of the percentages.
+        achievement: hasData && target > 0 ? Math.round((actual / target) * 1000) / 10 : 0,
+        rejectPct: hasData && actual > 0 ? Math.round((reject / actual) * 1000) / 10 : 0,
+        efficiency: hasData ? Number(r.avg_efficiency) || 0 : 0,
+        stdCycleTime: hasData ? Number(r.std_cycle_time) || 0 : 0,
+        actualCycleTime: hasData ? Number(r.actual_cycle_time) || 0 : 0,
         lossMinutes: Number(r.loss_minutes) || 0,
         lastEntryDate: r.last_entry_date,
       };
     });
 
+    const rowsWithData = rows.filter((r) => r.hasData);
+
     const totalTarget = rows.reduce((s, r) => s + r.target, 0);
     const totalActual = rows.reduce((s, r) => s + r.actual, 0);
     const totalGood = rows.reduce((s, r) => s + r.good, 0);
     const totalReject = rows.reduce((s, r) => s + r.reject, 0);
-    const effVals = rows.map((r) => r.efficiency).filter((v) => v > 0);
-    const avgEfficiency = effVals.length
-      ? Math.round((effVals.reduce((a, b) => a + b, 0) / effVals.length) * 100) / 100
+    const totalLossMinutes = rows.reduce((s, r) => s + r.lossMinutes, 0);
+
+    // Volume-weighted overall efficiency — matches how each machine's own
+    // efficiency is already weighted, instead of a flat average of averages
+    // (a flat average would let a low-volume machine skew the total).
+    const avgEfficiency = totalActual > 0
+      ? Math.round((rowsWithData.reduce((s, r) => s + r.efficiency * r.actual, 0) / totalActual) * 100) / 100
       : 0;
-    const bestMachine = rows.length ? rows.reduce((a, b) => (b.efficiency > a.efficiency ? b : a)) : null;
-    const worstMachine = rows.length ? rows.reduce((a, b) => (b.efficiency < a.efficiency ? b : a)) : null;
+
+    // Simple means for cycle times — sum/qty weighting doesn't apply the
+    // same way here since cycle time is per-piece, not a percentage.
+    const avgStdCycleTime = rowsWithData.length
+      ? Math.round((rowsWithData.reduce((s, r) => s + r.stdCycleTime, 0) / rowsWithData.length) * 100) / 100
+      : 0;
+    const avgActualCycleTime = rowsWithData.length
+      ? Math.round((rowsWithData.reduce((s, r) => s + r.actualCycleTime, 0) / rowsWithData.length) * 100) / 100
+      : 0;
+
+    const bestMachine = rowsWithData.length
+      ? rowsWithData.reduce((a, b) => (b.efficiency > a.efficiency ? b : a))
+      : null;
+    const worstMachine = rowsWithData.length
+      ? rowsWithData.reduce((a, b) => (b.efficiency < a.efficiency ? b : a))
+      : null;
 
     const totals = {
       target: totalTarget,
@@ -63,7 +88,11 @@ async function getMonthlyMachineWise(req, res) {
       achievement: totalTarget > 0 ? Math.round((totalActual / totalTarget) * 1000) / 10 : 0,
       rejectPct: totalActual > 0 ? Math.round((totalReject / totalActual) * 1000) / 10 : 0,
       machineCount: rows.length,
+      machinesWithData: rowsWithData.length,
       avgEfficiency,
+      avgStdCycleTime,
+      avgActualCycleTime,
+      totalLossMinutes,
       bestMachine,
       worstMachine,
     };

@@ -423,19 +423,19 @@ const DateWiseProduction = () => {
                         <table className="w-full min-w-[1210px] table-fixed border-separate border-spacing-0 text-left">
                           <ColGroup />
                           <tbody>
-                            <tr className="bg-[#FEF3C7] text-[10px] font-extrabold text-[#0F1D24]">
-                              <Td first className="truncate py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">TOTAL / AVG</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.target)}</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.target)}</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.actual)}</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.actual)}</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.achievement)}%</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.reject)}</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-red-500">{fmt(totals.rejectPct)}%</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.reject)}</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-red-500">{fmt(totals.rejectPct)}%</Td>
-                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.avgOee)}%</Td>
-                              <Td last className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.avgOee)}%</Td>
+                            <tr className="bg-[#FEF3C7] text-[14px] font-extrabold text-[#0F1D24]">
+                              <Td first className="truncate py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">TOTAL / AVG</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.target)}</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.target)}</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.actual)}</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.actual)}</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.achievement)}%</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.reject)}</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7] text-red-500">{fmt(totals.rejectPct)}%</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.reject)}</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7] text-red-500">{fmt(totals.rejectPct)}%</Td>
+                              <Td className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.avgOee)}%</Td>
+                              <Td last className="py-1 border-t-2 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.avgOee)}%</Td>
                             </tr>
                           </tbody>
                         </table>
