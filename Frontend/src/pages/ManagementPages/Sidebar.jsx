@@ -60,6 +60,12 @@ const menuItems = [
     icon: <FaExchangeAlt size={14} />,
   },
   {
+    id: 6,
+    title: "Monthly Production",
+    path: "/management/monthly/production/dashboard",
+    icon: <FaExchangeAlt size={14} />,
+  },
+  {
     id: 9,
     title: "Reports",
     path: "/management/reports",
