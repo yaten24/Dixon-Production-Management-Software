@@ -5,6 +5,7 @@ import {
   TrendingUp,
   XCircle,
   Gauge,
+  Cog,
   ChevronDown,
   Download,
   Printer,
@@ -12,7 +13,7 @@ import {
 } from "lucide-react";
 
 import Sidebar from "./Sidebar";
-import useDateWiseProduction from "../../hooks/useDateWiseProduction";
+import useMachineWiseProduction from "../../hooks/useMachineWiseProduction";
 
 const AMBER = "#FDC94D";
 const GREEN = "#10B981";
@@ -34,7 +35,7 @@ const CardShell = ({ className = "", children }) => (
   </div>
 );
 
-// Custom themed dropdown — replaces native <select>, matches Dashboard.jsx's header selects
+// Custom themed dropdown — same as DateWiseProduction.jsx
 const DarkSelect = ({ label, value, options = [], onChange }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -85,7 +86,13 @@ const DarkSelect = ({ label, value, options = [], onChange }) => {
 const KpiCard = ({ icon: Icon, accent, label, value, sub, stat1, stat2 }) => (
   <div className="flex min-h-0 flex-col gap-1.5 rounded-[2px] border border-white/10 bg-[#0F1D24] p-2.5 shadow-sm [container-type:inline-size]">
     <div className="flex items-center gap-2">
-      <span className="truncate text-[14.5px] font-bold uppercase tracking-wide text-white/70">{label}</span>
+      <span
+        className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[2px]"
+        style={{ backgroundColor: `${accent}22`, color: accent }}
+      >
+        <Icon size={12} />
+      </span>
+      <span className="truncate text-[9.5px] font-bold uppercase tracking-wide text-white/70">{label}</span>
     </div>
     <div>
       <div className="text-[clamp(16px,6cqw,21px)] font-extrabold leading-none text-white">{value}</div>
@@ -109,7 +116,7 @@ const KpiCard = ({ icon: Icon, accent, label, value, sub, stat1, stat2 }) => (
 const fmt = (n) => (n == null ? "-" : Number(n).toLocaleString("en-IN"));
 
 /* ==========================================================
-   TABLE CELL PRIMITIVES — bordered grid for clear data separation
+   TABLE CELL PRIMITIVES — same bordered grid as DateWiseProduction.jsx
 ========================================================== */
 const Th = ({ children, span, align = "center", first = false }) => (
   <th
@@ -136,63 +143,52 @@ const Legend = ({ swatch, label }) => (
 );
 
 /* ==========================================================
-   EXCEL EXPORT — builds a 2-row header sheet matching the table
+   EXCEL EXPORT
 ========================================================== */
 function exportToExcel({ rows, totals, month, year, hall, shift }) {
-  const headerRow1 = ["Date", "Target (Units)", "", "Actual (Units)", "", "", "Reject (Units)", "", "", "", "OEE (%)", ""];
-  const headerRow2 = ["Day", "Day", "Cumulative", "Day", "Cumulative", "Achv %", "Day", "%", "Cumulative", "Cum %", "Daily", "Cumulative"];
+  const header = [
+    "Machine", "Hall",
+    "Target (Units)", "Actual (Units)", "Good (Units)", "Reject (Units)",
+    "Achievement %", "Reject %", "Efficiency (%)",
+    "Std Cycle Time (Sec)", "Actual Cycle Time (Sec)", "Loss (Min)",
+  ];
 
-  const dataRows = rows.map((r) => {
-    const dateLabel = `${r.label} ${r.weekday}`;
-    if (r.sunday) {
-      return [dateLabel, "No entries", "", "", "", "", "", "", "", "", "", ""];
-    }
-    return [
-      dateLabel,
-      r.target, r.cumTarget,
-      r.actual, r.cumActual, r.achievement,
-      r.reject, r.rejectPct, r.cumReject, r.cumRejectPct,
-      r.dailyOee, r.cumOee,
-    ];
-  });
+  const dataRows = rows.map((r) => [
+    r.machine, r.hall,
+    r.target, r.actual, r.good, r.reject,
+    r.achievement, r.rejectPct, r.efficiency,
+    r.stdCycleTime, r.actualCycleTime, r.lossMinutes,
+  ]);
 
   const totalsRow = [
-    "TOTAL / AVG",
-    totals.target, totals.target,
-    totals.actual, totals.actual, totals.achievement || 0,
-    totals.reject, totals.rejectPct || 0, totals.reject, totals.rejectPct || 0,
-    totals.avgOee || 0, totals.avgOee || 0,
+    "TOTAL / AVG", `${totals.machineCount || 0} Machines`,
+    totals.target, totals.actual, totals.good, totals.reject,
+    totals.achievement || 0, totals.rejectPct || 0, totals.avgEfficiency || 0,
+    "", "", "",
   ];
 
-  const sheetData = [headerRow1, headerRow2, ...dataRows, totalsRow];
+  const sheetData = [header, ...dataRows, totalsRow];
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-  ws["!merges"] = [
-    { s: { r: 0, c: 1 }, e: { r: 0, c: 2 } },
-    { s: { r: 0, c: 3 }, e: { r: 0, c: 5 } },
-    { s: { r: 0, c: 6 }, e: { r: 0, c: 9 } },
-    { s: { r: 0, c: 10 }, e: { r: 0, c: 11 } },
-  ];
-  ws["!cols"] = Array(12).fill({ wch: 12 });
+  ws["!cols"] = Array(header.length).fill({ wch: 14 });
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Date Wise Production");
+  XLSX.utils.book_append_sheet(wb, ws, "Machine Wise Production");
 
   const hallLabel = hall && hall !== "All Halls" ? hall.replace(/\s+/g, "") : "AllHalls";
   const shiftLabel = shift && shift !== "All Shifts" ? `_Shift${shift}` : "";
-  XLSX.writeFile(wb, `DateWiseProduction_${month}${year}_${hallLabel}${shiftLabel}.xlsx`);
+  XLSX.writeFile(wb, `MachineWiseProduction_${month}${year}_${hallLabel}${shiftLabel}.xlsx`);
 }
 
 /* ==========================================================
    PAGE
 ========================================================== */
-const DateWiseProduction = () => {
+const MachineWiseProduction = () => {
   const [year, setYear] = useState("2026");
   const [month, setMonth] = useState(MONTHS[new Date().getMonth()]);
   const [hall, setHall] = useState("All Halls");
   const [shift, setShift] = useState("All Shifts");
 
-  const { rows, totals, loading, error, refetch } = useDateWiseProduction({ year, month, hall, shift });
+  const { rows, totals, loading, error, refetch } = useMachineWiseProduction({ year, month, hall, shift });
 
   const handleApply = () => refetch();
   const handleExportExcel = () => exportToExcel({ rows, totals, month, year, hall, shift });
@@ -215,15 +211,15 @@ const DateWiseProduction = () => {
 
       <div className="print-bg flex min-h-0 flex-1 flex-col overflow-hidden p-1">
         <div className="print-area flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-[2px] border border-[#FDC94D]/40 bg-white">
-          {/* HEADER — dark, matches Dashboard.jsx */}
+          {/* HEADER — dark, matches DateWiseProduction.jsx / Dashboard.jsx */}
           <header className="flex-shrink-0 rounded-t-[2px] bg-[#0F1D24] px-4 py-2.5">
             <div className="flex flex-wrap items-end justify-between gap-y-2 gap-x-3">
               <div>
                 <h1 className="whitespace-nowrap text-[14px] font-extrabold uppercase tracking-wide text-white">
-                  Monthly Data Wise Performance
+                  Machine Wise Performance
                 </h1>
                 <p className="text-[9.5px] font-semibold text-white/40">
-                  Monthly Production Summary — Date Wise ({month} {year}
+                  Monthly Production Summary — Machine Wise ({month} {year}
                   {hall !== "All Halls" ? `, ${hall}` : ""}
                   {shift !== "All Shifts" ? `, Shift ${shift}` : ""})
                 </p>
@@ -269,11 +265,11 @@ const DateWiseProduction = () => {
           )}
 
           {/* MAIN */}
-          <main className="print-area flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-1">
+          <main className="print-area flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2">
             {loading ? (
               <div className="no-print flex flex-1 flex-col items-center justify-center gap-2 text-[13px] font-semibold text-[#94A3B8]">
                 <RefreshCw size={18} className="animate-spin text-[#0F1D24]/40" />
-                Loading monthly data...
+                Loading machine data...
               </div>
             ) : (
               <>
@@ -281,25 +277,24 @@ const DateWiseProduction = () => {
                   <KpiCard
                     icon={Target} accent={BLUE}
                     label="Target (Units)" value={fmt(totals.target)} sub="Total Monthly Target"
-                    stat1={{ label: "Daily Avg Target", value: fmt(totals.dailyAvgTarget) }}
+                    stat1={{ label: "Machines", value: totals.machineCount || 0 }}
                   />
                   <KpiCard
                     icon={TrendingUp} accent={GREEN}
                     label="Actual (Units)" value={fmt(totals.actual)} sub="Total Monthly Actual"
-                    stat1={{ label: "Daily Avg Actual", value: fmt(totals.dailyAvgActual) }}
+                    stat1={{ label: "Good (Units)", value: fmt(totals.good) }}
                     stat2={{ label: "Achievement", value: `${totals.achievement || 0}%`, tone: "text-emerald-400" }}
                   />
                   <KpiCard
                     icon={XCircle} accent={RED}
                     label="Reject (Units)" value={fmt(totals.reject)} sub="Total Monthly Reject"
                     stat1={{ label: "Reject %", value: `${totals.rejectPct || 0}%`, tone: "text-red-400" }}
-                    stat2={{ label: "Daily Avg Reject", value: fmt(totals.dailyAvgReject) }}
                   />
                   <KpiCard
                     icon={Gauge} accent={PURPLE}
-                    label="OEE (%)" value={`${totals.avgOee || 0}%`} sub="Monthly Average OEE"
-                    stat1={{ label: "Best Day", value: `${totals.bestDay?.dailyOee ?? "-"}%`, tone: "text-emerald-400" }}
-                    stat2={{ label: "Lowest Day", value: `${totals.worstDay?.dailyOee ?? "-"}%`, tone: "text-red-400" }}
+                    label="Efficiency (%)" value={`${totals.avgEfficiency || 0}%`} sub="Average Across Machines"
+                    stat1={{ label: "Best Machine", value: totals.bestMachine ? `${totals.bestMachine.machine} (${totals.bestMachine.efficiency}%)` : "-", tone: "text-emerald-400" }}
+                    stat2={{ label: "Lowest Machine", value: totals.worstMachine ? `${totals.worstMachine.machine} (${totals.worstMachine.efficiency}%)` : "-", tone: "text-red-400" }}
                   />
                 </div>
 
@@ -307,90 +302,83 @@ const DateWiseProduction = () => {
                   <CardShell className="print-area flex min-h-0 flex-1 basis-0 flex-col">
                     <div className="mb-1.5 flex flex-shrink-0 items-center justify-between">
                       <h2 className="text-[11.5px] font-extrabold text-[#0F1D24]">
-                        Monthly Data Wise Details {month} {year}
+                        Machine Wise Details — {month} {year}
                       </h2>
                       <div className="flex items-center gap-3 text-[9px] font-bold">
                         <Legend swatch={BLUE} label="Target" />
                         <Legend swatch={GREEN} label="Actual" />
                         <Legend swatch={RED} label="Reject" />
-                        <Legend swatch={PURPLE} label="OEE (%)" />
+                        <Legend swatch={PURPLE} label="Efficiency" />
                       </div>
                     </div>
 
-                    <div className="print-area min-h-0 flex-1 overflow-auto rounded-[2px] border-2 border-[#0F1D24]/40">
-                      <table className="w-full min-w-[1100px] border-collapse text-left">
+                    <div className="print-area min-h-0 flex-1 overflow-auto rounded-[2px] border-2 border-[#0F1D24]/25">
+                      <table className="w-full min-w-[1150px] border-collapse text-left">
                         <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                          <tr className="text-[10.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
-                            <Th span={1} first><span className="block text-left">Date</span></Th>
-                            <Th span={2} align="center"><span className="text-blue-600">Target (Units)</span></Th>
-                            <Th span={3} align="center"><span className="text-emerald-600">Actual (Units)</span></Th>
-                            <Th span={4} align="center"><span className="text-red-500">Reject (Units)</span></Th>
-                            <Th span={2} align="center"><span className="text-purple-600">OEE (%)</span></Th>
-                          </tr>
-                          <tr className="text-[10.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
-                            <Th first><span className="block text-left">Day</span></Th>
-                            <Th>Day</Th>
-                            <Th>Cumulative</Th>
-                            <Th>Day</Th>
-                            <Th>Cumulative</Th>
+                          <tr className="text-[8.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
+                            <Th first><span className="block text-left">Machine</span></Th>
+                            <Th>Hall</Th>
+                            <Th><span className="text-blue-600">Target</span></Th>
+                            <Th><span className="text-emerald-600">Actual</span></Th>
+                            <Th><span className="text-emerald-600">Good</span></Th>
+                            <Th><span className="text-red-500">Reject</span></Th>
                             <Th>Achv %</Th>
-                            <Th>Day</Th>
-                            <Th>%</Th>
-                            <Th>Cumulative</Th>
-                            <Th>Cum %</Th>
-                            <Th>Daily</Th>
-                            <Th>Cumulative</Th>
+                            <Th><span className="text-red-500">Reject %</span></Th>
+                            <Th><span className="text-purple-600">Efficiency %</span></Th>
+                            <Th>Std Cycle (Sec)</Th>
+                            <Th>Actual Cycle (Sec)</Th>
+                            <Th>Loss (Min)</Th>
                           </tr>
                         </thead>
                         <tbody>
-                          {rows.map((r, idx) => (
-                            <tr
-                              key={r.day}
-                              className={`text-[10px] font-semibold text-[#0F1D24] hover:bg-[#F8FAFC] ${
-                                idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"
-                              } ${r.sunday ? "bg-red-50/40" : ""}`}
-                            >
-                              <Td first className="font-bold">
-                                {r.label} <span className={r.sunday ? "font-bold text-red-400" : "text-[#94A3B8]"}>{r.weekday}</span>
-                              </Td>
-                              {r.sunday ? (
-                                <td colSpan={11} className="border-b-2 border-r-2 border-[#CBD5E1] px-2 py-1 text-center italic text-[#94A3B8]">
-                                  — No entries —
-                                </td>
-                              ) : (
-                                <>
-                                  <Td>{fmt(r.target)}</Td>
-                                  <Td>{fmt(r.cumTarget)}</Td>
-                                  <Td>{fmt(r.actual)}</Td>
-                                  <Td>{fmt(r.cumActual)}</Td>
-                                  <Td className={r.achievement >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.achievement}%</Td>
-                                  <Td>{fmt(r.reject)}</Td>
-                                  <Td className="text-red-500">{r.rejectPct}%</Td>
-                                  <Td>{fmt(r.cumReject)}</Td>
-                                  <Td className="text-red-500">{r.cumRejectPct}%</Td>
-                                  <Td className={r.dailyOee >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.dailyOee}%</Td>
-                                  <Td className="border-r-0">{r.cumOee}%</Td>
-                                </>
-                              )}
+                          {rows.length === 0 ? (
+                            <tr>
+                              <td colSpan={12} className="border-b-2 border-[#CBD5E1] px-2 py-4 text-center italic text-[#94A3B8]">
+                                No machine data for this period.
+                              </td>
                             </tr>
-                          ))}
+                          ) : (
+                            rows.map((r, idx) => (
+                              <tr
+                                key={r.machineId}
+                                className={`text-[10px] font-semibold text-[#0F1D24] hover:bg-[#F8FAFC] ${
+                                  idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"
+                                }`}
+                              >
+                                <Td first className="font-bold">{r.machine}</Td>
+                                <Td>{r.hall}</Td>
+                                <Td>{fmt(r.target)}</Td>
+                                <Td>{fmt(r.actual)}</Td>
+                                <Td>{fmt(r.good)}</Td>
+                                <Td>{fmt(r.reject)}</Td>
+                                <Td className={r.achievement >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.achievement}%</Td>
+                                <Td className="text-red-500">{r.rejectPct}%</Td>
+                                <Td className={r.efficiency >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.efficiency}%</Td>
+                                <Td>{r.stdCycleTime}</Td>
+                                <Td>{r.actualCycleTime}</Td>
+                                <Td className="border-r-0">{r.lossMinutes}</Td>
+                              </tr>
+                            ))
+                          )}
                         </tbody>
-                        <tfoot>
-                          <tr className="border-t-4 border-[#0F1D24] bg-[#FDC94D]/15 text-[10px] font-extrabold text-[#0F1D24]">
-                            <Td first className="py-1.5">TOTAL / AVG</Td>
-                            <Td className="py-1.5">{fmt(totals.target)}</Td>
-                            <Td className="py-1.5">{fmt(totals.target)}</Td>
-                            <Td className="py-1.5">{fmt(totals.actual)}</Td>
-                            <Td className="py-1.5">{fmt(totals.actual)}</Td>
-                            <Td className="py-1.5 text-emerald-600">{totals.achievement || 0}%</Td>
-                            <Td className="py-1.5">{fmt(totals.reject)}</Td>
-                            <Td className="py-1.5 text-red-500">{totals.rejectPct || 0}%</Td>
-                            <Td className="py-1.5">{fmt(totals.reject)}</Td>
-                            <Td className="py-1.5 text-red-500">{totals.rejectPct || 0}%</Td>
-                            <Td className="py-1.5 text-emerald-600">{totals.avgOee || 0}%</Td>
-                            <Td className="border-r-0 py-1.5 text-emerald-600">{totals.avgOee || 0}%</Td>
-                          </tr>
-                        </tfoot>
+                        {rows.length > 0 && (
+                          <tfoot>
+                            <tr className="border-t-4 border-[#0F1D24] bg-[#FDC94D]/15 text-[10px] font-extrabold text-[#0F1D24]">
+                              <Td first className="py-1.5">TOTAL / AVG</Td>
+                              <Td className="py-1.5">{totals.machineCount || 0} Machines</Td>
+                              <Td className="py-1.5">{fmt(totals.target)}</Td>
+                              <Td className="py-1.5">{fmt(totals.actual)}</Td>
+                              <Td className="py-1.5">{fmt(totals.good)}</Td>
+                              <Td className="py-1.5">{fmt(totals.reject)}</Td>
+                              <Td className="py-1.5 text-emerald-600">{totals.achievement || 0}%</Td>
+                              <Td className="py-1.5 text-red-500">{totals.rejectPct || 0}%</Td>
+                              <Td className="py-1.5 text-emerald-600">{totals.avgEfficiency || 0}%</Td>
+                              <Td className="py-1.5">—</Td>
+                              <Td className="py-1.5">—</Td>
+                              <Td className="border-r-0 py-1.5">—</Td>
+                            </tr>
+                          </tfoot>
+                        )}
                       </table>
                     </div>
                   </CardShell>
@@ -404,4 +392,4 @@ const DateWiseProduction = () => {
   );
 };
 
-export default DateWiseProduction;
+export default MachineWiseProduction;

@@ -65,6 +65,7 @@ import ManagementMouldChangeDashboard from "../pages/ManagementPages/MouldChange
 import ManagementProductionDashboard from "../pages/ManagementPages/ProductionDashboard";
 import ProductionDashboard from "../pages/ProductionPages/ProductionDashboard";
 import DateWiseProduction from "../pages/ManagementPages/DateWiseProduction";
+import MachineWiseProduction from "../pages/ManagementPages/MachineWiseProduction";
 
 const AppRoutes = () => {
   return (
@@ -107,6 +108,15 @@ const AppRoutes = () => {
         element={
           <ManagementRoute>
             <DateWiseProduction />
+          </ManagementRoute>
+        }
+      />
+
+      <Route
+        path="/management/monthly/machines/production/dashboard"
+        element={
+          <ManagementRoute>
+            <MachineWiseProduction />
           </ManagementRoute>
         }
       />

@@ -55,7 +55,7 @@ const menuItems = [
   },
   {
     id: 5,
-    title: "Mould Change",
+    title: "Mold Change",
     path: "/management/mould-change",
     icon: <FaExchangeAlt size={14} />,
   },
@@ -63,7 +63,13 @@ const menuItems = [
     id: 6,
     title: "Monthly Production",
     path: "/management/monthly/production/dashboard",
-    icon: <FaExchangeAlt size={14} />,
+    icon: <MdOutlineProductionQuantityLimits size={14} />,
+  },
+  {
+    id: 6,
+    title: "Machines Production",
+    path: "/management/monthly/machines/production/dashboard",
+    icon: <MdOutlineProductionQuantityLimits size={14} />,
   },
   {
     id: 9,
@@ -157,13 +163,10 @@ const Sidebar = () => {
             <p className="truncate text-[16px] font-bold tracking-tight text-[#FDC94D]">
               PMS Dixon Dehradun
             </p>
-            {/* <p className="truncate text-[8px] font-medium text-slate-300">
-              Production Management System
-            </p> */}
           </div>
         ) : (
-          <div className="flex h-7 w-7 flex-shrink-0 items-center rounded-[2px] justify-center bg-[#0F1D24]">
-            <span className="font-mono text-[10px] font-extrabold text-[#FDC94D]">
+          <div className="flex h-11 w-11 flex-shrink-0 items-center rounded-[2px] justify-center bg-[#0F1D24]">
+            <span className="font-mono text-[15px] font-extrabold text-[#FDC94D]">
               PMS
             </span>
           </div>
@@ -353,21 +356,6 @@ const Sidebar = () => {
           )}
         </button>
       </div>
-
-      {/* System Status Footer */}
-      {/* {!collapsed && (
-        <div className="shrink-0 border-t border-slate-100 bg-white px-3 py-1.5 flex items-center justify-between text-[9px]">
-          <div>
-            <p className="font-bold text-[#0F1D24]">PMS-Dehradun</p>
-            <p className="font-mono text-slate-400 text-[8px]">v1.0.0</p>
-          </div>
-          <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 font-bold text-[8px] text-emerald-600 border border-emerald-200">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-            LIVE
-          </span>
-        </div>
-      )} */}
-
       {/* Collapse Toggle Button */}
       <button
         type="button"

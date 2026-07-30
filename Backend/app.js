@@ -22,6 +22,8 @@ const productionRejectDetailRoutes = require("./routes/productionRejectDetailRou
 const mouldChangeDashboardRoutes = require("./routes/mouldChangeDashboardRoutes");
 const managementDashboardRoutes = require("./routes/managemntDashboardRoutes");
 const monthlyDashboardRoutes = require("./routes/monthlyDashBoardRoutes")
+const datewiseProductionDashboard = require("./routes/dateWiseProductionRoutes")
+const machinewiseProductionDashboard = require("./routes/machineWiseProductionRoutes")
 const cookieParser = require("cookie-parser");
 
 const app = express();
@@ -82,5 +84,7 @@ app.use('/api/monthly-plans', require('./routes/monthlyPlan.routes'));
 app.use('/api/daily-plans', require('./routes/dailyPlan.routes'));
 app.use("/api/dashboard", managementDashboardRoutes);
 app.use("/api/monthly/dashboard", monthlyDashboardRoutes);
+app.use("/api/date-wise/production/dashboard", datewiseProductionDashboard);
+app.use("/api/machine-wise/production/dashboard", machinewiseProductionDashboard);
 
 module.exports = app;
