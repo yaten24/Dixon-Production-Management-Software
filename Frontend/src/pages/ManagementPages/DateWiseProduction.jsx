@@ -85,21 +85,21 @@ const DarkSelect = ({ label, value, options = [], onChange }) => {
 const KpiCard = ({ icon: Icon, accent, label, value, sub, stat1, stat2 }) => (
   <div className="flex min-h-0 flex-col gap-1.5 rounded-[2px] border border-white/10 bg-[#0F1D24] p-2.5 shadow-sm [container-type:inline-size]">
     <div className="flex items-center gap-2">
-      <span className="truncate text-[14.5px] font-bold uppercase tracking-wide text-white/70">{label}</span>
+      <span className="truncate text-[14.5px] font-bold uppercase tracking-wide text-white/90">{label}</span>
     </div>
     <div>
       <div className="text-[clamp(16px,6cqw,21px)] font-extrabold leading-none text-white">{value}</div>
       <div className="mt-1 text-[9.5px] font-semibold text-white/40">{sub}</div>
     </div>
-    <div className="flex items-center justify-between border-t border-white/10 pt-1.5 text-[9.5px] font-bold">
-      <div>
-        <div className="font-semibold text-white/40">{stat1.label}</div>
-        <div className={stat1.tone || "text-white"}>{stat1.value}</div>
+    <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-1.5 text-[9.5px] font-bold">
+      <div className="min-w-0">
+        <div className="truncate font-semibold text-white/40">{stat1.label}</div>
+        <div className={`truncate ${stat1.tone || "text-white"}`}>{stat1.value}</div>
       </div>
       {stat2 && (
-        <div className="text-right">
-          <div className="font-semibold text-white/40">{stat2.label}</div>
-          <div className={stat2.tone || "text-white"}>{stat2.value}</div>
+        <div className="min-w-0 text-right">
+          <div className="truncate font-semibold text-white/40">{stat2.label}</div>
+          <div className={`truncate ${stat2.tone || "text-white"}`}>{stat2.value}</div>
         </div>
       )}
     </div>
@@ -109,23 +109,60 @@ const KpiCard = ({ icon: Icon, accent, label, value, sub, stat1, stat2 }) => (
 const fmt = (n) => (n == null ? "-" : Number(n).toLocaleString("en-IN"));
 
 /* ==========================================================
-   TABLE CELL PRIMITIVES — bordered grid for clear data separation
+   TABLE CELL PRIMITIVES
+   NOTE: Using box-shadow "inset" borders instead of border-collapse
+   borders. border-collapse borders get owned by whichever row is
+   scrolled out of view under a sticky <thead>, which caused header/
+   body border mismatch + flicker while scrolling. Box-shadow borders
+   don't collapse, so header and body borders stay perfectly aligned
+   at every scroll position.
 ========================================================== */
-const Th = ({ children, span, align = "center", first = false }) => (
+const Th = ({ children, span, align = "center", first = false, last = false }) => (
   <th
     colSpan={span}
-    className={`border-b-2 border-r-2 border-[#94A3B8] px-2 py-1.5 text-${align} ${first ? "border-l-2" : ""}`}
+    className={`px-2 py-1.5 text-${align}`}
+    style={{
+      boxShadow: [
+        "inset 0 -2px 0 0 #94A3B8",
+        !last && "inset -2px 0 0 0 #94A3B8",
+        first && "inset 2px 0 0 0 #94A3B8",
+      ]
+        .filter(Boolean)
+        .join(", "),
+    }}
   >
     {children}
   </th>
 );
 
-const Td = ({ children, className = "", first = false }) => (
+const Td = ({ children, className = "", first = false, last = false, ...rest }) => (
   <td
-    className={`border-b-2 border-r-2 border-[#CBD5E1] px-2 py-1 ${first ? "border-l-2 border-[#CBD5E1]" : ""} ${className}`}
+    {...rest}
+    className={`px-2 py-1 ${className}`}
+    style={{
+      boxShadow: [
+        "inset 0 -2px 0 0 #CBD5E1",
+        !last && "inset -2px 0 0 0 #CBD5E1",
+        first && "inset 2px 0 0 0 #CBD5E1",
+      ]
+        .filter(Boolean)
+        .join(", "),
+    }}
   >
     {children}
   </td>
+);
+
+// Shared column widths so the scrollable header/body table and the
+// pinned (always-visible) totals table stay perfectly aligned.
+const COL_WIDTHS = [140, 90, 100, 90, 100, 80, 90, 75, 100, 85, 80, 100];
+
+const ColGroup = () => (
+  <colgroup>
+    {COL_WIDTHS.map((w, i) => (
+      <col key={i} style={{ width: `${w}px` }} />
+    ))}
+  </colgroup>
 );
 
 const Legend = ({ swatch, label }) => (
@@ -317,81 +354,92 @@ const DateWiseProduction = () => {
                       </div>
                     </div>
 
-                    <div className="print-area min-h-0 flex-1 overflow-auto rounded-[2px] border-2 border-[#0F1D24]/40">
-                      <table className="w-full min-w-[1100px] border-collapse text-left">
-                        <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                          <tr className="text-[10.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
-                            <Th span={1} first><span className="block text-left">Date</span></Th>
-                            <Th span={2} align="center"><span className="text-blue-600">Target (Units)</span></Th>
-                            <Th span={3} align="center"><span className="text-emerald-600">Actual (Units)</span></Th>
-                            <Th span={4} align="center"><span className="text-red-500">Reject (Units)</span></Th>
-                            <Th span={2} align="center"><span className="text-purple-600">OEE (%)</span></Th>
-                          </tr>
-                          <tr className="text-[10.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
-                            <Th first><span className="block text-left">Day</span></Th>
-                            <Th>Day</Th>
-                            <Th>Cumulative</Th>
-                            <Th>Day</Th>
-                            <Th>Cumulative</Th>
-                            <Th>Achv %</Th>
-                            <Th>Day</Th>
-                            <Th>%</Th>
-                            <Th>Cumulative</Th>
-                            <Th>Cum %</Th>
-                            <Th>Daily</Th>
-                            <Th>Cumulative</Th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rows.map((r, idx) => (
-                            <tr
-                              key={r.day}
-                              className={`text-[10px] font-semibold text-[#0F1D24] hover:bg-[#F8FAFC] ${
-                                idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"
-                              } ${r.sunday ? "bg-red-50/40" : ""}`}
-                            >
-                              <Td first className="font-bold">
-                                {r.label} <span className={r.sunday ? "font-bold text-red-400" : "text-[#94A3B8]"}>{r.weekday}</span>
-                              </Td>
-                              {r.sunday ? (
-                                <td colSpan={11} className="border-b-2 border-r-2 border-[#CBD5E1] px-2 py-1 text-center italic text-[#94A3B8]">
-                                  — No entries —
-                                </td>
-                              ) : (
-                                <>
-                                  <Td>{fmt(r.target)}</Td>
-                                  <Td>{fmt(r.cumTarget)}</Td>
-                                  <Td>{fmt(r.actual)}</Td>
-                                  <Td>{fmt(r.cumActual)}</Td>
-                                  <Td className={r.achievement >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.achievement}%</Td>
-                                  <Td>{fmt(r.reject)}</Td>
-                                  <Td className="text-red-500">{r.rejectPct}%</Td>
-                                  <Td>{fmt(r.cumReject)}</Td>
-                                  <Td className="text-red-500">{r.cumRejectPct}%</Td>
-                                  <Td className={r.dailyOee >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.dailyOee}%</Td>
-                                  <Td className="border-r-0">{r.cumOee}%</Td>
-                                </>
-                              )}
+                    <div className="print-area flex min-h-0 flex-1 flex-col overflow-x-auto overflow-y-hidden rounded-[2px] border-2 border-[#0F1D24]/40">
+                      {/* Scrollable header + body (vertical only — this is the part that scrolls) */}
+                      <div className="min-h-0 flex-1 overflow-y-auto">
+                        <table className="w-full min-w-[1210px] table-fixed border-separate border-spacing-0 text-left">
+                          <ColGroup />
+                          <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                            <tr className="text-[10.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
+                              <Th span={1} first><span className="block text-left">Date</span></Th>
+                              <Th span={2} align="center"><span className="text-blue-600">Target (Units)</span></Th>
+                              <Th span={3} align="center"><span className="text-emerald-600">Actual (Units)</span></Th>
+                              <Th span={4} align="center"><span className="text-red-500">Reject (Units)</span></Th>
+                              <Th span={2} align="center" last><span className="text-purple-600">OEE (%)</span></Th>
                             </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr className="border-t-4 border-[#0F1D24] bg-[#FDC94D]/15 text-[10px] font-extrabold text-[#0F1D24]">
-                            <Td first className="py-1.5">TOTAL / AVG</Td>
-                            <Td className="py-1.5">{fmt(totals.target)}</Td>
-                            <Td className="py-1.5">{fmt(totals.target)}</Td>
-                            <Td className="py-1.5">{fmt(totals.actual)}</Td>
-                            <Td className="py-1.5">{fmt(totals.actual)}</Td>
-                            <Td className="py-1.5 text-emerald-600">{totals.achievement || 0}%</Td>
-                            <Td className="py-1.5">{fmt(totals.reject)}</Td>
-                            <Td className="py-1.5 text-red-500">{totals.rejectPct || 0}%</Td>
-                            <Td className="py-1.5">{fmt(totals.reject)}</Td>
-                            <Td className="py-1.5 text-red-500">{totals.rejectPct || 0}%</Td>
-                            <Td className="py-1.5 text-emerald-600">{totals.avgOee || 0}%</Td>
-                            <Td className="border-r-0 py-1.5 text-emerald-600">{totals.avgOee || 0}%</Td>
-                          </tr>
-                        </tfoot>
-                      </table>
+                            <tr className="text-[10.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
+                              <Th first><span className="block text-left">Day</span></Th>
+                              <Th>Day</Th>
+                              <Th>Cumulative</Th>
+                              <Th>Day</Th>
+                              <Th>Cumulative</Th>
+                              <Th>Achv %</Th>
+                              <Th>Day</Th>
+                              <Th>%</Th>
+                              <Th>Cumulative</Th>
+                              <Th>Cum %</Th>
+                              <Th>Daily</Th>
+                              <Th last>Cumulative</Th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows.map((r, idx) => (
+                              <tr
+                                key={r.day}
+                                className={`text-[10px] font-semibold text-[#0F1D24] hover:bg-[#F8FAFC] ${
+                                  idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"
+                                } ${r.sunday ? "bg-red-50/40" : ""}`}
+                              >
+                                <Td first className="truncate font-bold">
+                                  {r.label} <span className={r.sunday ? "font-bold text-red-400" : "text-[#94A3B8]"}>{r.weekday}</span>
+                                </Td>
+                                {r.sunday ? (
+                                  <Td last colSpan={11} className="text-center italic text-[#94A3B8]">
+                                    — No entries —
+                                  </Td>
+                                ) : (
+                                  <>
+                                    <Td>{fmt(r.target)}</Td>
+                                    <Td>{fmt(r.cumTarget)}</Td>
+                                    <Td>{fmt(r.actual)}</Td>
+                                    <Td>{fmt(r.cumActual)}</Td>
+                                    <Td className={r.achievement >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.achievement}%</Td>
+                                    <Td>{fmt(r.reject)}</Td>
+                                    <Td className="text-red-500">{r.rejectPct}%</Td>
+                                    <Td>{fmt(r.cumReject)}</Td>
+                                    <Td className="text-red-500">{r.cumRejectPct}%</Td>
+                                    <Td className={r.dailyOee >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.dailyOee}%</Td>
+                                    <Td last>{r.cumOee}%</Td>
+                                  </>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Pinned TOTAL / AVG row — always visible, never scrolls away */}
+                      {rows.length > 0 && (
+                        <table className="w-full min-w-[1210px] table-fixed border-separate border-spacing-0 text-left">
+                          <ColGroup />
+                          <tbody>
+                            <tr className="bg-[#FEF3C7] text-[10px] font-extrabold text-[#0F1D24]">
+                              <Td first className="truncate py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">TOTAL / AVG</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.target)}</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.target)}</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.actual)}</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.actual)}</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.achievement)}%</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.reject)}</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-red-500">{fmt(totals.rejectPct)}%</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.reject)}</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-red-500">{fmt(totals.rejectPct)}%</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.avgOee)}%</Td>
+                              <Td last className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.avgOee)}%</Td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      )}
                     </div>
                   </CardShell>
                 </div>

@@ -86,27 +86,21 @@ const DarkSelect = ({ label, value, options = [], onChange }) => {
 const KpiCard = ({ icon: Icon, accent, label, value, sub, stat1, stat2 }) => (
   <div className="flex min-h-0 flex-col gap-1.5 rounded-[2px] border border-white/10 bg-[#0F1D24] p-2.5 shadow-sm [container-type:inline-size]">
     <div className="flex items-center gap-2">
-      <span
-        className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[2px]"
-        style={{ backgroundColor: `${accent}22`, color: accent }}
-      >
-        <Icon size={12} />
-      </span>
-      <span className="truncate text-[9.5px] font-bold uppercase tracking-wide text-white/70">{label}</span>
+      <span className="truncate text-[14.5px] font-bold uppercase tracking-wide text-white/70">{label}</span>
     </div>
     <div>
       <div className="text-[clamp(16px,6cqw,21px)] font-extrabold leading-none text-white">{value}</div>
       <div className="mt-1 text-[9.5px] font-semibold text-white/40">{sub}</div>
     </div>
-    <div className="flex items-center justify-between border-t border-white/10 pt-1.5 text-[9.5px] font-bold">
-      <div>
-        <div className="font-semibold text-white/40">{stat1.label}</div>
-        <div className={stat1.tone || "text-white"}>{stat1.value}</div>
+    <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-1.5 text-[9.5px] font-bold">
+      <div className="min-w-0">
+        <div className="truncate font-semibold text-white/40">{stat1.label}</div>
+        <div className={`truncate ${stat1.tone || "text-white"}`}>{stat1.value}</div>
       </div>
       {stat2 && (
-        <div className="text-right">
-          <div className="font-semibold text-white/40">{stat2.label}</div>
-          <div className={stat2.tone || "text-white"}>{stat2.value}</div>
+        <div className="min-w-0 text-right">
+          <div className="truncate font-semibold text-white/40">{stat2.label}</div>
+          <div className={`truncate ${stat2.tone || "text-white"}`}>{stat2.value}</div>
         </div>
       )}
     </div>
@@ -115,24 +109,51 @@ const KpiCard = ({ icon: Icon, accent, label, value, sub, stat1, stat2 }) => (
 
 const fmt = (n) => (n == null ? "-" : Number(n).toLocaleString("en-IN"));
 
-/* ==========================================================
-   TABLE CELL PRIMITIVES — same bordered grid as DateWiseProduction.jsx
-========================================================== */
-const Th = ({ children, span, align = "center", first = false }) => (
+const Th = ({ children, span, align = "center", first = false, last = false }) => (
   <th
     colSpan={span}
-    className={`border-b-2 border-r-2 border-[#94A3B8] px-2 py-1.5 text-${align} ${first ? "border-l-2" : ""}`}
+    className={`px-2 py-1.5 text-${align}`}
+    style={{
+      boxShadow: [
+        "inset 0 -2px 0 0 #94A3B8",
+        !last && "inset -2px 0 0 0 #94A3B8",
+        first && "inset 2px 0 0 0 #94A3B8",
+      ]
+        .filter(Boolean)
+        .join(", "),
+    }}
   >
     {children}
   </th>
 );
 
-const Td = ({ children, className = "", first = false }) => (
+const Td = ({ children, className = "", first = false, last = false }) => (
   <td
-    className={`border-b-2 border-r-2 border-[#CBD5E1] px-2 py-1 ${first ? "border-l-2 border-[#CBD5E1]" : ""} ${className}`}
+    className={`px-2 py-1 ${className}`}
+    style={{
+      boxShadow: [
+        "inset 0 -2px 0 0 #CBD5E1",
+        !last && "inset -2px 0 0 0 #CBD5E1",
+        first && "inset 2px 0 0 0 #CBD5E1",
+      ]
+        .filter(Boolean)
+        .join(", "),
+    }}
   >
     {children}
   </td>
+);
+
+// Shared column widths so the scrollable header/body table and the
+// pinned (always-visible) totals table stay perfectly aligned.
+const COL_WIDTHS = [160, 90, 95, 95, 90, 90, 85, 85, 100, 110, 115, 95];
+
+const ColGroup = () => (
+  <colgroup>
+    {COL_WIDTHS.map((w, i) => (
+      <col key={i} style={{ width: `${w}px` }} />
+    ))}
+  </colgroup>
 );
 
 const Legend = ({ swatch, label }) => (
@@ -265,7 +286,7 @@ const MachineWiseProduction = () => {
           )}
 
           {/* MAIN */}
-          <main className="print-area flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2">
+          <main className="print-area flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-1">
             {loading ? (
               <div className="no-print flex flex-1 flex-col items-center justify-center gap-2 text-[13px] font-semibold text-[#94A3B8]">
                 <RefreshCw size={18} className="animate-spin text-[#0F1D24]/40" />
@@ -312,74 +333,83 @@ const MachineWiseProduction = () => {
                       </div>
                     </div>
 
-                    <div className="print-area min-h-0 flex-1 overflow-auto rounded-[2px] border-2 border-[#0F1D24]/25">
-                      <table className="w-full min-w-[1150px] border-collapse text-left">
-                        <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                          <tr className="text-[8.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
-                            <Th first><span className="block text-left">Machine</span></Th>
-                            <Th>Hall</Th>
-                            <Th><span className="text-blue-600">Target</span></Th>
-                            <Th><span className="text-emerald-600">Actual</span></Th>
-                            <Th><span className="text-emerald-600">Good</span></Th>
-                            <Th><span className="text-red-500">Reject</span></Th>
-                            <Th>Achv %</Th>
-                            <Th><span className="text-red-500">Reject %</span></Th>
-                            <Th><span className="text-purple-600">Efficiency %</span></Th>
-                            <Th>Std Cycle (Sec)</Th>
-                            <Th>Actual Cycle (Sec)</Th>
-                            <Th>Loss (Min)</Th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rows.length === 0 ? (
-                            <tr>
-                              <td colSpan={12} className="border-b-2 border-[#CBD5E1] px-2 py-4 text-center italic text-[#94A3B8]">
-                                No machine data for this period.
-                              </td>
+                    <div className="print-area flex min-h-0 flex-1 flex-col overflow-x-auto overflow-y-hidden rounded-[2px] border-2 border-[#0F1D24]/25">
+                      {/* Scrollable header + body (vertical only — this is the part that scrolls) */}
+                      <div className="min-h-0 flex-1 overflow-y-auto">
+                        <table className="w-full min-w-[1215px] table-fixed border-separate border-spacing-0 text-left">
+                          <ColGroup />
+                          <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                            <tr className="text-[9.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
+                              <Th first><span className="block text-left">Machine</span></Th>
+                              <Th>Hall</Th>
+                              <Th><span className="text-blue-600">Target</span></Th>
+                              <Th><span className="text-emerald-600">Actual</span></Th>
+                              <Th><span className="text-emerald-600">Good</span></Th>
+                              <Th><span className="text-red-500">Reject</span></Th>
+                              <Th>Achv %</Th>
+                              <Th><span className="text-red-500">Reject %</span></Th>
+                              <Th><span className="text-purple-600">Efficiency %</span></Th>
+                              <Th>Std Cycle (Sec)</Th>
+                              <Th>Actual Cycle (Sec)</Th>
+                              <Th last>Loss (Min)</Th>
                             </tr>
-                          ) : (
-                            rows.map((r, idx) => (
-                              <tr
-                                key={r.machineId}
-                                className={`text-[10px] font-semibold text-[#0F1D24] hover:bg-[#F8FAFC] ${
-                                  idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"
-                                }`}
-                              >
-                                <Td first className="font-bold">{r.machine}</Td>
-                                <Td>{r.hall}</Td>
-                                <Td>{fmt(r.target)}</Td>
-                                <Td>{fmt(r.actual)}</Td>
-                                <Td>{fmt(r.good)}</Td>
-                                <Td>{fmt(r.reject)}</Td>
-                                <Td className={r.achievement >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.achievement}%</Td>
-                                <Td className="text-red-500">{r.rejectPct}%</Td>
-                                <Td className={r.efficiency >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.efficiency}%</Td>
-                                <Td>{r.stdCycleTime}</Td>
-                                <Td>{r.actualCycleTime}</Td>
-                                <Td className="border-r-0">{r.lossMinutes}</Td>
+                          </thead>
+                          <tbody>
+                            {rows.length === 0 ? (
+                              <tr>
+                                <td colSpan={12} className="border-b-2 border-[#CBD5E1] px-2 py-4 text-center italic text-[#94A3B8]">
+                                  No machine data for this period.
+                                </td>
                               </tr>
-                            ))
-                          )}
-                        </tbody>
-                        {rows.length > 0 && (
-                          <tfoot>
-                            <tr className="border-t-4 border-[#0F1D24] bg-[#FDC94D]/15 text-[10px] font-extrabold text-[#0F1D24]">
-                              <Td first className="py-1.5">TOTAL / AVG</Td>
-                              <Td className="py-1.5">{totals.machineCount || 0} Machines</Td>
-                              <Td className="py-1.5">{fmt(totals.target)}</Td>
-                              <Td className="py-1.5">{fmt(totals.actual)}</Td>
-                              <Td className="py-1.5">{fmt(totals.good)}</Td>
-                              <Td className="py-1.5">{fmt(totals.reject)}</Td>
-                              <Td className="py-1.5 text-emerald-600">{totals.achievement || 0}%</Td>
-                              <Td className="py-1.5 text-red-500">{totals.rejectPct || 0}%</Td>
-                              <Td className="py-1.5 text-emerald-600">{totals.avgEfficiency || 0}%</Td>
-                              <Td className="py-1.5">—</Td>
-                              <Td className="py-1.5">—</Td>
-                              <Td className="border-r-0 py-1.5">—</Td>
+                            ) : (
+                              rows.map((r, idx) => (
+                                <tr
+                                  key={r.machineId}
+                                  className={`text-[10px] font-semibold text-[#0F1D24] hover:bg-[#F8FAFC] ${
+                                    idx % 2 === 1 ? "bg-[#FAFBFC]" : "bg-white"
+                                  }`}
+                                >
+                                  <Td first className="truncate font-bold">{r.machine}</Td>
+                                  <Td className="truncate">{r.hall}</Td>
+                                  <Td>{fmt(r.target)}</Td>
+                                  <Td>{fmt(r.actual)}</Td>
+                                  <Td>{fmt(r.good)}</Td>
+                                  <Td>{fmt(r.reject)}</Td>
+                                  <Td className={r.achievement >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.achievement}%</Td>
+                                  <Td className="text-red-500">{r.rejectPct}%</Td>
+                                  <Td className={r.efficiency >= 90 ? "text-emerald-600" : "text-amber-600"}>{r.efficiency}%</Td>
+                                  <Td>{r.stdCycleTime}</Td>
+                                  <Td>{r.actualCycleTime}</Td>
+                                  <Td last>{r.lossMinutes}</Td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Pinned TOTAL / AVG row — always visible, never scrolls away */}
+                      {rows.length > 0 && (
+                        <table className="w-full min-w-[1215px] table-fixed border-separate border-spacing-0 text-left">
+                          <ColGroup />
+                          <tbody>
+                            <tr className="bg-[#FEF3C7] text-[10px] font-extrabold text-[#0F1D24]">
+                              <Td first className="truncate py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">TOTAL / AVG</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.machineCount)} Mc</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.target)}</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.actual)}</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.good)}</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">{fmt(totals.reject)}</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.achievement)}%</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-red-500">{fmt(totals.rejectPct)}%</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7] text-emerald-600">{fmt(totals.avgEfficiency)}%</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">—</Td>
+                              <Td className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">—</Td>
+                              <Td last className="py-1.5 border-t-4 border-t-[#0F1D24] bg-[#FEF3C7]">—</Td>
                             </tr>
-                          </tfoot>
-                        )}
-                      </table>
+                          </tbody>
+                        </table>
+                      )}
                     </div>
                   </CardShell>
                 </div>
