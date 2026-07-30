@@ -204,9 +204,6 @@ async function getKpis(filters) {
   const reject = Number(totals.reject);
   const efficiency = safePct(actual, target);
   const quality = safePct(good, actual);
-  // Simplified OEE proxy — see file header note. Swap for a real
-  // Availability x Performance x Quality calc once planned-minutes
-  // per shift/entry are captured.
   const oee = round1((efficiency * quality) / 100);
 
   return {
@@ -296,17 +293,9 @@ async function getHallPerformance(filters) {
     return { hall: r.hall, target, actual, good, reject, efficiency, oee, running, total, breakdown, status };
   });
 }
-
-// ---- Live Machine Production Overview table (monthly totals per machine) ----
-// NOTE: assumes a `parts` table with a `part_name` column — rename below
-// if your actual column is different (e.g. `name`, `part_no`).
 async function getLiveMachines(filters) {
   const { where, params } = buildEntryWhere(filters);
   const hallClause = filters.hall ? "AND m.hall = ?" : "";
-  // `where` (and its params) appears twice in the SQL below — once in the
-  // `agg` CTE, once in `latest` — so params must be duplicated in the
-  // same order they appear in the query text, followed by the hall value
-  // (if any) for the trailing "AND m.hall = ?".
   const queryParams = [...params, ...params, ...(filters.hall ? [filters.hall] : [])];
 
   const [rows] = await pool.query(
