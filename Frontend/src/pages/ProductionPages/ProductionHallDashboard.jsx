@@ -1160,7 +1160,7 @@ const HallDashboard = () => {
   };
   const handleExport = () => exportHallDashboardToExcel({ hallCode, filters, stats, machineWise });
   const handleBack = () => navigate(-1);
-  const handleHeatmap = () => navigate(`/management/halls/${hallId}/heatmap`);
+  const handleHeatmap = () => navigate(`/production/halls/${hallId}/heatmap`);
 
   const chartData = useMemo(() => buildHourlyChartData(hourlyTrend), [hourlyTrend]);
 

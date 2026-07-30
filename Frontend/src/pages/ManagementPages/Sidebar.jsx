@@ -29,12 +29,12 @@ const COLLAPSED_WIDTH = 64;
 
 // Combined into a flat menu without section headers
 const menuItems = [
-  // {
-  //   id: 1,
-  //   title: "Dashboard",
-  //   path: "/management/overall/dashboard",
-  //   icon: <FaTachometerAlt size={14} />,
-  // },
+  {
+    id: 1,
+    title: "Overall Dashboard",
+    path: "/management/overall/dashboard",
+    icon: <FaTachometerAlt size={14} />,
+  },
   {
     id: 2,
     title: "Production",

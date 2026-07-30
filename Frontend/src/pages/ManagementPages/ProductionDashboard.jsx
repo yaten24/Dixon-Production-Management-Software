@@ -230,7 +230,7 @@ function ControlBox({
     <header className="flex-shrink-0 bg-[#0F1D24] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
         <h1 className="whitespace-nowrap text-[18px] font-extrabold uppercase tracking-wide text-white">
-          Overall Production Dashboard
+          Production Dashboard
         </h1>
 
         <div className="flex flex-wrap items-center gap-2">
