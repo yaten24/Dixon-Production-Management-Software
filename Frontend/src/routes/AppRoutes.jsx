@@ -10,7 +10,6 @@ import NotFound from "../pages/CommanPages/NotFound";
 import Login from "../pages/CommanPages/Login";
 
 // Management
-import Dashboard from "../pages/ManagementPages/Dashboard";
 import AllRejectionReasons from "../pages/ManagementPages/RejectionDashboard";
 import LossAnalysisDashboard from "../pages/ManagementPages/LossTimeDashboard";
 import ManagerReportsPage from "../pages/ManagementPages/ReportsPage";
@@ -66,6 +65,7 @@ import ProductionDashboard from "../pages/ProductionPages/ProductionDashboard";
 import DateWiseProduction from "../pages/ManagementPages/DateWiseProduction";
 import MachineWiseProduction from "../pages/ManagementPages/MachineWiseProduction";
 import MoldChangeDashboard from "../pages/ManagementPages/MouldChangeDashboard";
+import OverAllDashboard from "../pages/ManagementPages/OverAllDashboard";
 
 const AppRoutes = () => {
   return (
@@ -89,7 +89,7 @@ const AppRoutes = () => {
         path="/management/overall/dashboard"
         element={
           <ManagementRoute>
-            <Dashboard />
+            <OverAllDashboard />
           </ManagementRoute>
         }
       />

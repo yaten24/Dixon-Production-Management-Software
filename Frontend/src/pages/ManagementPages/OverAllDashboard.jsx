@@ -345,7 +345,7 @@ const SHIFTS = ["All", "A", "B"];
 // a hall from this dropdown silently returned zero results.
 const HALLS = ["All", "Hall 1", "Hall 2", "Hall 3", "Hall 4", "C8"];
 
-const Dashboard = () => {
+const OverAllDashboard = () => {
   const [shift, setShift] = useState("A");
   const [hall, setHall] = useState("All");
   const [month, setMonth] = useState(MONTHS[new Date().getMonth()]);
@@ -502,4 +502,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default OverAllDashboard;
