@@ -1,8 +1,8 @@
-// MouldChangeDashboard.jsx — same visual language as RejectionDashboard.jsx
+// MoldChangeDashboard.jsx — same visual language as RejectionDashboard.jsx
 // (dark navy header, flat white bordered cards, sharp corners, hall-wise
 // bar chart, reason donut, top-machines ranked list, hourly trend with
-// shift toggling) re-purposed for mould_changes data. Backed by
-// routes/mouldChangeRoutes.js.
+// shift toggling) re-purposed for Mold_changes data. Backed by
+// routes/MoldChangeRoutes.js.
 import React, {
   useState,
   useMemo,
@@ -75,7 +75,7 @@ const formatDisplayDate = (iso) => {
 const getToday = () => new Date().toISOString().split("T")[0];
 
 // API base — adjust to match your Express server / proxy setup
-const API_BASE = "/api/mould-changes";
+const API_BASE = "/api/Mold-changes";
 
 const DEFAULT_DATA = {
   totalChanges: 0,
@@ -308,7 +308,7 @@ function CustomSelect({ value, onChange, options }) {
 // ==========================================================
 // HEADER
 // ==========================================================
-function MouldChangeHeader({
+function MoldChangeHeader({
   draftDate, setDraftDate,
   changeType, setChangeType, changeTypeOptions,
   status, setStatus, statusOptions,
@@ -319,7 +319,7 @@ function MouldChangeHeader({
     <header className="flex-shrink-0 bg-[#0F1D24] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
         <h1 className="text-[18px] font-extrabold uppercase tracking-wide text-white whitespace-nowrap">
-          Mould Change Dashboard
+          Mold Change Dashboard
         </h1>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -425,7 +425,7 @@ function KpiGrid({ data }) {
   return (
     <div className="grid grid-cols-2 gap-1.5">
       <KpiTile
-        label="Total Mould Changes"
+        label="Total Mold Changes"
         value={fmt(data.totalChanges)}
         subtitle={`Avg downtime ${fmt(data.avgDowntime)} min`}
         footer={<KpiSparkline color={GOLD} />}
@@ -453,9 +453,9 @@ function KpiGrid({ data }) {
 }
 
 // ==========================================================
-// HALL-WISE MOULD CHANGES — vertical bar comparison across halls
+// HALL-WISE Mold CHANGES — vertical bar comparison across halls
 // ==========================================================
-function HallWiseMouldChangePanel({ rows, missingHalls, totalChanges }) {
+function HallWiseMoldChangePanel({ rows, missingHalls, totalChanges }) {
   const safeRows = toArray(rows);
   const maxQty = Math.max(...safeRows.map((r) => r.qty || 0), 1);
   const highest = safeRows.reduce((a, b) => ((b.qty || 0) > (a?.qty || 0) ? b : a), safeRows[0]);
@@ -470,7 +470,7 @@ function HallWiseMouldChangePanel({ rows, missingHalls, totalChanges }) {
             <HiOutlineChartBar className="h-3.5 w-3.5" />
           </div>
           <div>
-            <h2 className="text-[12.5px] font-extrabold text-[#0F1D24]">Hall Wise Mould Changes</h2>
+            <h2 className="text-[12.5px] font-extrabold text-[#0F1D24]">Hall Wise Mold Changes</h2>
             <p className="text-[9px] font-medium text-[#9B9B9B]">Change count comparison across halls</p>
           </div>
         </div>
@@ -498,7 +498,7 @@ function HallWiseMouldChangePanel({ rows, missingHalls, totalChanges }) {
       {missingHalls?.length > 0 && (
         <div className="flex flex-shrink-0 items-center gap-1.5 border-b border-amber-200 bg-amber-50 px-3 py-1.5 text-[9.5px] font-semibold text-amber-700">
           <HiOutlineExclamationTriangle className="h-3 w-3 flex-shrink-0" />
-          No mould changes for {missingHalls.join(", ")} — showing all {safeRows.length} halls ({missingHalls.length} at 0).
+          No Mold changes for {missingHalls.join(", ")} — showing all {safeRows.length} halls ({missingHalls.length} at 0).
         </div>
       )}
 
@@ -557,7 +557,7 @@ function ReasonDistributionPanel({ rows, reasonsTracked, totalChanges }) {
           </div>
           <div>
             <h2 className="text-[12.5px] font-extrabold text-[#0F1D24]">Reason Distribution</h2>
-            <p className="text-[9px] font-medium text-[#9B9B9B]">Mould changes by reason</p>
+            <p className="text-[9px] font-medium text-[#9B9B9B]">Mold changes by reason</p>
           </div>
         </div>
         <div className="text-right">
@@ -646,7 +646,7 @@ function TopMachinesPanel({ rows }) {
 
       <div className="min-h-0 flex-1 divide-y divide-[#F0F0F0] overflow-auto">
         {safeRows.length === 0 ? (
-          <p className="px-3 py-6 text-center text-[11px] text-[#9B9B9B]">No mould changes for this selection.</p>
+          <p className="px-3 py-6 text-center text-[11px] text-[#9B9B9B]">No Mold changes for this selection.</p>
         ) : (
           safeRows.map((row, idx) => {
             const width = Math.max((row.qty / maxQty) * 100, row.qty > 0 ? 4 : 0);
@@ -671,7 +671,7 @@ function TopMachinesPanel({ rows }) {
       </div>
 
       <div className="flex-shrink-0 border-t border-[#C6C6C6] bg-[#FAFAFB] px-3 py-1.5 text-[9.5px] font-semibold text-[#9B9B9B]">
-        {safeRows.length} machines with mould changes
+        {safeRows.length} machines with Mold changes
       </div>
     </div>
   );
@@ -812,7 +812,7 @@ async function fetchJson(url, options) {
   return res.json();
 }
 
-function useMouldChangeData(filters) {
+function useMoldChangeData(filters) {
   const [data, setData] = useState(DEFAULT_DATA);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -831,7 +831,7 @@ function useMouldChangeData(filters) {
     const key = JSON.stringify(filters);
     if (!force && lastKeyRef.current === key) {
       console.warn(
-        "[MouldChangeDashboard] fetchAll called again with identical filters — " +
+        "[MoldChangeDashboard] fetchAll called again with identical filters — " +
         "skipping. This usually means the component is being remounted or " +
         "re-invoked from outside (check the Network tab's Initiator stack)."
       );
@@ -873,7 +873,7 @@ function useMouldChangeData(filters) {
       });
     } catch (err) {
       if (err.name === "AbortError") return; // superseded by a newer fetch — not a real error
-      console.error("Failed to load mould change dashboard data", err);
+      console.error("Failed to load Mold change dashboard data", err);
       setError(err);
     } finally {
       if (!controller.signal.aborted) setLoading(false);
@@ -894,7 +894,7 @@ function useMouldChangeData(filters) {
 const CHANGE_TYPE_OPTIONS = ["All", "Planned", "Unplanned"];
 const STATUS_OPTIONS = ["All", "Planned", "In Progress", "Completed", "Cancelled"];
 
-const MouldChangeDashboard = () => {
+const MoldChangeDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -911,7 +911,7 @@ const MouldChangeDashboard = () => {
   // calls on every render (including the ones fetchAll's own setState
   // causes), i.e. an infinite fetch loop.
   const filters = useMemo(() => ({ date, changeType, status }), [date, changeType, status]);
-  const { data, loading, refetch } = useMouldChangeData(filters);
+  const { data, loading, refetch } = useMoldChangeData(filters);
 
   const handleApply = useCallback(() => setDate(draftDate), [draftDate]);
   const handleReset = useCallback(() => {
@@ -946,7 +946,7 @@ const MouldChangeDashboard = () => {
 
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-1">
           <div className="flex min-h-0 flex-1 flex-col gap-2 border border-[#FDC94D]/40" style={{ animation: "mcGlow 3s ease-in-out infinite" }}>
-            <MouldChangeHeader
+            <MoldChangeHeader
               draftDate={draftDate} setDraftDate={setDraftDate}
               changeType={changeType} setChangeType={setChangeType} changeTypeOptions={CHANGE_TYPE_OPTIONS}
               status={status} setStatus={setStatus} statusOptions={STATUS_OPTIONS}
@@ -960,7 +960,7 @@ const MouldChangeDashboard = () => {
             />
             <div className="grid min-h-0 flex-[2] grid-cols-1 gap-2 lg:grid-cols-[360px_1fr_1fr] p-1">
               <KpiGrid data={data} />
-              <HallWiseMouldChangePanel rows={data.hallWise} missingHalls={data.hallsMissing} totalChanges={data.totalChanges} />
+              <HallWiseMoldChangePanel rows={data.hallWise} missingHalls={data.hallsMissing} totalChanges={data.totalChanges} />
               <ReasonDistributionPanel rows={data.reasonDistribution} reasonsTracked={data.reasonsTracked} totalChanges={data.totalChanges} />
             </div>
 
@@ -975,4 +975,4 @@ const MouldChangeDashboard = () => {
   );
 };
 
-export default MouldChangeDashboard;
+export default MoldChangeDashboard;

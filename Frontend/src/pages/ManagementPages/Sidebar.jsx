@@ -56,7 +56,7 @@ const menuItems = [
   {
     id: 5,
     title: "Mold Change",
-    path: "/management/mould-change",
+    path: "/management/mold-change",
     icon: <FaExchangeAlt size={14} />,
   },
   {

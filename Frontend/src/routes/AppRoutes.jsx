@@ -11,7 +11,6 @@ import Login from "../pages/CommanPages/Login";
 
 // Management
 import Dashboard from "../pages/ManagementPages/Dashboard";
-import MouldChangeDashboard from "../pages/ManagementPages/MouldChangeDashboard";
 import AllRejectionReasons from "../pages/ManagementPages/RejectionDashboard";
 import LossAnalysisDashboard from "../pages/ManagementPages/LossTimeDashboard";
 import ManagerReportsPage from "../pages/ManagementPages/ReportsPage";
@@ -66,6 +65,7 @@ import ManagementProductionDashboard from "../pages/ManagementPages/ProductionDa
 import ProductionDashboard from "../pages/ProductionPages/ProductionDashboard";
 import DateWiseProduction from "../pages/ManagementPages/DateWiseProduction";
 import MachineWiseProduction from "../pages/ManagementPages/MachineWiseProduction";
+import MoldChangeDashboard from "../pages/ManagementPages/MouldChangeDashboard";
 
 const AppRoutes = () => {
   return (
@@ -185,10 +185,10 @@ const AppRoutes = () => {
       />
 
       <Route
-        path="/management/mould-change"
+        path="/management/mold-change"
         element={
           <ManagementRoute>
-            <ManagementMouldChangeDashboard />
+            <MoldChangeDashboard />
           </ManagementRoute>
         }
       />
