@@ -59,12 +59,12 @@ import AdminDailyPlanPage from "../pages/AdminPages/DailyPlanPage";
 import AdminReportsPage from "../pages/AdminPages/ReportsPage";
 import AdminViewDailyPlanPage from "../pages/AdminPages/DailyPlanView";
 import AdminMonthlyPlanView from "../pages/AdminPages/MonthlyPlanView";
-import ManagementMouldChangeDashboard from "../pages/ManagementPages/MouldChangeDashboard";
+import ManagementMouldChangeDashboard from "../pages/ManagementPages/MoldChangeDashboard";
 import ManagementProductionDashboard from "../pages/ManagementPages/ProductionDashboard";
 import ProductionDashboard from "../pages/ProductionPages/ProductionDashboard";
 import DateWiseProduction from "../pages/ManagementPages/DateWiseProduction";
 import MachineWiseProduction from "../pages/ManagementPages/MachineWiseProduction";
-import MoldChangeDashboard from "../pages/ManagementPages/MouldChangeDashboard";
+import MoldChangeDashboard from "../pages/ManagementPages/MoldChangeDashboard";
 import OverAllDashboard from "../pages/ManagementPages/OverAllDashboard";
 
 const AppRoutes = () => {

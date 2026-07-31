@@ -16,20 +16,19 @@ import {
   HiOutlineChevronDown,
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
-  HiOutlineClock,
-  HiOutlineWrenchScrewdriver,
   HiOutlineExclamationTriangle,
-  HiOutlineTag,
-  HiOutlineBuildingOffice2,
   HiOutlineCog6Tooth,
   HiOutlineChartBar,
   HiOutlineChartPie,
+  HiOutlineTableCells,
+  HiOutlinePresentationChartLine,
 } from "react-icons/hi2";
 
 import Sidebar from "./Sidebar";
+import { useMoldChangeData } from "../../hooks/useMoldChangeDashboard";
 
 // ==========================================================
-// THEME TOKENS — matches ProductionDashboard.jsx / RejectionDashboard.jsx
+// THEME TOKENS
 // ==========================================================
 const NAVY = "#0F1D24";
 const GOLD = "#FDC94D";
@@ -37,6 +36,7 @@ const DANGER = "#DC2626";
 const DANGER_SOFT = "#FCA5A5";
 const BORDER = "border border-[#C6C6C6]";
 const SURFACE = `bg-white ${BORDER}`;
+const RADIUS = "rounded-[2px]";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 const MONTH_NAMES = [
@@ -51,8 +51,7 @@ const isShiftA = (h) => SHIFT_A_HOURS.includes(h);
 
 const fmt = (n) => (n ?? 0).toLocaleString("en-IN");
 const pct = (num, den) => (den > 0 ? Math.round((num / den) * 1000) / 10 : 0);
-const toArray = (value) =>
-  Array.isArray(value) ? value : value ? Object.values(value) : [];
+const toArray = (value) => (Array.isArray(value) ? value : value ? Object.values(value) : []);
 
 const toDateKey = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -61,32 +60,28 @@ const parseDateKey = (key) => {
   const [y, m, d] = key.split("-").map(Number);
   return new Date(y, (m || 1) - 1, d || 1);
 };
+const toMonthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const parseMonthKey = (key) => {
+  if (!key) return new Date();
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, 1);
+};
 const formatDisplayDate = (iso) => {
   if (!iso) return "—";
   const d = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
-const getToday = () => new Date().toISOString().split("T")[0];
-
-// API base — adjust to match your Express server / proxy setup
-const API_BASE = "/api/Mold-changes";
-
-const DEFAULT_DATA = {
-  totalChanges: 0,
-  topReason: null,
-  topHall: null,
-  topMachine: null,
-  hallWise: [],
-  hallsMissing: [],
-  reasonDistribution: [],
-  reasonsTracked: 0,
-  topMachines: [],
-  hourlyTrend: [],
+const formatDisplayMonth = (key) => {
+  if (!key) return "—";
+  const d = parseMonthKey(key);
+  return `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
 };
+const getToday = () => new Date().toISOString().split("T")[0];
+const getThisMonth = () => new Date().toISOString().slice(0, 7);
 
 // ==========================================================
-// CUSTOM DATE PICKER (unchanged from reference — portal positioned)
+// CUSTOM DATE PICKER
 // ==========================================================
 function CustomDatePicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
@@ -143,8 +138,7 @@ function CustomDatePicker({ value, onChange }) {
     return cells;
   }, [viewDate]);
 
-  const changeMonth = (delta) =>
-    setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1));
+  const changeMonth = (delta) => setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + delta, 1));
   const handleSelect = (date) => { onChange(toDateKey(date)); setOpen(false); };
 
   return (
@@ -152,7 +146,7 @@ function CustomDatePicker({ value, onChange }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-7 items-center gap-1.5 border px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 ${
+        className={`flex h-7 items-center gap-1.5 ${RADIUS} border px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 ${
           open ? "border-[#FDC94D]" : "border-white/15 hover:border-white/30"
         } bg-white/5`}
       >
@@ -165,16 +159,16 @@ function CustomDatePicker({ value, onChange }) {
         <div
           ref={panelRef}
           style={{ position: "fixed", top: coords.top, left: coords.left }}
-          className="z-[9999] w-60 overflow-hidden border border-[#C6C6C6] bg-white shadow-[0_10px_24px_rgba(15,29,36,0.2)]"
+          className={`z-[9999] w-60 overflow-hidden ${RADIUS} border border-[#C6C6C6] bg-white shadow-[0_10px_24px_rgba(15,29,36,0.2)]`}
         >
           <div className="flex items-center justify-between bg-[#0F1D24] px-2.5 py-2">
-            <button type="button" onClick={() => changeMonth(-1)} className="flex h-5 w-5 items-center justify-center text-[#FDC94D] transition-colors duration-100 hover:bg-white/10">
+            <button type="button" onClick={() => changeMonth(-1)} className={`flex h-5 w-5 items-center justify-center ${RADIUS} text-[#FDC94D] transition-colors duration-100 hover:bg-white/10`}>
               <HiOutlineChevronLeft className="h-3 w-3" />
             </button>
             <span className="text-[11px] font-bold text-white">
               {MONTH_NAMES[viewDate.getMonth()]} {viewDate.getFullYear()}
             </span>
-            <button type="button" onClick={() => changeMonth(1)} className="flex h-5 w-5 items-center justify-center text-[#FDC94D] transition-colors duration-100 hover:bg-white/10">
+            <button type="button" onClick={() => changeMonth(1)} className={`flex h-5 w-5 items-center justify-center ${RADIUS} text-[#FDC94D] transition-colors duration-100 hover:bg-white/10`}>
               <HiOutlineChevronRight className="h-3 w-3" />
             </button>
           </div>
@@ -220,13 +214,16 @@ function CustomDatePicker({ value, onChange }) {
 }
 
 // ==========================================================
-// CUSTOM SELECT (unchanged from reference)
+// CUSTOM MONTH PICKER
 // ==========================================================
-function CustomSelect({ value, onChange, options }) {
+function CustomMonthPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
+  const [viewYear, setViewYear] = useState(() => parseMonthKey(value).getFullYear());
   const [coords, setCoords] = useState(null);
   const wrapperRef = useRef(null);
   const panelRef = useRef(null);
+
+  useEffect(() => setViewYear(parseMonthKey(value).getFullYear()), [value]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -242,11 +239,11 @@ function CustomSelect({ value, onChange, options }) {
   const updateCoords = useCallback(() => {
     if (!wrapperRef.current) return;
     const rect = wrapperRef.current.getBoundingClientRect();
-    const panelWidth = 208;
+    const panelWidth = 220;
     let left = rect.left;
     if (left + panelWidth > window.innerWidth - 8) left = window.innerWidth - panelWidth - 8;
     if (left < 8) left = 8;
-    setCoords({ top: rect.bottom + 6, left, minWidth: rect.width });
+    setCoords({ top: rect.bottom + 6, left });
   }, []);
 
   useEffect(() => {
@@ -261,38 +258,80 @@ function CustomSelect({ value, onChange, options }) {
     };
   }, [open, updateCoords]);
 
+  const selectedKey = value || "";
+  const todayMonthKey = toMonthKey(new Date());
+
+  const handleSelect = (monthIdx) => {
+    onChange(`${viewYear}-${String(monthIdx + 1).padStart(2, "0")}`);
+    setOpen(false);
+  };
+
   return (
     <div ref={wrapperRef} className="relative flex-shrink-0">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-7 min-w-[120px] items-center gap-1.5 border px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 ${
+        className={`flex h-7 items-center gap-1.5 ${RADIUS} border px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 ${
           open ? "border-[#FDC94D]" : "border-white/15 hover:border-white/30"
         } bg-white/5`}
       >
-        <span className="min-w-0 flex-1 truncate text-left">{value}</span>
+        <HiOutlineCalendarDays className="h-3.5 w-3.5 text-white/60" />
+        {formatDisplayMonth(selectedKey)}
         <HiOutlineChevronDown className={`h-2.5 w-2.5 text-white/50 transition-transform duration-100 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && coords && createPortal(
         <div
           ref={panelRef}
-          style={{ position: "fixed", top: coords.top, left: coords.left, minWidth: coords.minWidth }}
-          className="z-[9999] max-h-56 w-52 overflow-y-auto border border-[#C6C6C6] bg-white py-1 shadow-[0_10px_24px_rgba(15,29,36,0.2)]"
+          style={{ position: "fixed", top: coords.top, left: coords.left }}
+          className={`z-[9999] w-56 overflow-hidden ${RADIUS} border border-[#C6C6C6] bg-white shadow-[0_10px_24px_rgba(15,29,36,0.2)]`}
         >
-          {options.map((opt) => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => { onChange(opt); setOpen(false); }}
-              className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-[10.5px] font-medium transition-colors duration-100 ${
-                value === opt ? "bg-[#FDC94D]/20 text-[#0F1D24]" : "text-[#0F1D24] hover:bg-[#FAFAFB]"
-              }`}
-            >
-              <span className="truncate">{opt}</span>
-              {value === opt && <HiOutlineCheck className="h-3 w-3 flex-shrink-0 text-[#0F1D24]" />}
+          <div className="flex items-center justify-between bg-[#0F1D24] px-2.5 py-2">
+            <button type="button" onClick={() => setViewYear((y) => y - 1)} className={`flex h-5 w-5 items-center justify-center ${RADIUS} text-[#FDC94D] transition-colors duration-100 hover:bg-white/10`}>
+              <HiOutlineChevronLeft className="h-3 w-3" />
             </button>
-          ))}
+            <span className="text-[11px] font-bold text-white">{viewYear}</span>
+            <button type="button" onClick={() => setViewYear((y) => y + 1)} className={`flex h-5 w-5 items-center justify-center ${RADIUS} text-[#FDC94D] transition-colors duration-100 hover:bg-white/10`}>
+              <HiOutlineChevronRight className="h-3 w-3" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-px bg-[#E5E5E5] p-px">
+            {MONTH_NAMES.map((name, idx) => {
+              const key = `${viewYear}-${String(idx + 1).padStart(2, "0")}`;
+              const isSelected = key === selectedKey, isCurrent = key === todayMonthKey;
+              return (
+                <button
+                  type="button"
+                  key={name}
+                  onClick={() => handleSelect(idx)}
+                  className={`h-9 bg-white text-[10px] font-semibold transition-colors duration-100 hover:bg-[#FDC94D]/25
+                  ${isSelected ? "bg-[#0F1D24] text-[#FDC94D] hover:bg-[#0F1D24]" : "text-[#0F1D24]"}
+                  ${isCurrent && !isSelected ? "font-bold underline decoration-[#FDC94D] decoration-2 underline-offset-2" : ""}`}
+                >
+                  {name.slice(0, 3)}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between border-t border-[#C6C6C6] px-2.5 py-2">
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                setViewYear(now.getFullYear());
+                onChange(toMonthKey(now));
+                setOpen(false);
+              }}
+              className="text-[10.5px] font-semibold text-[#0F1D24] hover:underline"
+            >
+              This Month
+            </button>
+            <button type="button" onClick={() => setOpen(false)} className="text-[10.5px] font-medium text-[#9B9B9B] hover:text-[#0F1D24]">
+              Close
+            </button>
+          </div>
         </div>,
         document.body
       )}
@@ -301,13 +340,35 @@ function CustomSelect({ value, onChange, options }) {
 }
 
 // ==========================================================
+// FILTER MODE TOGGLE — Daily / Monthly
+// ==========================================================
+function FilterModeToggle({ mode, onChange }) {
+  return (
+    <div className={`flex items-stretch overflow-hidden ${RADIUS} border border-white/15`}>
+      {["daily", "monthly"].map((m) => (
+        <button
+          key={m}
+          type="button"
+          onClick={() => onChange(m)}
+          className={`px-2.5 py-1 text-[10px] font-bold capitalize transition-colors duration-100 ${
+            mode === m ? "bg-[#FDC94D] text-[#0F1D24]" : "bg-white/5 text-white hover:bg-white/10"
+          } ${m === "monthly" ? "border-l border-white/15" : ""}`}
+        >
+          {m}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ==========================================================
 // HEADER
 // ==========================================================
 function MoldChangeHeader({
+  filterType, setFilterType,
   draftDate, setDraftDate,
-  changeType, setChangeType, changeTypeOptions,
-  status, setStatus, statusOptions,
-  onApply, onRefresh, onReset, onRecent, onExport,
+  draftMonth, setDraftMonth,
+  onApply, onRefresh, onReset, onExport,
   loading, dirty,
 }) {
   return (
@@ -318,13 +379,17 @@ function MoldChangeHeader({
         </h1>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <CustomDatePicker value={draftDate} onChange={setDraftDate} />
-          <CustomSelect value={changeType} onChange={setChangeType} options={changeTypeOptions} />
-          <CustomSelect value={status} onChange={setStatus} options={statusOptions} />
+          <FilterModeToggle mode={filterType} onChange={setFilterType} />
+
+          {filterType === "daily" ? (
+            <CustomDatePicker value={draftDate} onChange={setDraftDate} />
+          ) : (
+            <CustomMonthPicker value={draftMonth} onChange={setDraftMonth} />
+          )}
 
           <button
             onClick={onApply}
-            className="flex h-7 items-center gap-1.5 bg-[#FDC94D] px-3 text-[10.5px] font-extrabold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/90"
+            className={`flex h-7 items-center gap-1.5 ${RADIUS} bg-[#FDC94D] px-3 text-[10.5px] font-extrabold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/90`}
           >
             <HiOutlineCheck className="h-3.5 w-3.5" /> Apply
           </button>
@@ -332,28 +397,21 @@ function MoldChangeHeader({
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30 disabled:opacity-50"
+            className={`flex h-7 items-center gap-1.5 ${RADIUS} border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30 disabled:opacity-50`}
           >
             <HiOutlineArrowPath className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} /> Refresh
           </button>
 
           <button
             onClick={onReset}
-            className="flex h-7 items-center gap-1.5 border border-red-400/40 bg-red-500/10 px-2.5 text-[10.5px] font-semibold text-red-300 transition-colors duration-100 hover:bg-red-500/20"
+            className={`flex h-7 items-center gap-1.5 ${RADIUS} border border-red-400/40 bg-red-500/10 px-2.5 text-[10.5px] font-semibold text-red-300 transition-colors duration-100 hover:bg-red-500/20`}
           >
             <HiOutlineXMark className="h-3.5 w-3.5" /> Reset
           </button>
 
           <button
-            onClick={onRecent}
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
-          >
-            <HiOutlineClock className="h-3.5 w-3.5" /> Recent
-          </button>
-
-          <button
             onClick={onExport}
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+            className={`flex h-7 items-center gap-1.5 ${RADIUS} border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30`}
           >
             <HiOutlineArrowDownTray className="h-3.5 w-3.5" /> Export
           </button>
@@ -370,7 +428,7 @@ function MoldChangeHeader({
 }
 
 // ==========================================================
-// KPI TILE PRIMITIVES (unchanged from reference)
+// KPI TILE PRIMITIVES
 // ==========================================================
 function KpiSparkline({ color = GOLD }) {
   const points = "0,20 10,16 20,18 30,10 40,14 50,6 60,10 70,4 80,8 90,2 100,5";
@@ -382,29 +440,29 @@ function KpiSparkline({ color = GOLD }) {
 }
 function KpiProgressBar({ value = 0, color = GOLD }) {
   return (
-    <div className="h-1 w-full overflow-hidden rounded-full bg-white/10">
-      <div className="h-full rounded-full transition-all duration-300" style={{ width: `${Math.min(Math.max(value, 4), 100)}%`, background: color }} />
+    <div className={`h-1 w-full overflow-hidden ${RADIUS} bg-white/10`}>
+      <div className={`h-full ${RADIUS} transition-all duration-300`} style={{ width: `${Math.min(Math.max(value, 4), 100)}%`, background: color }} />
     </div>
   );
 }
 function KpiDots({ colors = [GOLD, "#9CA3AF", "#6B7280", "#4B5563", "#374151"] }) {
   return (
     <div className="flex items-center gap-1">
-      {colors.map((c, i) => <span key={i} className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />)}
+      {colors.map((c, i) => <span key={i} className={`h-1.5 w-1.5 ${RADIUS}`} style={{ background: c }} />)}
     </div>
   );
 }
 function KpiStatus({ label = "Active", color = "#22C55E" }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: color }} />
+      <span className={`h-1.5 w-1.5 flex-shrink-0 ${RADIUS}`} style={{ background: color }} />
       <span className="truncate text-[8.5px] font-semibold text-white/50">{label}</span>
     </div>
   );
 }
 function KpiTile({ label, value, subtitle, footer }) {
   return (
-    <div className="flex flex-col justify-between rounded-[2px] border border-white/10 bg-[#0F1D24] p-2">
+    <div className={`flex flex-col justify-between ${RADIUS} border border-white/10 bg-[#0F1D24] p-2`}>
       <div className="mt-2">
         <p className="text-[10.5px] font-bold uppercase tracking-wide text-white/50">{label}</p>
         <p className="mt-0.5 truncate text-[16px] font-extrabold leading-tight text-white">{value}</p>
@@ -448,7 +506,7 @@ function KpiGrid({ data }) {
 }
 
 // ==========================================================
-// HALL-WISE Mold CHANGES — vertical bar comparison across halls
+// HALL-WISE MOLD CHANGES
 // ==========================================================
 function HallWiseMoldChangePanel({ rows, missingHalls, totalChanges }) {
   const safeRows = toArray(rows);
@@ -458,10 +516,10 @@ function HallWiseMoldChangePanel({ rows, missingHalls, totalChanges }) {
   const avgPerHall = safeRows.length ? Math.round((totalChanges / safeRows.length) * 10) / 10 : 0;
 
   return (
-    <div className={`flex min-h-0 h-full flex-1 flex-col rounded-[2px] overflow-hidden ${SURFACE}`}>
+    <div className={`flex min-h-0 h-full flex-1 flex-col ${RADIUS} overflow-hidden ${SURFACE}`}>
       <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-[#C6C6C6] px-3 py-2">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 rounded-[2px] items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
+          <div className={`flex h-6 w-6 ${RADIUS} items-center justify-center bg-[#0F1D24] text-[#FDC94D]`}>
             <HiOutlineChartBar className="h-3.5 w-3.5" />
           </div>
           <div>
@@ -498,36 +556,40 @@ function HallWiseMoldChangePanel({ rows, missingHalls, totalChanges }) {
       )}
 
       <div className="flex min-h-0 flex-1 items-end justify-around gap-2 px-4 pb-2 pt-4">
-        {safeRows.map((row) => {
-          const h = Math.max((row.qty / maxQty) * 100, row.qty > 0 ? 6 : 1.5);
-          const isHighest = row.hall === highest?.hall && row.qty > 0;
-          return (
-            <div key={row.hall} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-              <span className="font-mono text-[10.5px] font-extrabold text-[#0F1D24]">{fmt(row.qty)}</span>
-              <div className="flex w-full flex-1 items-end justify-center">
-                <div
-                  className="w-3/5"
-                  style={{
-                    height: `${h}%`,
-                    background: row.qty === 0 ? "#E5E5E5" : isHighest ? DANGER : "#F59E0B",
-                    minHeight: 2,
-                  }}
-                />
+        {safeRows.length === 0 ? (
+          <p className="w-full py-6 text-center text-[11px] text-[#9B9B9B]">No hall data for this selection.</p>
+        ) : (
+          safeRows.map((row) => {
+            const h = Math.max((row.qty / maxQty) * 100, row.qty > 0 ? 6 : 1.5);
+            const isHighest = row.hall === highest?.hall && row.qty > 0;
+            return (
+              <div key={row.hall} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
+                <span className="font-mono text-[10.5px] font-extrabold text-[#0F1D24]">{fmt(row.qty)}</span>
+                <div className="flex w-full flex-1 items-end justify-center">
+                  <div
+                    className="w-3/5"
+                    style={{
+                      height: `${h}%`,
+                      background: row.qty === 0 ? "#E5E5E5" : isHighest ? DANGER : "#F59E0B",
+                      minHeight: 2,
+                    }}
+                  />
+                </div>
+                <span className="max-w-full truncate text-[9.5px] font-bold text-[#0F1D24]">{row.hall}</span>
               </div>
-              <span className="max-w-full truncate text-[9.5px] font-bold text-[#0F1D24]">{row.hall}</span>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-px border-t border-[#C6C6C6] bg-[#E5E5E5]">
         <div className="flex items-center justify-between gap-2 bg-red-50 px-3 py-1.5">
           <span className="text-[9.5px] font-bold text-red-700">Highest</span>
-          <span className="font-mono text-[10.5px] font-extrabold text-red-700">{highest?.hall} · {fmt(highest?.qty)}</span>
+          <span className="font-mono text-[10.5px] font-extrabold text-red-700">{highest?.hall ?? "—"} · {fmt(highest?.qty)}</span>
         </div>
         <div className="flex items-center justify-between gap-2 bg-emerald-50 px-3 py-1.5">
           <span className="text-[9.5px] font-bold text-emerald-700">Lowest</span>
-          <span className="font-mono text-[10.5px] font-extrabold text-emerald-700">{lowest?.hall} · {fmt(lowest?.qty)}</span>
+          <span className="font-mono text-[10.5px] font-extrabold text-emerald-700">{lowest?.hall ?? "—"} · {fmt(lowest?.qty)}</span>
         </div>
       </div>
     </div>
@@ -535,7 +597,7 @@ function HallWiseMoldChangePanel({ rows, missingHalls, totalChanges }) {
 }
 
 // ==========================================================
-// REASON DISTRIBUTION — donut chart + reason legend
+// REASON DISTRIBUTION
 // ==========================================================
 function ReasonDistributionPanel({ rows, reasonsTracked, totalChanges }) {
   const safeRows = toArray(rows);
@@ -544,10 +606,10 @@ function ReasonDistributionPanel({ rows, reasonsTracked, totalChanges }) {
   const topReason = safeRows[0];
 
   return (
-    <div className={`flex min-h-0 h-full flex-1 flex-col rounded-[2px] overflow-hidden ${SURFACE}`}>
+    <div className={`flex min-h-0 h-full flex-1 flex-col ${RADIUS} overflow-hidden ${SURFACE}`}>
       <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-[#C6C6C6] px-3 py-2">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 rounded-[2px] items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
+          <div className={`flex h-6 w-6 ${RADIUS} items-center justify-center bg-[#0F1D24] text-[#FDC94D]`}>
             <HiOutlineChartPie className="h-3.5 w-3.5" />
           </div>
           <div>
@@ -572,46 +634,50 @@ function ReasonDistributionPanel({ rows, reasonsTracked, totalChanges }) {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 items-center gap-3 px-3 py-3">
-        <svg width={size} height={size} className="flex-shrink-0">
-          <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
-            {safeRows.map((r) => {
-              const share = totalChanges > 0 ? r.qty / totalChanges : 0;
-              const dash = share * circumference;
-              const el = (
-                <circle
-                  key={r.reason}
-                  cx={size / 2} cy={size / 2} r={radius}
-                  fill="none" stroke={r.color} strokeWidth={stroke}
-                  strokeDasharray={`${dash} ${circumference - dash}`}
-                  strokeDashoffset={-offsetAcc}
-                />
-              );
-              offsetAcc += dash;
-              return el;
-            })}
-          </g>
-          <text x="50%" y="47%" textAnchor="middle" fontSize="18" fontWeight="800" fill="#0F1D24" fontFamily="ui-monospace, monospace">
-            {fmt(totalChanges)}
-          </text>
-          <text x="50%" y="60%" textAnchor="middle" fontSize="8" fontWeight="700" fill="#9B9B9B">TOTAL</text>
-        </svg>
+      {safeRows.length === 0 ? (
+        <p className="flex-1 px-3 py-8 text-center text-[11px] text-[#9B9B9B]">No mold change reasons for this selection.</p>
+      ) : (
+        <div className="flex min-h-0 flex-1 items-center gap-3 px-3 py-3">
+          <svg width={size} height={size} className="flex-shrink-0">
+            <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
+              {safeRows.map((r) => {
+                const share = totalChanges > 0 ? r.qty / totalChanges : 0;
+                const dash = share * circumference;
+                const el = (
+                  <circle
+                    key={r.reason}
+                    cx={size / 2} cy={size / 2} r={radius}
+                    fill="none" stroke={r.color} strokeWidth={stroke}
+                    strokeDasharray={`${dash} ${circumference - dash}`}
+                    strokeDashoffset={-offsetAcc}
+                  />
+                );
+                offsetAcc += dash;
+                return el;
+              })}
+            </g>
+            <text x="50%" y="47%" textAnchor="middle" fontSize="18" fontWeight="800" fill="#0F1D24" fontFamily="ui-monospace, monospace">
+              {fmt(totalChanges)}
+            </text>
+            <text x="50%" y="60%" textAnchor="middle" fontSize="8" fontWeight="700" fill="#9B9B9B">TOTAL</text>
+          </svg>
 
-        <div className="min-w-0 flex-1 divide-y divide-[#F0F0F0]">
-          {safeRows.map((r) => (
-            <div key={r.reason} className="flex items-center justify-between gap-2 py-1">
-              <span className="flex min-w-0 items-center gap-1.5">
-                <span className="h-2 w-2 flex-shrink-0" style={{ background: r.color }} />
-                <span className="truncate text-[10.5px] font-semibold text-[#0F1D24]">{r.reason}</span>
-              </span>
-              <span className="flex flex-shrink-0 items-center gap-1.5 font-mono text-[10.5px]">
-                <span className="font-extrabold text-[#0F1D24]">{fmt(r.qty)}</span>
-                <span className="text-[#9B9B9B]">{pct(r.qty, totalChanges)}%</span>
-              </span>
-            </div>
-          ))}
+          <div className="min-w-0 flex-1 divide-y divide-[#F0F0F0] overflow-y-auto" style={{ maxHeight: size }}>
+            {safeRows.map((r) => (
+              <div key={r.reason} className="flex items-center justify-between gap-2 py-1">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="h-2 w-2 flex-shrink-0" style={{ background: r.color }} />
+                  <span className="truncate text-[10.5px] font-semibold text-[#0F1D24]">{r.reason}</span>
+                </span>
+                <span className="flex flex-shrink-0 items-center gap-1.5 font-mono text-[10.5px]">
+                  <span className="font-extrabold text-[#0F1D24]">{fmt(r.qty)}</span>
+                  <span className="text-[#9B9B9B]">{pct(r.qty, totalChanges)}%</span>
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-shrink-0 border-t border-[#C6C6C6] bg-[#FAFAFB] px-3 py-1.5 text-[9.5px] font-semibold text-[#9B9B9B]">
         {reasonsTracked} reasons tracked
@@ -621,16 +687,16 @@ function ReasonDistributionPanel({ rows, reasonsTracked, totalChanges }) {
 }
 
 // ==========================================================
-// TOP MACHINES — ranked by total downtime minutes
+// TOP MACHINES
 // ==========================================================
 function TopMachinesPanel({ rows }) {
   const safeRows = toArray(rows);
   const maxQty = Math.max(...safeRows.map((r) => r.qty || 0), 1);
 
   return (
-    <div className={`flex min-h-0 h-full flex-1 flex-col rounded-[2px] overflow-hidden ${SURFACE}`}>
+    <div className={`flex min-h-0 h-full flex-1 flex-col ${RADIUS} overflow-hidden ${SURFACE}`}>
       <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#C6C6C6] px-3 py-2">
-        <div className="flex h-6 w-6 rounded-[2px] items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
+        <div className={`flex h-6 w-6 ${RADIUS} items-center justify-center bg-[#0F1D24] text-[#FDC94D]`}>
           <HiOutlineCog6Tooth className="h-3.5 w-3.5" />
         </div>
         <div>
@@ -641,13 +707,13 @@ function TopMachinesPanel({ rows }) {
 
       <div className="min-h-0 flex-1 divide-y divide-[#F0F0F0] overflow-auto">
         {safeRows.length === 0 ? (
-          <p className="px-3 py-6 text-center text-[11px] text-[#9B9B9B]">No Mold changes for this selection.</p>
+          <p className="px-3 py-6 text-center text-[11px] text-[#9B9B9B]">No mold changes for this selection.</p>
         ) : (
           safeRows.map((row, idx) => {
             const width = Math.max((row.qty / maxQty) * 100, row.qty > 0 ? 4 : 0);
             return (
               <div key={row.machine} className="flex items-center gap-2.5 px-3 py-2">
-                <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center bg-[#0F1D24] font-mono text-[9.5px] font-extrabold text-[#FDC94D]">
+                <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center ${RADIUS} bg-[#0F1D24] font-mono text-[9.5px] font-extrabold text-[#FDC94D]`}>
                   {idx + 1}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -655,8 +721,8 @@ function TopMachinesPanel({ rows }) {
                     <span className="truncate text-[11px] font-bold text-[#0F1D24]">{row.machine}</span>
                     <span className="flex-shrink-0 font-mono text-[11px] font-extrabold text-red-600">{fmt(row.qty)} min</span>
                   </div>
-                  <div className="mt-1 h-1.5 w-full overflow-hidden bg-[#F0F0F0]">
-                    <div className="h-full bg-red-500" style={{ width: `${width}%` }} />
+                  <div className={`mt-1 h-1.5 w-full overflow-hidden ${RADIUS} bg-[#F0F0F0]`}>
+                    <div className={`h-full ${RADIUS} bg-red-500`} style={{ width: `${width}%` }} />
                   </div>
                 </div>
               </div>
@@ -666,17 +732,18 @@ function TopMachinesPanel({ rows }) {
       </div>
 
       <div className="flex-shrink-0 border-t border-[#C6C6C6] bg-[#FAFAFB] px-3 py-1.5 text-[9.5px] font-semibold text-[#9B9B9B]">
-        {safeRows.length} machines with Mold changes
+        {safeRows.length} machines with mold changes
       </div>
     </div>
   );
 }
 
 // ==========================================================
-// HOURLY DOWNTIME TREND — bar chart with Shift A / Shift B toggle
+// HOURLY DOWNTIME TREND — bar chart / table toggle + Shift A/B toggle
 // ==========================================================
 function HourlyDowntimeTrendPanel({ points }) {
   const [activeShift, setActiveShift] = useState("both");
+  const [viewMode, setViewMode] = useState("chart"); // 'chart' | 'table'
 
   const series = useMemo(() => {
     const byHour = new Map();
@@ -686,10 +753,16 @@ function HourlyDowntimeTrendPanel({ points }) {
     }));
   }, [points]);
 
+  const filteredForTable = useMemo(
+    () => series.filter((p) => activeShift === "both" || p.shift === activeShift),
+    [series, activeShift],
+  );
+
   const maxQty = Math.max(...series.map((p) => p.qty), 1);
   const niceMax = Math.ceil((maxQty * 1.3) / 4) * 4 || 4;
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(niceMax * f));
   const peak = series.reduce((a, b) => (b.qty > (a?.qty ?? -1) ? b : a), series[0]);
+  const totalQty = series.reduce((s, p) => s + p.qty, 0);
 
   const width = 900, height = 220, pad = { top: 10, right: 10, bottom: 26, left: 30 };
   const chartW = width - pad.left - pad.right;
@@ -699,21 +772,40 @@ function HourlyDowntimeTrendPanel({ points }) {
   const yFor = (v) => pad.top + chartH - (v / niceMax) * chartH;
 
   return (
-    <div className={`flex min-h-0 h-full flex-1 flex-col rounded-[2px] overflow-hidden ${SURFACE}`}>
+    <div className={`flex min-h-0 h-full flex-1 flex-col ${RADIUS} overflow-hidden ${SURFACE}`}>
       <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[#C6C6C6] px-3 py-2">
         <div>
           <h2 className="text-[12.5px] font-extrabold text-[#0F1D24]">Hourly Downtime Trend</h2>
           <p className="text-[9px] font-medium text-[#9B9B9B]">Shift A (08:00–20:00) · Shift B (20:00–08:00)</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-stretch overflow-hidden border border-[#C6C6C6]">
+          <div className={`flex items-stretch overflow-hidden ${RADIUS} border border-[#C6C6C6]`}>
+            <button
+              onClick={() => setViewMode("chart")}
+              className={`flex items-center gap-1 px-2 py-1 text-[9.5px] font-bold transition-colors duration-100 ${
+                viewMode === "chart" ? "bg-[#0F1D24] text-[#FDC94D]" : "bg-white text-[#0F1D24] hover:bg-[#F4F4F5]"
+              }`}
+            >
+              <HiOutlinePresentationChartLine className="h-3.5 w-3.5" /> Chart
+            </button>
+            <button
+              onClick={() => setViewMode("table")}
+              className={`flex items-center gap-1 border-l border-[#C6C6C6] px-2 py-1 text-[9.5px] font-bold transition-colors duration-100 ${
+                viewMode === "table" ? "bg-[#0F1D24] text-[#FDC94D]" : "bg-white text-[#0F1D24] hover:bg-[#F4F4F5]"
+              }`}
+            >
+              <HiOutlineTableCells className="h-3.5 w-3.5" /> Table
+            </button>
+          </div>
+
+          <div className={`flex items-stretch overflow-hidden ${RADIUS} border border-[#C6C6C6]`}>
             <button
               onClick={() => setActiveShift(activeShift === "A" ? "both" : "A")}
               className={`flex items-center gap-1.5 px-2.5 py-1 text-[9.5px] font-bold transition-colors duration-100 ${
                 activeShift === "A" ? "bg-[#FDC94D] text-[#0F1D24]" : "bg-white text-[#0F1D24] hover:bg-[#FFF9EA]"
               }`}
             >
-              <span className="h-1.5 w-1.5 rounded-[2px]" style={{ background: GOLD }} /> Shift A · 08:00–20:00
+              <span className={`h-1.5 w-1.5 ${RADIUS}`} style={{ background: GOLD }} /> Shift A · 08:00–20:00
             </button>
             <button
               onClick={() => setActiveShift(activeShift === "B" ? "both" : "B")}
@@ -721,9 +813,10 @@ function HourlyDowntimeTrendPanel({ points }) {
                 activeShift === "B" ? "bg-[#0F1D24] text-[#FDC94D]" : "bg-white text-[#0F1D24] hover:bg-[#F4F4F5]"
               }`}
             >
-              <span className="h-1.5 w-1.5 rounded-[2px]" style={{ background: NAVY }} /> Shift B · 20:00–08:00
+              <span className={`h-1.5 w-1.5 ${RADIUS}`} style={{ background: NAVY }} /> Shift B · 20:00–08:00
             </button>
           </div>
+
           <div className="text-right">
             <p className="text-[8px] font-bold uppercase tracking-wide text-[#9B9B9B]">Peak Hour</p>
             <p className="font-mono text-[12px] font-extrabold text-[#0F1D24]">
@@ -734,187 +827,125 @@ function HourlyDowntimeTrendPanel({ points }) {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 p-2">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" preserveAspectRatio="none">
-          {series.map((p, i) => (
-            <rect key={`bg-${p.hour}`} x={pad.left + i * slot} y={pad.top} width={slot} height={chartH} fill={p.shift === "A" ? "#FFF9EA" : "#F4F4F5"} />
-          ))}
+      {viewMode === "chart" ? (
+        <div className="min-h-0 flex-1 p-2">
+          <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" preserveAspectRatio="none">
+            {series.map((p, i) => (
+              <rect key={`bg-${p.hour}`} x={pad.left + i * slot} y={pad.top} width={slot} height={chartH} fill={p.shift === "A" ? "#FFF9EA" : "#F4F4F5"} />
+            ))}
 
-          {yTicks.map((tick, i) => (
-            <g key={i}>
-              <line x1={pad.left} x2={width - pad.right} y1={yFor(tick)} y2={yFor(tick)} stroke="#E5E5E5" strokeWidth={1} />
-              <text x={pad.left - 6} y={yFor(tick) + 3} textAnchor="end" fontSize="8.5" fill="#9B9B9B" fontFamily="ui-monospace, monospace">
-                {tick}
-              </text>
-            </g>
-          ))}
-
-          <line x1={pad.left + 12 * slot} x2={pad.left + 12 * slot} y1={pad.top} y2={pad.top + chartH} stroke="#0F1D24" strokeWidth={1.5} />
-
-          {series.map((p, i) => {
-            const dimmed = activeShift !== "both" && p.shift !== activeShift;
-            const isPeak = peak && p.hour === peak.hour && p.qty > 0;
-            const h = (p.qty / niceMax) * chartH;
-            const barX = pad.left + i * slot + (slot - barW) / 2;
-            const barY = pad.top + chartH - h;
-            return (
-              <g key={`bar-${p.hour}`}>
-                <rect x={barX} y={barY} width={barW} height={h} fill={dimmed ? "#F3B4B4" : isPeak ? DANGER : DANGER_SOFT} opacity={dimmed ? 0.35 : 1} />
-                {p.qty > 0 && (
-                  <text x={barX + barW / 2} y={Math.max(barY - 4, pad.top + 8)} textAnchor="middle" fontSize="8" fontWeight="700" fill={dimmed ? "#C9C9C9" : "#0F1D24"} fontFamily="ui-monospace, monospace">
-                    {p.qty}
-                  </text>
-                )}
+            {yTicks.map((tick, i) => (
+              <g key={i}>
+                <line x1={pad.left} x2={width - pad.right} y1={yFor(tick)} y2={yFor(tick)} stroke="#E5E5E5" strokeWidth={1} />
+                <text x={pad.left - 6} y={yFor(tick) + 3} textAnchor="end" fontSize="8.5" fill="#9B9B9B" fontFamily="ui-monospace, monospace">
+                  {tick}
+                </text>
               </g>
-            );
-          })}
+            ))}
 
-          {series.map((p, i) => (
-            <text key={`lbl-${p.hour}`} x={pad.left + i * slot + slot / 2} y={height - 8} textAnchor="middle" fontSize="8" fontWeight="600" fill="#9B9B9B">
-              {String(p.hour).padStart(2, "0")}
-            </text>
-          ))}
-        </svg>
-      </div>
+            <line x1={pad.left + 12 * slot} x2={pad.left + 12 * slot} y1={pad.top} y2={pad.top + chartH} stroke="#0F1D24" strokeWidth={1.5} />
+
+            {series.map((p, i) => {
+              const dimmed = activeShift !== "both" && p.shift !== activeShift;
+              const isPeak = peak && p.hour === peak.hour && p.qty > 0;
+              const h = (p.qty / niceMax) * chartH;
+              const barX = pad.left + i * slot + (slot - barW) / 2;
+              const barY = pad.top + chartH - h;
+              return (
+                <g key={`bar-${p.hour}`}>
+                  <rect x={barX} y={barY} width={barW} height={h} fill={dimmed ? "#F3B4B4" : isPeak ? DANGER : DANGER_SOFT} opacity={dimmed ? 0.35 : 1} />
+                  {p.qty > 0 && (
+                    <text x={barX + barW / 2} y={Math.max(barY - 4, pad.top + 8)} textAnchor="middle" fontSize="8" fontWeight="700" fill={dimmed ? "#C9C9C9" : "#0F1D24"} fontFamily="ui-monospace, monospace">
+                      {p.qty}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+
+            {series.map((p, i) => (
+              <text key={`lbl-${p.hour}`} x={pad.left + i * slot + slot / 2} y={height - 8} textAnchor="middle" fontSize="8" fontWeight="600" fill="#9B9B9B">
+                {String(p.hour).padStart(2, "0")}
+              </text>
+            ))}
+          </svg>
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-auto">
+          <table className="w-full border-collapse text-[10.5px]">
+            <thead className="sticky top-0 bg-[#0F1D24] text-white">
+              <tr>
+                <th className="px-3 py-1.5 text-left font-bold uppercase tracking-wide text-[9px]">Hour</th>
+                <th className="px-3 py-1.5 text-left font-bold uppercase tracking-wide text-[9px]">Shift</th>
+                <th className="px-3 py-1.5 text-right font-bold uppercase tracking-wide text-[9px]">Downtime (min)</th>
+                <th className="px-3 py-1.5 text-right font-bold uppercase tracking-wide text-[9px]">Share</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#F0F0F0]">
+              {filteredForTable.map((p) => (
+                <tr key={p.hour} className={p.hour === peak?.hour && p.qty > 0 ? "bg-red-50" : ""}>
+                  <td className="px-3 py-1.5 font-mono font-bold text-[#0F1D24]">{String(p.hour).padStart(2, "0")}:00</td>
+                  <td className="px-3 py-1.5 font-semibold text-[#0F1D24]">Shift {p.shift}</td>
+                  <td className="px-3 py-1.5 text-right font-mono font-extrabold text-[#0F1D24]">{fmt(p.qty)}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-[#9B9B9B]">{pct(p.qty, totalQty)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="flex flex-shrink-0 items-center justify-between border-t border-[#C6C6C6] px-3 py-1.5">
         <div className="flex items-center gap-3 text-[9.5px] font-bold text-[#9B9B9B]">
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-[2px]" style={{ background: GOLD }} /> Shift A</span>
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-[2px]" style={{ background: NAVY }} /> Shift B</span>
+          <span className="flex items-center gap-1"><span className={`h-2 w-2 ${RADIUS}`} style={{ background: GOLD }} /> Shift A</span>
+          <span className="flex items-center gap-1"><span className={`h-2 w-2 ${RADIUS}`} style={{ background: NAVY }} /> Shift B</span>
         </div>
         <span className="text-[9.5px] font-semibold text-[#9B9B9B]">
-          Total Downtime: <span className="font-mono font-extrabold text-[#0F1D24]">{fmt(series.reduce((s, p) => s + p.qty, 0))} min</span>
+          Total Downtime: <span className="font-mono font-extrabold text-[#0F1D24]">{fmt(totalQty)} min</span>
         </span>
       </div>
     </div>
   );
 }
 
-// ==========================================================
-// DATA FETCHING HOOK — pulls all five endpoints for a given filter set
-// ==========================================================
-
-// fetch() only rejects on network failure — a 404/500 still resolves
-// "successfully" and would otherwise get JSON.parse'd as if it were
-// real data. This wrapper turns non-2xx responses into a real error.
-async function fetchJson(url, options) {
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    let detail = "";
-    try { detail = (await res.json()).error || ""; } catch { /* ignore */ }
-    throw new Error(`${res.status} ${res.statusText} — ${url}${detail ? ` (${detail})` : ""}`);
-  }
-  return res.json();
-}
-
-function useMoldChangeData(filters) {
-  const [data, setData] = useState(DEFAULT_DATA);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  // Tracks the in-flight request so a slow/late response from a
-  // superseded filter set can never overwrite fresher data.
-  const abortRef = useRef(null);
-  // Defense-in-depth: if something outside this hook (a remounting
-  // parent, an unstable `key`, StrictMode, etc.) keeps invoking fetchAll
-  // with filters that haven't actually changed, skip the redundant call
-  // instead of re-firing 5 requests every time. If you see the console
-  // warning below firing repeatedly, the bug is upstream of this file —
-  // check the Network tab's Initiator stack for the real trigger.
-  const lastKeyRef = useRef(null);
-
-  const fetchAll = useCallback(async (force = false) => {
-    const key = JSON.stringify(filters);
-    if (!force && lastKeyRef.current === key) {
-      console.warn(
-        "[MoldChangeDashboard] fetchAll called again with identical filters — " +
-        "skipping. This usually means the component is being remounted or " +
-        "re-invoked from outside (check the Network tab's Initiator stack)."
-      );
-      return;
-    }
-    lastKeyRef.current = key;
-
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setLoading(true);
-    setError(null);
-    const qs = new URLSearchParams(
-      Object.fromEntries(Object.entries(filters).filter(([, v]) => v && v !== "All"))
-    ).toString();
-
-    try {
-      const [summary, hallWise, distribution, topMachines, hourly] = await Promise.all([
-        fetchJson(`${API_BASE}/summary?${qs}`, { signal: controller.signal }),
-        fetchJson(`${API_BASE}/hall-wise?${qs}`, { signal: controller.signal }),
-        fetchJson(`${API_BASE}/reason-distribution?${qs}`, { signal: controller.signal }),
-        fetchJson(`${API_BASE}/top-machines?${qs}`, { signal: controller.signal }),
-        fetchJson(`${API_BASE}/hourly-trend?${qs}`, { signal: controller.signal }),
-      ]);
-
-      // Guard against the (rare) case where this request was aborted
-      // just after Promise.all resolved but before state updates.
-      if (controller.signal.aborted) return;
-
-      setData({
-        ...summary,
-        hallWise: hallWise.hallWise ?? [],
-        hallsMissing: hallWise.hallsMissing ?? [],
-        reasonDistribution: distribution.reasonDistribution ?? [],
-        reasonsTracked: distribution.reasonsTracked ?? 0,
-        topMachines: topMachines.topMachines ?? [],
-        hourlyTrend: hourly.hourlyTrend ?? [],
-      });
-    } catch (err) {
-      if (err.name === "AbortError") return; // superseded by a newer fetch — not a real error
-      console.error("Failed to load Mold change dashboard data", err);
-      setError(err);
-    } finally {
-      if (!controller.signal.aborted) setLoading(false);
-    }
-  }, [filters]);
-
-  useEffect(() => {
-    fetchAll();
-    return () => abortRef.current?.abort();
-  }, [fetchAll]);
-
-  return { data, loading, error, refetch: () => fetchAll(true) };
-}
 
 // ==========================================================
 // PAGE
 // ==========================================================
-const CHANGE_TYPE_OPTIONS = ["All", "Planned", "Unplanned"];
-const STATUS_OPTIONS = ["All", "Planned", "In Progress", "Completed", "Cancelled"];
-
 const MoldChangeDashboard = () => {
-  const navigate = useNavigate();
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const [filterType, setFilterType] = useState("daily");
+
   const [date, setDate] = useState(getToday());
   const [draftDate, setDraftDate] = useState(getToday());
-  const [changeType, setChangeType] = useState("All");
-  const [status, setStatus] = useState("All");
-  const dirty = draftDate !== date;
+  const [month, setMonth] = useState(getThisMonth());
+  const [draftMonth, setDraftMonth] = useState(getThisMonth());
 
-  // Memoized: without this, `{ date, changeType, status }` is a brand-new
-  // object on every render, which — since it's a dependency of the fetch
-  // hook's useCallback/useEffect chain — would re-trigger all five API
-  // calls on every render (including the ones fetchAll's own setState
-  // causes), i.e. an infinite fetch loop.
-  const filters = useMemo(() => ({ date, changeType, status }), [date, changeType, status]);
+  const dirty = draftDate !== date || draftMonth !== month;
+
+  // Memoized: without this, filters would be a brand-new object on every
+  // render and re-trigger all five API calls in an infinite fetch loop.
+  const filters = useMemo(
+    () => ({ filterType, date, month }),
+    [filterType, date, month],
+  );
   const { data, loading, refetch } = useMoldChangeData(filters);
 
-  const handleApply = useCallback(() => setDate(draftDate), [draftDate]);
+  const handleApply = useCallback(() => {
+    setDate(draftDate);
+    setMonth(draftMonth);
+  }, [draftDate, draftMonth]);
+
   const handleReset = useCallback(() => {
     const today = getToday();
+    const thisMonth = getThisMonth();
+    setFilterType("daily");
     setDraftDate(today);
     setDate(today);
-    setChangeType("All");
-    setStatus("All");
+    setDraftMonth(thisMonth);
+    setMonth(thisMonth);
   }, []);
 
   return (
@@ -940,15 +971,17 @@ const MoldChangeDashboard = () => {
         />
 
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-1">
-          <div className="flex min-h-0 flex-1 flex-col gap-2 border border-[#FDC94D]/40" style={{ animation: "mcGlow 3s ease-in-out infinite" }}>
+          <div className={`flex min-h-0 flex-1 flex-col gap-2 ${RADIUS} border border-[#FDC94D]/40`} style={{ animation: "mcGlow 3s ease-in-out infinite" }}>
             <MoldChangeHeader
-              draftDate={draftDate} setDraftDate={setDraftDate}
-              changeType={changeType} setChangeType={setChangeType} changeTypeOptions={CHANGE_TYPE_OPTIONS}
-              status={status} setStatus={setStatus} statusOptions={STATUS_OPTIONS}
+              filterType={filterType}
+              setFilterType={setFilterType}
+              draftDate={draftDate}
+              setDraftDate={setDraftDate}
+              draftMonth={draftMonth}
+              setDraftMonth={setDraftMonth}
               onApply={handleApply}
               onRefresh={refetch}
               onReset={handleReset}
-              onRecent={() => {}}
               onExport={() => {}}
               loading={loading}
               dirty={dirty}

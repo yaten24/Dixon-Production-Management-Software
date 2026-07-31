@@ -186,7 +186,7 @@ const CustomDatePicker = ({ value, onChange }) => {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+        className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
       >
         <HiOutlineCalendarDays className="h-3.5 w-3.5" />
         {formatDisplayDate(selectedKey)}
@@ -200,13 +200,13 @@ const CustomDatePicker = ({ value, onChange }) => {
             className="z-[9999] w-58 overflow-hidden rounded-[2px] border border-[#E2E8F0] bg-white shadow-lg"
           >
             <div className="flex items-center justify-between bg-[#0F1D24] px-2.5 py-2">
-              <button type="button" onClick={() => changeMonth(-1)} className="flex h-5 w-5 items-center justify-center text-[#FDC94D] hover:bg-white/10">
+              <button type="button" onClick={() => changeMonth(-1)} className="flex h-5 w-5 items-center justify-center rounded-[2px] text-[#FDC94D] hover:bg-white/10">
                 <HiOutlineChevronLeft className="h-3 w-3" />
               </button>
               <span className="text-[11px] font-bold text-white">
                 {MONTH_NAMES[viewDate.getMonth()]} {viewDate.getFullYear()}
               </span>
-              <button type="button" onClick={() => changeMonth(1)} className="flex h-5 w-5 items-center justify-center text-[#FDC94D] hover:bg-white/10">
+              <button type="button" onClick={() => changeMonth(1)} className="flex h-5 w-5 items-center justify-center rounded-[2px] text-[#FDC94D] hover:bg-white/10">
                 <HiOutlineChevronRight className="h-3 w-3" />
               </button>
             </div>
@@ -226,7 +226,7 @@ const CustomDatePicker = ({ value, onChange }) => {
                     type="button"
                     key={key}
                     onClick={() => handleSelect(date)}
-                    className={`h-6 bg-white text-[10px] font-semibold transition-colors duration-100 hover:bg-[#FDC94D]/25
+                    className={`h-6 rounded-[2px] bg-white text-[10px] font-semibold transition-colors duration-100 hover:bg-[#FDC94D]/25
                     ${isSelected ? "bg-[#0F1D24] text-[#FDC94D] hover:bg-[#0F1D24]" : "text-[#0F172A]"}
                     ${isToday && !isSelected ? "font-bold underline decoration-[#FDC94D] decoration-2 underline-offset-2" : ""}`}
                   >
@@ -307,7 +307,7 @@ const CustomSelect = ({ value, onChange, options = [], maxWidth = 190 }) => {
         type="button"
         onClick={() => setOpen((o) => !o)}
         style={{ maxWidth }}
-        className="flex h-7 min-w-[100px] items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+        className="flex h-7 min-w-[100px] items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
       >
         <span className="min-w-0 flex-1 truncate text-left">{displayLabel}</span>
         <HiOutlineChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-100 ${open ? "rotate-180" : ""}`} />
@@ -368,37 +368,36 @@ function ControlBox({
 
   return (
     <header className="flex-shrink-0 bg-[#0F1D24] px-4 py-3">
-      <div className="flex flex-nowrap items-center gap-3 overflow-x-auto">
+      <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
         <div className="flex flex-shrink-0 items-center gap-2.5">
           <button
             onClick={onBack}
             title="Back"
-            className="flex h-7 w-7 items-center justify-center border border-white/15 text-white transition-colors duration-100 hover:border-white/30 hover:bg-white/5"
+            className="flex h-7 w-7 items-center justify-center rounded-[2px] border border-white/15 text-white transition-colors duration-100 hover:border-white/30 hover:bg-white/5"
           >
             <HiOutlineArrowLeft className="h-3.5 w-3.5" />
           </button>
           <div className="min-w-0">
-            <h1 className="whitespace-nowrap text-[16px] font-extrabold uppercase leading-none tracking-wide text-white">
+            <h1 className="whitespace-nowrap text-[14px] sm:text-[15px] lg:text-[16px] font-extrabold uppercase leading-none tracking-wide text-white">
               {hallCode} Dashboard
             </h1>
-            <p className="mt-1 whitespace-nowrap font-mono text-[9px] leading-none text-white/50">
+            <p className="mt-1 whitespace-nowrap font-mono text-[8.5px] sm:text-[9px] leading-none text-white/50">
               {formatDisplayDate(draft.date)}
             </p>
           </div>
         </div>
 
-        <div className="h-6 w-px flex-shrink-0 bg-white/10" />
-
-        <div className="flex flex-shrink-0 items-center gap-2">
+        {/* filters + all action buttons grouped together on one side */}
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <CustomDatePicker value={draft.date} onChange={(date) => setDraft((p) => ({ ...p, date }))} />
           <CustomSelect value={draft.machine} onChange={(machine) => setDraft((p) => ({ ...p, machine }))} options={machineOptions} maxWidth={190} />
           <CustomSelect value={draft.shift} onChange={(shift) => setDraft((p) => ({ ...p, shift }))} options={shiftOptions} />
-        </div>
 
-        <div className="flex flex-shrink-0 items-center gap-2">
+          <div className="h-6 w-px flex-shrink-0 bg-white/10" />
+
           <button
             onClick={onApply}
-            className="flex h-7 items-center gap-1.5 bg-[#FDC94D] px-3 text-[10.5px] font-extrabold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/90"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] bg-[#FDC94D] px-3 text-[10.5px] font-extrabold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/90"
           >
             <HiOutlineCheck className="h-3.5 w-3.5" /> Apply
           </button>
@@ -406,14 +405,14 @@ function ControlBox({
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30 disabled:opacity-50"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30 disabled:opacity-50"
           >
             <HiOutlineArrowPath className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} /> Refresh
           </button>
 
           <button
             onClick={onReset}
-            className="flex h-7 items-center gap-1.5 border border-red-400/40 bg-red-500/10 px-2.5 text-[10.5px] font-semibold text-red-300 transition-colors duration-100 hover:bg-red-500/20"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-red-400/40 bg-red-500/10 px-2.5 text-[10.5px] font-semibold text-red-300 transition-colors duration-100 hover:bg-red-500/20"
           >
             <HiOutlineXMark className="h-3.5 w-3.5" /> Reset
           </button>
@@ -423,34 +422,32 @@ function ControlBox({
               Unapplied changes
             </span>
           )}
-        </div>
 
-        {/* message shows inline, same row — grows to fill remaining space */}
-        {message ? (
-          <div className="flex h-7 min-w-0 flex-1 shrink items-center gap-1.5 border border-amber-400/30 bg-amber-500/10 px-2.5 text-[10.5px] font-semibold text-amber-300">
-            <HiOutlineExclamationTriangle className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{message}</span>
-          </div>
-        ) : (
-          <div className="min-w-[8px] flex-1" />
-        )}
+          <div className="h-6 w-px flex-shrink-0 bg-white/10" />
 
-        <div className="flex flex-shrink-0 items-center gap-2">
           <button
             onClick={onHeatmap}
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
           >
             <HiOutlineSquares2X2 className="h-3.5 w-3.5" /> Heatmap
           </button>
 
           <button
             onClick={onExport}
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
           >
             <HiOutlineArrowDownTray className="h-3.5 w-3.5" /> Export
           </button>
         </div>
       </div>
+
+      {/* message shown as its own full-width row so it never forces a scrollbar */}
+      {message && (
+        <div className="mt-2 flex items-center gap-1.5 rounded-[2px] border border-amber-400/30 bg-amber-500/10 px-2.5 py-1.5 text-[10.5px] font-semibold text-amber-300">
+          <HiOutlineExclamationTriangle className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{message}</span>
+        </div>
+      )}
     </header>
   );
 }
@@ -513,48 +510,51 @@ const KpiCard = ({
   const resolvedBarColor = barColor || effColor(barValue ?? 0);
 
   return (
-    <div className="group flex min-w-[168px] flex-1 flex-col rounded-[2px] border border-[#E2E8F0] bg-white p-2 text-left shadow-sm transition-all duration-150 hover:-translate-y-[2px] hover:shadow-md">
+    <div className="group flex min-w-[168px] flex-1 flex-col rounded-[2px] border border-[#1E2E38] bg-[#0F1D24] p-2 text-left shadow-sm transition-all duration-150 hover:-translate-y-[2px] hover:shadow-md">
       <div className="mb-1 flex items-start justify-between gap-1">
         <div className="min-w-0">
-          <h3 className="truncate text-[13px] font-bold leading-tight text-[#0F172A]">
+          <h3
+            className="inline-block truncate rounded-[2px] px-1.5 py-0.5 text-[10px] sm:text-[11px] md:text-[12px] font-extrabold uppercase leading-tight tracking-wide"
+            style={{ background: `${badgeColor}33`, color: badgeColor }}
+          >
             {title}
           </h3>
-          <p className="mt-0.5 truncate text-[8.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
+          <p className="mt-1 truncate text-[7.5px] sm:text-[8px] md:text-[8.5px] font-bold uppercase tracking-wide text-[#8A97A3]">
             {subtitle}
           </p>
         </div>
         {Icon && (
           <div
             className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[2px]"
-            style={{ background: `${badgeColor}1A`, color: badgeColor }}
+            style={{ background: `${badgeColor}33`, color: badgeColor }}
           >
             <Icon className="h-3.5 w-3.5" />
           </div>
         )}
       </div>
 
-      <p className="mt-1 font-mono text-[26px] font-extrabold leading-none text-[#0F172A]">
+      <p className="mt-1 font-mono text-[20px] sm:text-[22px] md:text-[24px] lg:text-[26px] font-extrabold leading-none text-white">
         {display}
       </p>
 
       {(footerLeftLabel || footerRightLabel) && (
-        <div className="mt-2.5 flex items-center gap-4 border-t border-[#EEF2F6] pt-2">
+        <div className="mt-2.5 flex items-center gap-4 border-t border-white/10 pt-2">
           {footerLeftLabel && (
             <div className="leading-none">
-              <p className="text-[7.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
+              <p className="text-[7px] sm:text-[7.5px] font-bold uppercase tracking-wide text-[#8A97A3]">
                 {footerLeftLabel}
               </p>
-              <p className="mt-0.5 font-mono text-[12px] font-bold text-[#0F172A]">
+              <p className="mt-0.5 font-mono text-[11px] sm:text-[12px] font-bold text-white">
                 {footerLeftValue}
               </p>
             </div>
           )}
           {footerRightLabel && (
             <div className="leading-none">
-              <p className="text-[7.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
+              <p className="text-[7px] sm:text-[7.5px] font-bold uppercase tracking-wide text-[#8A97A3]">
                 {footerRightLabel}
               </p>
-              <p className="mt-0.5 font-mono text-[12px] font-bold text-[#0F172A]">
+              <p className="mt-0.5 font-mono text-[11px] sm:text-[12px] font-bold text-white">
                 {footerRightValue}
               </p>
             </div>
@@ -565,15 +565,15 @@ const KpiCard = ({
       {barValue !== undefined && barValue !== null && (
         <>
           <div className="mt-2 flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#475569]">Efficiency</span>
+            <span className="text-[9px] sm:text-[10px] font-bold text-[#CBD5E1]">Efficiency</span>
             <span
-              className="font-mono text-[13px] font-extrabold"
+              className="font-mono text-[12px] sm:text-[13px] font-extrabold"
               style={{ color: resolvedBarColor }}
             >
               {barValue}%
             </span>
           </div>
-          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-[2px] bg-[#EEF2F6]">
+          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-[2px] bg-white/10">
             <div
               className="h-full rounded-[2px] transition-[width] duration-500 ease-out"
               style={{
@@ -603,7 +603,7 @@ const KpiCardsRow = ({ stats, hallCode, loading }) => {
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="h-[150px] min-w-[168px] flex-1 animate-pulse rounded-[2px] border border-[#E2E8F0] bg-white shadow-sm"
+            className="h-[150px] min-w-[168px] flex-1 animate-pulse rounded-[2px] border border-[#1E2E38] bg-[#0F1D24] shadow-sm"
           />
         ))}
       </div>
@@ -1004,6 +1004,16 @@ const Chart = ({ chartData }) => {
                 {showActual && (
                   <rect x={gx + barW + 3} y={yFor(d.actual)} width={barW} height={Math.max(chartH - (yFor(d.actual) - pad.top), 0)}
                     fill={isHover ? ACCENT_BLUE : NAVY} rx={2} />
+                )}
+                {showTarget && d.target > 0 && (
+                  <text x={gx + barW / 2} y={yFor(d.target) - 4} textAnchor="middle" fontSize="7" fontWeight="700" fill="#94A3B8">
+                    {d.target}
+                  </text>
+                )}
+                {showActual && d.actual > 0 && (
+                  <text x={gx + barW + 3 + barW / 2} y={yFor(d.actual) - 4} textAnchor="middle" fontSize="7" fontWeight="700" fill={NAVY}>
+                    {d.actual}
+                  </text>
                 )}
                 {isHover && (
                   <line x1={pad.left + i * slot + slot / 2} x2={pad.left + i * slot + slot / 2} y1={pad.top} y2={pad.top + chartH}
