@@ -500,6 +500,71 @@ function ReasonBreakup({ title, rows, reasonOptions, updateRow, addRow, removeRo
 }
 
 // ============================================================
+// InfoCell — small bordered "cell" used in the selected-machine header
+// strip so every field there (Hall, Operator, Part, etc.) sits in its
+// own 1px-bordered box instead of a loose inline row. `highlight` marks
+// the value with the gold accent (used for Selected Machine + Hall).
+// ============================================================
+function InfoCell({ label, value, icon: Icon, highlight = false }) {
+  return (
+    <div className="flex items-center gap-2 border border-[#C6C6C6] bg-white px-2.5 py-1.5">
+      {Icon && <Icon className="flex-shrink-0 text-[13px] text-[#0F1D24]/60" />}
+      <div className="min-w-0 leading-tight">
+        <p className="text-[9px] font-bold uppercase tracking-wide text-[#9B9B9B]">{label}</p>
+        <p className="truncate text-[11.5px] font-bold text-[#0F1D24]">
+          {highlight ? (
+            <mark className="bg-[#FDC94D] px-1 text-[#0F1D24]">{value}</mark>
+          ) : (
+            value
+          )}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// GoodQtyCelebration — small celebratory popup shown once Actual Qty
+// and Reject Qty have both been entered, surfacing Good Qty (= Actual
+// − Reject) so the operator gets a quick positive confirmation of what
+// was actually produced. Portaled to document.body (same pattern as
+// the dropdown panels above) and auto-dismisses after a few seconds.
+// ============================================================
+function GoodQtyCelebration({ goodQty, actual, reject, onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#0F1D24]/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-xs border-2 border-[#0F1D24] bg-white p-5 text-center shadow-[0_10px_30px_rgba(15,29,36,0.35)]"
+      >
+        <div className="mx-auto mb-2 flex h-14 w-14 animate-bounce items-center justify-center rounded-full bg-[#FDC94D] text-2xl">
+          🎉
+        </div>
+        <p className="text-[11px] font-bold uppercase tracking-wide text-[#9B9B9B]">Good Quantity Produced</p>
+        <p className="mt-1 font-mono text-[34px] font-extrabold leading-none text-[#0F1D24]">{goodQty}</p>
+        <p className="mt-2 text-[10.5px] text-[#9B9B9B]">Actual {actual} − Reject {reject} = {goodQty} Good</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-3 h-8 w-full border border-[#0F1D24] bg-[#0F1D24] text-[11px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24]"
+        >
+          Nice! Continue
+        </button>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+// ============================================================
 // OeeCard — flat stat card used in the Availability/Performance/
 // Quality/OEE panel, with the formula shown as a caption so it's
 // always visible next to the number it produced.
@@ -527,7 +592,7 @@ const AdvProductionEntry = () => {
     shiftATimes, shiftBTimes,
     filteredMachines, currentMachine, machineEntries,
     currentMachineIndex, setCurrentMachineIndex,
-    progress, efficiency,
+    progress,
     totalRejectQty, totalMouldRejectQty, totalLossMinutes,
     rejectReasons, mouldRejectReasons, lossReasons, lossTimeReasonOptions,
     addCustomRejectReason, removeCustomRejectReason, updateRejectReason,
@@ -577,34 +642,28 @@ const AdvProductionEntry = () => {
   const [newMouldPart, setNewMouldPart] = useState({ part_name: "", standard_cycle_time: "" });
   const [addMouldPartError, setAddMouldPartError] = useState(null);
 
-  // ================= MACHINE NUMBER SEARCH (replaces Unit Identifier) =================
-  // This used to be a free-text "Unit Identifier" input with no real
-  // meaning. It's now a search box over the same machine list the left
-  // sidebar shows, matched against machine_code (or name), and selecting
-  // a result jumps the whole form straight to that machine — same as
-  // clicking it in the sidebar — instead of collecting a throwaway
-  // string field.
-  const [machineNumberQuery, setMachineNumberQuery] = useState("");
-  const [machineNumberSuggestions, setMachineNumberSuggestions] = useState([]);
-  const [showMachineNumberDropdown, setShowMachineNumberDropdown] = useState(false);
-  const machineNumberIdRef = useRef(nextDropdownId());
-  const machineNumberWrapperRef = useRef(null);
+  // NOTE: the top filter strip intentionally keeps only Date / Shift /
+  // Hall / Time Slot now — the "Machine Number" search field that used
+  // to live here was removed since the sidebar already gives a full
+  // machine search + list, and the request was to keep exactly four
+  // filters up top.
 
-  useCloseOnOtherDropdownOpen(machineNumberIdRef.current, setShowMachineNumberDropdown);
+  // Good Qty celebration popup — shown once after Actual Qty + Reject
+  // Qty are both entered/blurred, celebrating Good Qty (Actual − Reject).
+  // `lastCelebratedKeyRef` stops it firing again for the same combo of
+  // machine/actual/reject (e.g. re-focusing the field without changes).
+  const [showGoodQtyPopup, setShowGoodQtyPopup] = useState(false);
+  const lastCelebratedKeyRef = useRef(null);
+  const goodQty = Math.max((Number(formData.actual) || 0) - (Number(formData.reject) || 0), 0);
 
-  useEffect(() => {
-    setMachineNumberQuery(currentMachine?.machine_code || currentMachine?.name || "");
-  }, [currentMachine?.id]);
-
-  useEffect(() => {
-    const h = (e) => {
-      if (machineNumberWrapperRef.current && !machineNumberWrapperRef.current.contains(e.target)) {
-        setShowMachineNumberDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
+  const maybeCelebrateGoodQty = () => {
+    const actualNum = Number(formData.actual) || 0;
+    if (actualNum <= 0) return;
+    const key = `${currentMachine?.id}-${formData.actual}-${formData.reject}`;
+    if (lastCelebratedKeyRef.current === key) return;
+    lastCelebratedKeyRef.current = key;
+    setShowGoodQtyPopup(true);
+  };
 
   // BUG FIX: useProductionEntry's plan-loading effect is gated on
   // `if (!setupComplete) return;`, but this component never called
@@ -941,34 +1000,6 @@ const AdvProductionEntry = () => {
     }
   };
 
-  // ================= MACHINE NUMBER SEARCH handlers =================
-  const handleMachineNumberChange = (e) => {
-    const val = e.target.value;
-    setMachineNumberQuery(val);
-    if (!val || !val.trim()) {
-      setMachineNumberSuggestions([]);
-      setShowMachineNumberDropdown(false);
-      return;
-    }
-    const q = val.trim().toLowerCase();
-    const matches = filteredMachines.filter(
-      (m) =>
-        String(m.machine_code || "").toLowerCase().includes(q) ||
-        (m.name || "").toLowerCase().includes(q)
-    );
-    setMachineNumberSuggestions(matches);
-    announceDropdownOpen(machineNumberIdRef.current);
-    setShowMachineNumberDropdown(true);
-  };
-
-  const selectMachineByNumber = (m) => {
-    const idx = filteredMachines.indexOf(m);
-    if (idx >= 0) goToMachine(idx);
-    setMachineNumberQuery(m.machine_code || m.name || "");
-    setMachineNumberSuggestions([]);
-    setShowMachineNumberDropdown(false);
-  };
-
   const handleFinalSubmit = async () => {
     setSubmitResult(null);
     const results = await finalSubmit();
@@ -1008,6 +1039,13 @@ const AdvProductionEntry = () => {
   // Loss Time = ((Target Qty − Actual Qty) × Actual Cycle Time) ÷ 60,
   // expressed in minutes. Only positive when the machine ran short of
   // target; if actual meets/exceeds target there's no loss.
+  //
+  // Reject Qty is deliberately NOT part of this formula — a rejected
+  // piece still ran through the machine and consumed cycle time, so it
+  // already counts toward Actual Qty. Rejects are accounted for
+  // separately in the Reject Breakup; folding them into the loss-time
+  // shortfall too would double-count that time as both a reject AND a
+  // loss.
   const calculatedLossMinutes = useMemo(() => {
     const target = Number(formData.target) || 0;
     const actual = Number(formData.actual) || 0;
@@ -1102,65 +1140,6 @@ const AdvProductionEntry = () => {
       />
 
       <div className="flex h-screen min-h-0 flex-1 flex-col overflow-hidden">
-      {/* ================= TOP BAR ================= */}
-      <div className="w-full flex-shrink-0 border-b border-[#C6C6C6] bg-white">
-        <div className="h-[2px] w-full" style={{ background: `linear-gradient(90deg, ${NAVY} 0%, ${BORDER} 50%, ${GOLD} 100%)` }} />
-        <div className="flex h-auto min-h-[40px] flex-wrap items-center gap-2.5 px-3 py-1.5">
-          <button onClick={handleBack} title="Back" className="flex h-7 w-7 flex-shrink-0 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D]">
-            <FaArrowLeft className="text-[11px]" />
-          </button>
-          <button onClick={() => setSidebarOpen((o) => !o)} className="flex h-7 w-7 flex-shrink-0 items-center justify-center border border-[#C6C6C6] bg-white text-[#0F1D24] transition-colors duration-100 hover:bg-[#0F1D24] hover:text-[#FDC94D] md:hidden" title="Toggle machine list">
-            <FaIndustry className="text-[11px]" />
-          </button>
-
-          {(masterError || submitError || submitResult || planError) && (
-            <div className="min-w-0 flex-1 truncate text-[11px] font-semibold">
-              {masterError && <span className="text-red-700">{masterError}</span>}
-              {submitError && <span className="text-red-700">{submitError}</span>}
-              {submitResult && <span className={submitResult.type === "success" ? "text-emerald-700" : "text-red-700"}>{submitResult.message}</span>}
-              {planError && <span className="text-amber-700">{planError}</span>}
-            </div>
-          )}
-          {plan?.header && (
-            <span className="ml-auto flex flex-shrink-0 items-center gap-1 border border-[#FDC94D] bg-[#FDC94D]/10 px-2 py-1 text-[10.5px] font-bold text-[#0F1D24]">
-              <FaClipboardCheck className="text-[10px]" />
-              Plan {plan.header.plan_number} loaded
-            </span>
-          )}
-        </div>
-
-        {/* Informational-only banner: a plan is optional now (see PLAN IS
-            OPTIONAL note in useProductionEntry.js). When no real plan is
-            found for the selected date/hall/shift this just tells the
-            user the entry will save as a manual/ad-hoc entry — it never
-            blocks saving. */}
-        {formData.date && formData.hall && formData.shift && !planLoading && !hasRealPlan && !planError && (
-          <div className="flex items-start gap-2 border-t border-amber-200 bg-amber-50 px-3 py-1.5">
-            <FaExclamationTriangle className="mt-[1px] flex-shrink-0 text-[11px] text-amber-700" />
-            <span className="text-[11px] font-semibold text-amber-800">
-              No production plan found for Hall {formData.hall}, Shift {formData.shift} on {formData.date}.
-              {" "}
-              Entries will be saved as manual entries (no plan link) — create the plan when possible.
-            </span>
-          </div>
-        )}
-
-        {/* Loss Time banner — highlighted whenever the formula finds a
-            shortfall against target. Stays visible on every tab since
-            it directly gates the Save & Next / Save Entry buttons below. */}
-        {roundedRequiredLossMinutes > 0 && (
-          <div className={`flex items-start gap-2 border-t px-3 py-1.5 ${lossTimeMismatch ? "border-red-300 bg-red-50" : "border-emerald-300 bg-emerald-50"}`}>
-            <FaExclamationTriangle className={`mt-[1px] flex-shrink-0 text-[11px] ${lossTimeMismatch ? "text-red-700" : "text-emerald-700"}`} />
-            <span className={`text-[11px] font-semibold ${lossTimeMismatch ? "text-red-800" : "text-emerald-800"}`}>
-              Loss Time detected: <span className="font-mono font-extrabold">{roundedRequiredLossMinutes} min</span>
-              {" "}(Target {formData.target || 0} − Actual {formData.actual || 0}) × Actual Cycle Time {formData.actualCycleTime || 0}s ÷ 60.
-              {lossTimeMismatch
-                ? " Add matching reasons in the Loss Time Breakup below to enable Save & Next / Save Entry."
-                : " Loss Time Breakup matched — Save enabled."}
-            </span>
-          </div>
-        )}
-      </div>
 
       {/* ================= BODY — fills remaining screen height ================= */}
       <div className="flex min-h-0 flex-1 gap-2 p-2 md:flex-row flex-col">
@@ -1231,9 +1210,14 @@ const AdvProductionEntry = () => {
 
         {/* ---------- MAIN PANEL — its own internal scroll ---------- */}
         <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto">
-          {/* Selected-machine header strip */}
+          {/* Selected-machine header strip — everything lives inside this
+              single 1px-bordered box now. Top row: exactly the four
+              filters (Date / Shift / Hall / Time Slot). Below: the
+              selected machine name + progress, then every other field
+              (Hall, Operator, Part, etc.) as its own bordered cell, with
+              Selected Machine and Hall highlighted in gold. */}
           <div className="flex-shrink-0 border border-[#C6C6C6] bg-white">
-            <div className="grid grid-cols-2 gap-2 border-b border-[#C6C6C6] p-2 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2 border-b border-[#C6C6C6] p-2 sm:grid-cols-4">
               <div>
                 <label className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">Date</label>
                 <CustomDatePicker value={formData.date} onChange={(v) => handleChange({ target: { name: "date", value: v } })} />
@@ -1250,63 +1234,9 @@ const AdvProductionEntry = () => {
                 <label className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">Time Slot</label>
                 <ThemedSelect value={formData.timeSlot} onChange={(v) => handleChange({ target: { name: "timeSlot", value: v } })} icon={FaClock} options={timeSlotOptions} placeholder="Select Time Slot" />
               </div>
-
-              {/* Machine Number search — replaces the old free-text "Unit
-                  Identifier" field. Typing filters the same machine list
-                  the sidebar uses (matched on machine_code / name);
-                  picking a result jumps the whole form to that machine. */}
-              <div ref={machineNumberWrapperRef} className="relative">
-                <label className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">Machine Number</label>
-                <div className="relative">
-                  <FaBarcode className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-[#0F1D24]/70" />
-                  <input
-                    type="text"
-                    value={machineNumberQuery}
-                    onChange={handleMachineNumberChange}
-                    onFocus={() => {
-                      if (machineNumberQuery.trim()) {
-                        announceDropdownOpen(machineNumberIdRef.current);
-                        setShowMachineNumberDropdown(true);
-                      }
-                    }}
-                    autoComplete="off"
-                    placeholder="Search machine no..."
-                    className={`${textInputClass} pl-6`}
-                  />
-                </div>
-
-                {showMachineNumberDropdown && machineNumberSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 z-[60] mt-1 max-h-52 overflow-y-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
-                    {machineNumberSuggestions.map((m) => {
-                      const idx = filteredMachines.indexOf(m);
-                      const isCurrent = idx === currentMachineIndex;
-                      return (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => selectMachineByNumber(m)}
-                          className={`block w-full border-b border-[#C6C6C6] px-2.5 py-1.5 text-left last:border-b-0 transition-colors duration-100 ${
-                            isCurrent ? "bg-[#0F1D24] text-[#FDC94D]" : "hover:bg-[#FDC94D]/20"
-                          }`}
-                        >
-                          <div className="text-[11.5px] font-bold">{m.name}</div>
-                          <div className={`text-[9.5px] ${isCurrent ? "text-[#FDC94D]/80" : "text-[#9B9B9B]"}`}>
-                            Code: {m.machine_code || "—"} · ID: {m.id}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-                {showMachineNumberDropdown && machineNumberQuery.trim() && machineNumberSuggestions.length === 0 && (
-                  <div className="absolute left-0 right-0 z-[60] mt-1 border border-[#C6C6C6] bg-white p-2 text-[10.5px] text-[#9B9B9B] shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
-                    No machine matched "{machineNumberQuery}".
-                  </div>
-                )}
-              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 px-2.5 py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#C6C6C6] px-2.5 py-2">
               <div className="flex items-center gap-2">
                 <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center border border-[#C6C6C6] bg-[#FAFAFA] text-[#0F1D24]">
                   <FaIndustry className="text-[15px]" />
@@ -1314,54 +1244,29 @@ const AdvProductionEntry = () => {
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-wide text-[#9B9B9B]">Selected Machine</p>
                   <h2 className="inline-flex flex-wrap items-center gap-1.5 text-[14.5px] font-extrabold leading-tight text-[#0F1D24]">
-                    <mark className="bg-[#FDC94D]/40 px-1.5 py-0.5 border-l-[3px] border-l-[#0F1D24]">
+                    <mark className="bg-[#FDC94D] px-1.5 py-0.5 border-l-[3px] border-l-[#0F1D24]">
                       {currentMachine?.name || "—"}
                     </mark>
                     {isDone && <span className="text-[10px] font-bold text-emerald-600">· Saved</span>}
                   </h2>
                 </div>
               </div>
+              <span className="text-[10.5px] font-semibold text-[#9B9B9B]">
+                Machine <span className="font-bold text-[#0F1D24]">{currentMachineIndex + 1}</span>/<span className="font-bold text-[#0F1D24]">{filteredMachines.length}</span>
+              </span>
+            </div>
 
-              <div className="hidden h-8 w-px bg-[#C6C6C6] md:block" />
+            <div className="grid grid-cols-2 gap-2 p-2.5 sm:grid-cols-3 lg:grid-cols-6">
+              <InfoCell label="Hall" value={formData.hall || "—"} icon={FaIndustry} highlight />
+              <InfoCell label="Operator" value={operatorDetails?.operator_name || formData.operatorId || "—"} icon={FaUser} />
+              <InfoCell label="Part" value={formData.part || "—"} icon={FaCube} />
+              <InfoCell label="Part No." value={formData.partNumber || "—"} icon={FaBarcode} />
+              <InfoCell label="Std. Cycle Time" value={`${formData.standardCycleTime || "—"} sec`} icon={FaClock} />
+              <InfoCell label="Target / Actual" value={`${formData.target || 0} / ${formData.actual || 0}`} icon={FaClipboardList} />
+            </div>
 
-              <div className="flex flex-1 flex-wrap items-center gap-5">
-                <div className="flex items-center gap-1.5">
-                  <FaUser className="text-[12px] text-[#9B9B9B]" />
-                  <div className="leading-tight">
-                    <p className="text-[9px] font-bold uppercase text-[#9B9B9B]">Operator</p>
-                    <p className="text-[11px] font-bold text-[#0F1D24]">
-                      {operatorDetails?.operator_name || formData.operatorId || "—"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <FaCube className="text-[12px] text-[#9B9B9B]" />
-                  <div className="leading-tight">
-                    <p className="text-[9px] font-bold uppercase text-[#9B9B9B]">Part</p>
-                    <p className="text-[11px] font-bold text-[#0F1D24]">{formData.part || "—"}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <FaBarcode className="text-[12px] text-[#9B9B9B]" />
-                  <div className="leading-tight">
-                    <p className="text-[9px] font-bold uppercase text-[#9B9B9B]">Part No.</p>
-                    <p className="font-mono text-[11px] font-bold text-[#0F1D24]">{formData.partNumber || "—"}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <FaClock className="text-[12px] text-[#9B9B9B]" />
-                  <div className="leading-tight">
-                    <p className="text-[9px] font-bold uppercase text-[#9B9B9B]">Std. Cycle Time</p>
-                    <p className="font-mono text-[11px] font-bold text-[#0F1D24]">{formData.standardCycleTime || "—"} sec</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <FaClipboardList className="text-[12px] text-[#9B9B9B]" />
-                  <div className="leading-tight">
-                    <p className="text-[9px] font-bold uppercase text-[#9B9B9B]">Target / Actual</p>
-                    <p className="font-mono text-[11px] font-bold text-[#0F1D24]">{formData.target || 0} / {formData.actual || 0}</p>
-                  </div>
-                </div>
+            {(isFromPlan || !hasRealPlan) && (
+              <div className="flex flex-wrap gap-1.5 border-t border-[#C6C6C6] px-2.5 py-1.5">
                 {isFromPlan && (
                   <span className="border border-[#FDC94D] bg-[#FDC94D]/20 px-2 py-0.5 text-[9.5px] font-bold text-[#0F1D24]">Pre-filled from Plan</span>
                 )}
@@ -1371,11 +1276,7 @@ const AdvProductionEntry = () => {
                   </span>
                 )}
               </div>
-
-              <span className="text-[10.5px] font-semibold text-[#9B9B9B]">
-                Machine <span className="font-bold text-[#0F1D24]">{currentMachineIndex + 1}</span>/<span className="font-bold text-[#0F1D24]">{filteredMachines.length}</span>
-              </span>
-            </div>
+            )}
           </div>
 
           {/* Availability / Performance / Quality / OEE — placed right below
@@ -1427,7 +1328,7 @@ const AdvProductionEntry = () => {
           {activeTab === "entry" && (
             <>
               <div className="flex-shrink-0 border border-[#C6C6C6] bg-white p-2.5">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-10">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-9">
                   {/* OPERATOR */}
                   <div className="relative col-span-2">
                     <label className="mb-1 block text-[10.5px] font-semibold text-[#0F1D24]">Operator ID / Name</label>
@@ -1529,27 +1430,44 @@ const AdvProductionEntry = () => {
                   <Field label="Actual Cycle Time" suffix="Sec">
                     <input type="number" name="actualCycleTime" value={formData.actualCycleTime} onChange={handleChange} className={numInputClass} />
                   </Field>
-                  {/* Target Qty is now auto-calculated (see computeCalcTarget /
-                      the targetSource effect in useProductionEntry.js) instead
-                      of being typed in: it uses the matched plan's target_qty
-                      when one exists, otherwise floor(slot seconds ÷ standard
-                      cycle time). Shown read-only, same style as Std. Cycle
-                      Time, so it's clear it isn't a manual field anymore. */}
-                  <Field label="Target Qty (auto)" suffix="Nos">
-                    <div className="flex h-9 items-center bg-[#FAFAFA] px-2.5 font-mono text-[12.5px] font-bold text-[#0F1D24]">
-                      {formData.target || "-"}
-                    </div>
+                  {/* Target Qty is calculated from Actual Cycle Time
+                      (floor(slot seconds ÷ actual cycle time), or the
+                      plan's target_qty when a plan is matched — see
+                      computeCalcTarget in useProductionEntry.js) but stays
+                      a normal editable field: type over it to set your own
+                      target, and the auto-calc backs off (targetSource
+                      becomes "manual") until a different part/plan loads. */}
+                  <Field label="Target Qty" suffix="Nos">
+                    <input
+                      type="number"
+                      name="target"
+                      value={formData.target}
+                      onChange={(e) => {
+                        handleChange(e);
+                        handleChange({ target: { name: "targetSource", value: "manual" } });
+                      }}
+                      className={numInputClass}
+                    />
                   </Field>
                   <Field label="Actual Qty" suffix="Nos">
-                    <input type="number" name="actual" value={formData.actual} onChange={handleChange} className={numInputClass} />
+                    <input
+                      type="number"
+                      name="actual"
+                      value={formData.actual}
+                      onChange={handleChange}
+                      onBlur={maybeCelebrateGoodQty}
+                      className={numInputClass}
+                    />
                   </Field>
                   <Field label="Reject Qty" suffix="Nos">
-                    <input type="number" name="reject" value={formData.reject} onChange={handleChange} className={`${numInputClass} text-red-600`} />
-                  </Field>
-                  <Field label="Efficiency" suffix="%">
-                    <div className="flex h-9 items-center bg-[#FAFAFA] px-2.5 font-mono text-[12.5px] font-bold text-orange-600">
-                      {efficiency}
-                    </div>
+                    <input
+                      type="number"
+                      name="reject"
+                      value={formData.reject}
+                      onChange={handleChange}
+                      onBlur={maybeCelebrateGoodQty}
+                      className={`${numInputClass} text-red-600`}
+                    />
                   </Field>
                 </div>
               </div>
@@ -1761,6 +1679,15 @@ const AdvProductionEntry = () => {
         </div>
       </div>
       </div>
+
+      {showGoodQtyPopup && (
+        <GoodQtyCelebration
+          goodQty={goodQty}
+          actual={formData.actual || 0}
+          reject={formData.reject || 0}
+          onClose={() => setShowGoodQtyPopup(false)}
+        />
+      )}
     </div>
   );
 };

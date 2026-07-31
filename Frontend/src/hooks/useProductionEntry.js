@@ -38,11 +38,20 @@ const SLOT_MINUTES = 60;
 //   1. If the machine has a matched plan detail with a target_qty, use it
 //      as-is (that's the officially planned number).
 //   2. Otherwise compute a theoretical max for the slot:
-//      target = floor( (slot seconds) / (standard cycle time seconds) )
-const computeCalcTarget = (standardCycleTime) => {
-  const std = Number(standardCycleTime) || 0;
-  if (!std) return "";
-  return String(Math.floor((SLOT_MINUTES * 60) / std));
+//      target = floor( (slot seconds) / (ACTUAL cycle time seconds) )
+//
+// CHANGED: this used to be driven off Standard Cycle Time. Target is now
+// derived from Actual Cycle Time instead, since Standard Cycle Time is a
+// catalog/reference number for the part while Actual Cycle Time reflects
+// what the machine is really running at right now — that's the number
+// that should drive how many pieces are realistically achievable in the
+// slot. Target Qty is also now a normal editable field (see `targetSource
+// === "manual"` below) — the operator can type over the calculated value,
+// and once they do, this auto-calc backs off and leaves their number alone.
+const computeCalcTarget = (actualCycleTime) => {
+  const act = Number(actualCycleTime) || 0;
+  if (!act) return "";
+  return String(Math.floor((SLOT_MINUTES * 60) / act));
 };
 
 const baseFormData = {
@@ -61,10 +70,13 @@ const baseFormData = {
   actualCycleTime: "",
 
   target: "",
-  // "plan"  -> target came from a matched plan detail's target_qty and
-  //            should NOT be overwritten by the cycle-time formula.
-  // "calc"  -> target was computed from the cycle-time formula and
-  //            should keep recalculating whenever cycle time changes.
+  // "plan"   -> target came from a matched plan detail's target_qty and
+  //             should NOT be overwritten by the cycle-time formula.
+  // "calc"   -> target was computed from the cycle-time formula and
+  //             should keep recalculating whenever actual cycle time changes.
+  // "manual" -> the operator typed a value into the (now editable) Target
+  //             Qty field directly — auto-calc backs off and leaves it alone
+  //             until a new part/plan is loaded.
   targetSource: null,
   actual: "",
 
@@ -361,13 +373,14 @@ const useProductionEntry = () => {
         planDetail?.actual_cycle_time ?? planDetail?.cycle_time ?? carryActualCT;
 
       // ==========================================================
-      // TARGET QTY — auto-calculated, not typed in by the user:
+      // TARGET QTY — auto-calculated, but the field stays editable:
       //   1. Matched plan detail's target_qty, if one exists.
-      //   2. Otherwise floor(slot seconds / standard cycle time) —
-      //      see computeCalcTarget() above.
+      //   2. Otherwise floor(slot seconds / ACTUAL cycle time) —
+      //      see computeCalcTarget() above (now driven off Actual
+      //      Cycle Time, not Standard Cycle Time).
       // ==========================================================
       const planTargetQty = planDetail?.target_qty ? String(planDetail.target_qty) : "";
-      const target = planTargetQty || computeCalcTarget(standardCT);
+      const target = planTargetQty || computeCalcTarget(actualCT);
       const targetSource = planTargetQty ? "plan" : (target ? "calc" : null);
 
       const plannedMould = (planDetail?.mould_changes || []).find(
@@ -453,22 +466,22 @@ const useProductionEntry = () => {
   }, [currentMachine?.id, plan]);
 
   // ==========================================================
-  // TARGET QTY — keep it live-recalculated from Standard Cycle Time
+  // TARGET QTY — keep it live-recalculated from ACTUAL Cycle Time
   // whenever that changes AFTER the initial load (e.g. the user picks
   // a different part in the search box, which changes cycle time).
-  // A plan-provided target (targetSource === "plan") is left alone —
-  // that number is the officially planned target and shouldn't be
-  // silently replaced by the formula.
+  // A plan-provided target (targetSource === "plan") or a value the
+  // operator typed in by hand (targetSource === "manual") is left
+  // alone — those shouldn't be silently replaced by the formula.
   // ==========================================================
   useEffect(() => {
-    if (formData.targetSource === "plan") return;
+    if (formData.targetSource === "plan" || formData.targetSource === "manual") return;
 
-    const calc = computeCalcTarget(formData.standardCycleTime);
+    const calc = computeCalcTarget(formData.actualCycleTime);
     if (calc && calc !== formData.target) {
       setFormData((prev) => ({ ...prev, target: calc, targetSource: calc ? "calc" : prev.targetSource }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.standardCycleTime, formData.targetSource]);
+  }, [formData.actualCycleTime, formData.targetSource]);
 
   const progress = useMemo(() => {
     if (!filteredMachines.length) return 0;
