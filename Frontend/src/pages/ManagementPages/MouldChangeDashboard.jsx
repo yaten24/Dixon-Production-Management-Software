@@ -1,8 +1,3 @@
-// MoldChangeDashboard.jsx — same visual language as RejectionDashboard.jsx
-// (dark navy header, flat white bordered cards, sharp corners, hall-wise
-// bar chart, reason donut, top-machines ranked list, hourly trend with
-// shift toggling) re-purposed for Mold_changes data. Backed by
-// routes/MoldChangeRoutes.js.
 import React, {
   useState,
   useMemo,

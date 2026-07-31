@@ -7,6 +7,7 @@ import {
   HiOutlineCalendarDateRange,
   HiOutlineFunnel,
   HiOutlineChevronRight,
+  HiOutlineChevronLeft,
   HiOutlineChevronDown,
   HiOutlineCheck,
   HiOutlineXMark,
@@ -84,6 +85,225 @@ const DEFAULT_DOWNTIME_REASONS = [
 ];
 
 // ============================================================
+// CSV EXPORT HELPER
+// ============================================================
+const csvEscape = (val) => {
+  const s = String(val ?? "");
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+};
+
+const downloadCsv = (filename, rows) => {
+  const csvContent = rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+  const blob = new Blob([`\uFEFF${csvContent}`], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+const buildExportRows = ({ date, overall, hallSummary, hallList, hourlyData }) => {
+  const rows = [];
+
+  rows.push([`Production Dashboard Export — ${formatDisplayDate(date)}`]);
+  rows.push([]);
+
+  rows.push(["Summary"]);
+  rows.push(["Section", "Actual", "Target", "Rejection", "Efficiency %"]);
+
+  const effOf = (actual, target) =>
+    target > 0 ? (Math.round((actual / target) * 1000) / 10).toFixed(1) : "0.0";
+
+  rows.push([
+    "Overall Production",
+    overall?.actual ?? 0,
+    overall?.target ?? 0,
+    overall?.rejection ?? 0,
+    effOf(overall?.actual ?? 0, overall?.target ?? 0),
+  ]);
+
+  hallList.forEach((hall) => {
+    const s = hallSummary?.[hall] || {};
+    rows.push([
+      hall,
+      s.actual ?? 0,
+      s.target ?? 0,
+      s.rejection ?? 0,
+      effOf(s.actual ?? 0, s.target ?? 0),
+    ]);
+  });
+
+  rows.push([]);
+  rows.push(["Hourly Data (Shift A 08:00–20:00, Shift B 20:00–08:00)"]);
+  rows.push(["Hour", "Target", "Actual", "Efficiency %"]);
+
+  const series = buildFullDaySeries(hourlyData);
+  series.forEach((p) => {
+    rows.push([p.hour, p.target, p.actual, effOf(p.actual, p.target)]);
+  });
+
+  return rows;
+};
+
+// ============================================================
+// CUSTOM DATE PICKER
+// ============================================================
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+const toIso = (y, m, d) =>
+  `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+const parseIso = (iso) => {
+  const [y, m, d] = (iso || getToday()).split("-").map(Number);
+  return { y, m: m - 1, d };
+};
+
+function CustomDatePicker({ value, onChange, onClose }) {
+  const initial = parseIso(value);
+  const [viewYear, setViewYear] = useState(initial.y);
+  const [viewMonth, setViewMonth] = useState(initial.m);
+
+  const todayIso = getToday();
+  const selected = parseIso(value);
+
+  const firstOfMonth = new Date(viewYear, viewMonth, 1);
+  const startWeekday = firstOfMonth.getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
+
+  const cells = [];
+  for (let i = 0; i < startWeekday; i++) {
+    cells.push({
+      day: daysInPrevMonth - startWeekday + 1 + i,
+      inMonth: false,
+      iso: null,
+    });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ day: d, inMonth: true, iso: toIso(viewYear, viewMonth, d) });
+  }
+  while (cells.length % 7 !== 0) {
+    const trailing = cells.length - (startWeekday + daysInMonth);
+    cells.push({ day: trailing + 1, inMonth: false, iso: null });
+  }
+
+  const goPrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  };
+  const goNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  };
+
+  return (
+    <div className="w-64 select-none border border-[#E2E8F0] bg-white p-2.5 shadow-lg rounded-[2px]">
+      <div className="mb-2 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={goPrevMonth}
+          className="flex h-6 w-6 items-center justify-center rounded-[2px] text-[#475569] hover:bg-[#F1F5F9]"
+        >
+          <HiOutlineChevronLeft className="h-3.5 w-3.5" />
+        </button>
+        <span className="text-[11.5px] font-extrabold text-[#0F172A]">
+          {MONTH_NAMES[viewMonth]} {viewYear}
+        </span>
+        <button
+          type="button"
+          onClick={goNextMonth}
+          className="flex h-6 w-6 items-center justify-center rounded-[2px] text-[#475569] hover:bg-[#F1F5F9]"
+        >
+          <HiOutlineChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div className="mb-1 grid grid-cols-7 gap-0.5">
+        {WEEKDAY_LABELS.map((w) => (
+          <div
+            key={w}
+            className="flex h-6 items-center justify-center text-[9px] font-bold uppercase text-[#94A3B8]"
+          >
+            {w}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 gap-0.5">
+        {cells.map((cell, i) => {
+          const isSelected =
+            cell.inMonth &&
+            cell.day === selected.d &&
+            viewMonth === selected.m &&
+            viewYear === selected.y;
+          const isToday = cell.inMonth && cell.iso === todayIso;
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={!cell.inMonth}
+              onClick={() => cell.iso && onChange(cell.iso)}
+              className={`flex h-7 w-7 items-center justify-center rounded-[2px] text-[10.5px] font-semibold transition-colors duration-100 ${
+                !cell.inMonth
+                  ? "text-transparent"
+                  : isSelected
+                    ? "bg-[#0F1D24] text-[#FDC94D] font-extrabold"
+                    : isToday
+                      ? "border border-[#0F1D24] text-[#0F172A]"
+                      : "text-[#334155] hover:bg-[#F1F5F9]"
+              }`}
+            >
+              {cell.day}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-2 flex gap-1.5 border-t border-[#EEF2F6] pt-2">
+        <button
+          type="button"
+          onClick={() => {
+            const t = getToday();
+            const { y, m } = parseIso(t);
+            setViewYear(y);
+            setViewMonth(m);
+            onChange(t);
+          }}
+          className="flex-1 rounded-[2px] border border-[#E2E8F0] px-2 py-1 text-[10px] font-bold text-[#0F1D24] hover:border-[#0F1D24]"
+        >
+          Today
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-1 rounded-[2px] bg-[#0F1D24] px-2 py-1 text-[10px] font-bold text-[#FDC94D] hover:bg-[#0F1D24]/90"
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // KPI SUMMARY CARD
 // ============================================================
 function SummaryCard({
@@ -95,6 +315,7 @@ function SummaryCard({
   rejection,
   badgeColor,
   highlighted,
+  dark,
   onClick,
 }) {
   const efficiency = target > 0 ? Math.round((actual / target) * 1000) / 10 : 0;
@@ -106,22 +327,32 @@ function SummaryCard({
       className={`group flex min-w-[168px] flex-1 flex-col rounded-[2px] border p-2 text-left shadow-sm transition-all duration-150 hover:-translate-y-[2px] hover:shadow-md ${
         highlighted
           ? "border-[#BFDBFE] bg-[#EFF6FF]"
-          : "border-[#E2E8F0] bg-white"
+          : dark
+            ? "border-[#1E2E38] bg-[#0F1D24]"
+            : "border-[#E2E8F0] bg-white"
       }`}
     >
       <div className="mb-1 flex items-start justify-between gap-1">
         <div className="min-w-0">
-          <h3 className="truncate text-[13px] font-bold leading-tight text-[#0F172A]">
+          <h3
+            className={`truncate text-[13px] font-bold leading-tight ${
+              dark ? "text-white" : "text-[#0F172A]"
+            }`}
+          >
             {title}
           </h3>
-          <p className="mt-0.5 truncate text-[8.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
+          <p
+            className={`mt-0.5 truncate text-[8.5px] font-bold uppercase tracking-wide ${
+              dark ? "text-[#8A97A3]" : "text-[#94A3B8]"
+            }`}
+          >
             {subtitle}
           </p>
         </div>
         <div
-          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md"
+          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[2px]"
           style={{
-            background: highlighted ? "#DBEAFE" : `${badgeColor}1A`,
+            background: highlighted ? "#DBEAFE" : dark ? `${badgeColor}33` : `${badgeColor}1A`,
             color: highlighted ? ACCENT_BLUE : badgeColor,
           }}
         >
@@ -129,31 +360,57 @@ function SummaryCard({
         </div>
       </div>
 
-      <p className="mt-1 font-mono text-[26px] font-extrabold leading-none text-[#0F172A]">
+      <p
+        className={`mt-1 font-mono text-[26px] font-extrabold leading-none ${
+          dark ? "text-white" : "text-[#0F172A]"
+        }`}
+      >
         {fmt(actual)}
       </p>
 
-      <div className="mt-2.5 flex items-center gap-4 border-t border-[#EEF2F6] pt-2">
+      <div
+        className={`mt-2.5 flex items-center gap-4 border-t pt-2 ${
+          dark ? "border-white/10" : "border-[#EEF2F6]"
+        }`}
+      >
         <div className="leading-none">
-          <p className="text-[7.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
+          <p
+            className={`text-[7.5px] font-bold uppercase tracking-wide ${
+              dark ? "text-[#8A97A3]" : "text-[#94A3B8]"
+            }`}
+          >
             Target
           </p>
-          <p className="mt-0.5 font-mono text-[12px] font-bold text-[#0F172A]">
+          <p
+            className={`mt-0.5 font-mono text-[12px] font-bold ${
+              dark ? "text-white" : "text-[#0F172A]"
+            }`}
+          >
             {fmt(target)}
           </p>
         </div>
         <div className="leading-none">
-          <p className="text-[7.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
+          <p
+            className={`text-[7.5px] font-bold uppercase tracking-wide ${
+              dark ? "text-[#8A97A3]" : "text-[#94A3B8]"
+            }`}
+          >
             Rejection
           </p>
-          <p className="mt-0.5 font-mono text-[12px] font-bold text-red-600">
+          <p className="mt-0.5 font-mono text-[12px] font-bold text-red-400">
             {fmt(rejection)}
           </p>
         </div>
       </div>
 
       <div className="mt-2 flex items-center justify-between">
-        <span className="text-[10px] font-bold text-[#475569]">Efficiency</span>
+        <span
+          className={`text-[10px] font-bold ${
+            dark ? "text-[#CBD5E1]" : "text-[#475569]"
+          }`}
+        >
+          Efficiency
+        </span>
         <span
           className="font-mono text-[13px] font-extrabold"
           style={{ color: effColor(efficiency) }}
@@ -161,9 +418,13 @@ function SummaryCard({
           {efficiency}%
         </span>
       </div>
-      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#EEF2F6]">
+      <div
+        className={`mt-1 h-1.5 w-full overflow-hidden rounded-[2px] ${
+          dark ? "bg-white/10" : "bg-[#EEF2F6]"
+        }`}
+      >
         <div
-          className="h-full rounded-full transition-[width] duration-500 ease-out"
+          className="h-full rounded-[2px] transition-[width] duration-500 ease-out"
           style={{
             width: `${Math.min(Math.max(efficiency, 0), 100)}%`,
             background: effColor(efficiency),
@@ -202,6 +463,7 @@ function SummaryCardsRow({ overall, hallSummary, halls, onSelectHall }) {
             target={s.target}
             rejection={s.rejection}
             badgeColor={badgeColor}
+            dark
             onClick={() => onSelectHall(hall)}
           />
         );
@@ -239,41 +501,21 @@ function ControlBox({
             <button
               type="button"
               onClick={() => setPickerOpen((o) => !o)}
-              className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+              className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
             >
               <HiOutlineCalendarDays className="h-3.5 w-3.5" />
               {formatDisplayDate(draftDate)}
             </button>
             {pickerOpen && (
-              <div className="absolute right-0 top-full z-30 mt-1 flex flex-col gap-1.5 border border-[#E2E8F0] bg-white p-2 shadow-lg">
-                <input
-                  type="date"
+              <div className="absolute right-0 top-full z-30 mt-1">
+                <CustomDatePicker
                   value={draftDate}
-                  onChange={(e) => setDraftDate(e.target.value)}
-                  className="border border-[#E2E8F0] px-2 py-1 text-[11px] font-semibold text-[#0F172A] outline-none focus:border-[#0F1D24]"
+                  onChange={(iso) => setDraftDate(iso)}
+                  onClose={() => {
+                    onApply();
+                    setPickerOpen(false);
+                  }}
                 />
-                <div className="flex gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onApply();
-                      setPickerOpen(false);
-                    }}
-                    className="flex flex-1 items-center justify-center gap-1 bg-[#0F1D24] px-2 py-1 text-[10.5px] font-bold text-[#FDC94D] hover:bg-[#0F1D24]/90"
-                  >
-                    <HiOutlineCheck className="h-3 w-3" /> Apply
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onReset();
-                      setPickerOpen(false);
-                    }}
-                    className="flex items-center justify-center gap-1 border border-[#E2E8F0] px-2 py-1 text-[10.5px] font-bold text-[#0F1D24] hover:border-[#0F1D24]"
-                  >
-                    <HiOutlineXMark className="h-3 w-3" /> Today
-                  </button>
-                </div>
               </div>
             )}
           </div>
@@ -283,14 +525,14 @@ function ControlBox({
             <button
               type="button"
               onClick={() => setFilterOpen((o) => !o)}
-              className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+              className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
             >
               <HiOutlineFunnel className="h-3.5 w-3.5" />
               Advanced Filter
               <HiOutlineChevronDown className="h-3 w-3" />
             </button>
             {filterOpen && (
-              <div className="absolute right-0 top-full z-30 mt-1 w-48 border border-[#E2E8F0] bg-white p-3 text-[11px] font-semibold text-[#64748B] shadow-lg">
+              <div className="absolute right-0 top-full z-30 mt-1 w-48 rounded-[2px] border border-[#E2E8F0] bg-white p-3 text-[11px] font-semibold text-[#64748B] shadow-lg">
                 More filters coming soon.
               </div>
             )}
@@ -298,7 +540,7 @@ function ControlBox({
 
           <button
             onClick={onApply}
-            className="flex h-7 items-center gap-1.5 bg-[#FDC94D] px-3 text-[10.5px] font-extrabold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/90"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] bg-[#FDC94D] px-3 text-[10.5px] font-extrabold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/90"
           >
             <HiOutlineCheck className="h-3.5 w-3.5" /> Apply
           </button>
@@ -306,7 +548,7 @@ function ControlBox({
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30 disabled:opacity-50"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30 disabled:opacity-50"
           >
             <HiOutlineArrowPath
               className={`h-3 w-3 ${loading ? "animate-spin" : ""}`}
@@ -316,14 +558,14 @@ function ControlBox({
 
           <button
             onClick={onReset}
-            className="flex h-7 items-center gap-1.5 border border-red-400/40 bg-red-500/10 px-2.5 text-[10.5px] font-semibold text-red-300 transition-colors duration-100 hover:bg-red-500/20"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-red-400/40 bg-red-500/10 px-2.5 text-[10.5px] font-semibold text-red-300 transition-colors duration-100 hover:bg-red-500/20"
           >
             <HiOutlineXMark className="h-3.5 w-3.5" /> Reset
           </button>
 
           <button
             onClick={onExport}
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
           >
             <HiOutlineArrowDownTray className="h-3.5 w-3.5" /> Export
           </button>
@@ -349,7 +591,7 @@ function LegendBadge({ label, swatch, filled, active = true, onClick }) {
       type="button"
       onClick={onClick}
       disabled={!clickable}
-      className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold transition-colors duration-100 ${
+      className={`flex items-center gap-1.5 rounded-[2px] border px-2 py-0.5 text-[10px] font-bold transition-colors duration-100 ${
         active
           ? "border-[#E2E8F0] text-[#0F172A]"
           : "border-[#EEF2F6] text-[#B0B7C3]"
@@ -357,7 +599,7 @@ function LegendBadge({ label, swatch, filled, active = true, onClick }) {
       style={{ background: active && filled ? `${swatch}22` : "#fff" }}
     >
       <span
-        className="h-2 w-2 rounded-full"
+        className="h-2 w-2 rounded-[2px]"
         style={{ background: active ? swatch : "#CBD5E1" }}
       />
       {label}
@@ -453,7 +695,7 @@ function OverallProductionChart({ data = [], onExpand, loading }) {
           >
             {tab.label}
             {activeTab === tab.key && (
-              <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-[#2563EB]" />
+              <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-[2px] bg-[#2563EB]" />
             )}
           </button>
         ))}
@@ -529,8 +771,20 @@ function OverallProductionChart({ data = [], onExpand, loading }) {
                       width={slot}
                       height={chartH}
                       fill={isShiftA(HOURS_24[i]) ? SHIFT_A_BG : SHIFT_B_BG}
+                      stroke="#D8E0E8"
+                      strokeWidth={1}
                     />
                   ))}
+
+                  <rect
+                    x={pad.left}
+                    y={pad.top}
+                    width={chartW}
+                    height={chartH}
+                    fill="none"
+                    stroke="#CBD5E1"
+                    strokeWidth={1.5}
+                  />
 
                   {yTicks.map((tick, i) => (
                     <g key={i}>
@@ -601,7 +855,7 @@ function OverallProductionChart({ data = [], onExpand, loading }) {
                               0,
                             )}
                             fill={isHover ? "#94A3B8" : "#CBD5E1"}
-                            rx={1.5}
+                            rx={2}
                           />
                         )}
                         {showActual && (
@@ -614,7 +868,7 @@ function OverallProductionChart({ data = [], onExpand, loading }) {
                               0,
                             )}
                             fill={isHover ? ACCENT_BLUE : NAVY}
-                            rx={1.5}
+                            rx={2}
                           />
                         )}
                         {isHover && (
@@ -659,7 +913,7 @@ function OverallProductionChart({ data = [], onExpand, loading }) {
                 {!hasAnyValue && (
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-2">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-[#E2E8F0] text-[#94A3B8]">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-[2px] border-2 border-[#E2E8F0] text-[#94A3B8]">
                         <HiOutlineCalendarDateRange className="h-6 w-6" />
                       </div>
                       <p className="text-[12px] font-bold text-[#94A3B8]">
@@ -691,8 +945,8 @@ function OverallProductionChart({ data = [], onExpand, loading }) {
 // ============================================================
 function EfficiencyRow({ label, efficiency }) {
   return (
-    <div className="mb-2.5">
-      <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-[#334155]">
+    <div className="mb-1 rounded-[2px] border border-[#E2E8F0] px-2 py-1">
+      <div className="mb-0.5 flex items-center justify-between text-[10px] font-semibold text-[#334155]">
         <span>{label}</span>
         <span
           className="font-mono font-bold"
@@ -701,9 +955,9 @@ function EfficiencyRow({ label, efficiency }) {
           {efficiency}%
         </span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#EEF2F6]">
+      <div className="h-1 w-full overflow-hidden rounded-[2px] border border-[#E2E8F0] bg-[#F8FAFC]">
         <div
-          className="h-full rounded-full"
+          className="h-full rounded-[2px]"
           style={{
             width: `${Math.min(Math.max(efficiency, 0), 100)}%`,
             background: effColor(efficiency),
@@ -716,14 +970,14 @@ function EfficiencyRow({ label, efficiency }) {
 
 function DowntimeRow({ label, percent }) {
   return (
-    <div className="mb-2.5">
-      <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-[#334155]">
+    <div className="mb-1 rounded-[2px] border border-[#E2E8F0] px-2 py-1">
+      <div className="mb-0.5 flex items-center justify-between text-[10px] font-semibold text-[#334155]">
         <span>{label}</span>
         <span className="font-mono font-bold text-[#0F172A]">{percent}%</span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#EEF2F6]">
+      <div className="h-1 w-full overflow-hidden rounded-[2px] border border-[#E2E8F0] bg-[#F8FAFC]">
         <div
-          className="h-full rounded-full bg-[#0F172A]"
+          className="h-full rounded-[2px] bg-[#0F172A]"
           style={{ width: `${Math.min(Math.max(percent, 0), 100)}%` }}
         />
       </div>
@@ -739,7 +993,7 @@ function AnalyticsSidebar({ halls, hallSummary, downtimeReasons }) {
 
   return (
     <div className="flex h-full flex-col rounded-[2px] border border-[#E2E8F0] bg-white shadow-sm">
-      <div className="flex flex-shrink-0 items-center gap-4 border-b border-[#EEF2F6] px-4">
+      <div className="flex flex-shrink-0 items-center gap-3 border-b border-[#EEF2F6] px-3">
         {[
           { key: "analytics", label: "Analytics" },
           { key: "results", label: "Results" },
@@ -748,7 +1002,7 @@ function AnalyticsSidebar({ halls, hallSummary, downtimeReasons }) {
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
-            className={`relative py-2.5 text-[11.5px] font-bold transition-colors duration-100 ${
+            className={`relative py-1.5 text-[10.5px] font-bold transition-colors duration-100 ${
               tab === t.key
                 ? "text-[#0F172A]"
                 : "text-[#94A3B8] hover:text-[#475569]"
@@ -756,13 +1010,13 @@ function AnalyticsSidebar({ halls, hallSummary, downtimeReasons }) {
           >
             {t.label}
             {tab === t.key && (
-              <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-[#2563EB]" />
+              <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-[2px] bg-[#2563EB]" />
             )}
           </button>
         ))}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden px-2 py-1.5">
         {tab === "results" ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-[#94A3B8]">
             <HiOutlineCalendarDateRange className="h-7 w-7" />
@@ -772,30 +1026,54 @@ function AnalyticsSidebar({ halls, hallSummary, downtimeReasons }) {
           </div>
         ) : (
           <>
-            <h3 className="mb-3 text-[12px] font-extrabold text-[#0F172A]">
-              Hall Efficiency Breakdown
-            </h3>
-            {halls.map((hall) => {
-              const s = hallSummary?.[hall] || {};
-              const efficiency =
-                s.target > 0
-                  ? Math.round(((s.actual || 0) / s.target) * 1000) / 10
-                  : 0;
-              return (
-                <EfficiencyRow
-                  key={hall}
-                  label={hall}
-                  efficiency={efficiency}
+            <section className="flex min-h-0 flex-1 flex-col rounded-[2px] border border-[#E2E8F0] bg-white">
+              <div className="flex flex-shrink-0 items-center gap-1.5 border-b border-[#E2E8F0] bg-[#F8FAFC] px-2 py-1">
+                <span
+                  className="h-2 w-2 rounded-[2px]"
+                  style={{ background: ACCENT_BLUE }}
                 />
-              );
-            })}
+                <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#0F172A]">
+                  Hall Efficiency Breakdown
+                </h3>
+              </div>
+              <div className="flex-1 p-1.5">
+                {halls.map((hall) => {
+                  const s = hallSummary?.[hall] || {};
+                  const efficiency =
+                    s.target > 0
+                      ? Math.round(((s.actual || 0) / s.target) * 1000) / 10
+                      : 0;
+                  return (
+                    <EfficiencyRow
+                      key={hall}
+                      label={hall}
+                      efficiency={efficiency}
+                    />
+                  );
+                })}
+              </div>
+            </section>
 
-            <h3 className="mb-3 mt-5 text-[12px] font-extrabold text-[#0F172A]">
-              Top Downtime Reasons
-            </h3>
-            {reasons.map((r) => (
-              <DowntimeRow key={r.label} label={r.label} percent={r.percent} />
-            ))}
+            <section className="flex min-h-0 flex-1 flex-col rounded-[2px] border border-[#E2E8F0] bg-white">
+              <div className="flex flex-shrink-0 items-center gap-1.5 border-b border-[#E2E8F0] bg-[#F8FAFC] px-2 py-1">
+                <span
+                  className="h-2 w-2 rounded-[2px]"
+                  style={{ background: NAVY }}
+                />
+                <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#0F172A]">
+                  Top Downtime Reasons
+                </h3>
+              </div>
+              <div className="flex-1 p-1.5">
+                {reasons.map((r) => (
+                  <DowntimeRow
+                    key={r.label}
+                    label={r.label}
+                    percent={r.percent}
+                  />
+                ))}
+              </div>
+            </section>
           </>
         )}
       </div>
@@ -836,7 +1114,17 @@ const ManagementProductionDashboard = () => {
     [navigate],
   );
 
-  const handleExportExcel = () => console.log("Export Excel", { date });
+  const handleExportExcel = useCallback(() => {
+    const rows = buildExportRows({
+      date,
+      overall: summary?.overall,
+      hallSummary: summary?.hallSummary,
+      hallList: halls,
+      hourlyData,
+    });
+    downloadCsv(`production-dashboard-${date}.csv`, rows);
+  }, [date, summary, hourlyData]);
+
   const handleApplyFilters = () => setDate(draftDate);
   const handleReset = () => {
     const today = getToday();
@@ -887,7 +1175,7 @@ const ManagementProductionDashboard = () => {
             />
 
             {error && (
-              <div className="mx-4 flex-shrink-0 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700">
+              <div className="mx-4 flex-shrink-0 rounded-[2px] border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-700">
                 {error}
               </div>
             )}

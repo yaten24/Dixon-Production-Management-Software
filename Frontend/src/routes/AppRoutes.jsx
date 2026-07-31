@@ -43,7 +43,7 @@ import DailyPlanOperatorAssignment from "../pages/PlanningPage/DailyPlanOperator
 import DailyPlanPageForOperatorAllocation from "../pages/PlanningPage/DailyPlanPageForOperatorAllocation";
 import PublicRoute from "./PublicRoute";
 import Unauthorized from "../pages/CommanPages/Unauthorized";
-import ManagementHallDashboard from "../pages/ManagementPages/HallDashBoard";
+import ManagementHallDashboard from "../pages/ManagementPages/ProductionHallDashBoard";
 import ManagementHourlyMachineTracking from "../pages/ManagementPages/HourlyMachineTracking";
 import AdminProductionDashboard from "../pages/AdminPages/ProductionDashboard";
 import AdminRejectionDashboard from "../pages/AdminPages/RejectionDashboard";
