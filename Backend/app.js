@@ -17,7 +17,7 @@ const productionPlanRoutes = require("./routes/productionPlanRoutes");
 const productionHistoryRoutes = require("./routes/productuonHistoryRoutes");
 const adminDashboardRoutes = require("./routes/adminDashboardRoutes");
 const productionDashboardRoutes = require("./routes/productionDashboardRoutes");
-const lossTimeDashboardRoutes = require("./routes/lossTimeRoutes")
+const lossTimeDashboardRoutes = require("./routes/losstimeDashboardRoutes")
 const productionRejectDetailRoutes = require("./routes/productionRejectDetailRoutes");
 const mouldChangeDashboardRoutes = require("./routes/mouldChangeDashboardRoutes");
 const managementDashboardRoutes = require("./routes/managemntDashboardRoutes");
@@ -77,7 +77,7 @@ app.use("/api/production-plan", productionPlanRoutes);
 app.use('/api/mould-changes', require('./routes/mouldChange.routes'));
 app.use('/api/mould/changes', require('./routes/MouldChangeDashboard'));
 app.use("/api/production-dashboard", productionDashboardRoutes);
-app.use("/api/loss-time", lossTimeDashboardRoutes);
+// app.use("/api/loss-time", lossTimeDashboardRoutes);
 app.use("/api/production-reject-details", productionRejectDetailRoutes);
 app.use("/api/mould-change-dashboard", mouldChangeDashboardRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
@@ -88,5 +88,6 @@ app.use("/api/monthly/dashboard", monthlyDashboardRoutes);
 app.use("/api/date-wise/production/dashboard", datewiseProductionDashboard);
 app.use("/api/machine-wise/production/dashboard", machinewiseProductionDashboard);
 app.use("/api/rejection/dashboard", rejectionDashboardRoutes)
+app.use("/api/losstime/dashboard", lossTimeDashboardRoutes);
 
 module.exports = app;

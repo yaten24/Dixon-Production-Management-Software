@@ -31,7 +31,7 @@ import {
 } from "react-icons/hi2";
 
 import Sidebar from "./Sidebar";
-import useLossTimeData from "../../hooks/useLossTimeData";
+import useLossTimeData from "../../hooks/useLossTimeDashboard";
 
 // ==========================================================
 // THEME TOKENS — matches RejectionDashboard.jsx
