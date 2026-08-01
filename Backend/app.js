@@ -27,6 +27,7 @@ const machinewiseProductionDashboard = require("./routes/machineWiseProductionRo
 const rejectionDashboardRoutes = require("./routes/rejectionDashboardRoutes")
 const moldChangeDashboard = require("./routes/moldChangeDashboardRoutes")
 const reportsPageRoutes = require("./routes/reportsPageRoutes")
+const partsProductionRoutes = require("./routes/partsProductionDashboardRoutes");
 const cookieParser = require("cookie-parser");
 
 const app = express();
@@ -63,6 +64,7 @@ app.use(
 app.use(express.json());
 app.use("/api/machines", machineRoutes);
 app.use('/api/production', require('./routes/productionHeatMapRoutes'));
+app.use("/api/new/production/parts", partsProductionRoutes);
 app.use("/api/parts", partRoutes);
 app.use("/api/operators", operatorRoutes);
 app.use("/api/users", userRoutes);
@@ -93,5 +95,4 @@ app.use("/api/rejection/dashboard", rejectionDashboardRoutes)
 app.use("/api/losstime/dashboard", lossTimeDashboardRoutes);
 app.use("/api/mold/change/dashboard", moldChangeDashboard)
 app.use("/api/reports/page", reportsPageRoutes)
-
 module.exports = app;

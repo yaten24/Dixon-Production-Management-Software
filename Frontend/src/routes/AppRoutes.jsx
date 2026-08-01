@@ -66,7 +66,7 @@ import DateWiseProduction from "../pages/ManagementPages/DateWiseProduction";
 import MachineWiseProduction from "../pages/ManagementPages/MachineWiseProduction";
 import MoldChangeDashboard from "../pages/ManagementPages/MoldChangeDashboard";
 import OverAllDashboard from "../pages/ManagementPages/OverAllDashboard";
-import ProductionPartsDashboard from "../pages/ManagementPages/PartsDashboard";
+import PartProductionDashboard from "../pages/ManagementPages/PartsDashboard";
 
 const AppRoutes = () => {
   return (
@@ -99,7 +99,7 @@ const AppRoutes = () => {
         path="/management/parts/produced"
         element={
           <ManagementRoute>
-            <ProductionPartsDashboard />
+            <PartProductionDashboard />
           </ManagementRoute>
         }
       />
