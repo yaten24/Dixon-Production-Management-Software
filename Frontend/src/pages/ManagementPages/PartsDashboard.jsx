@@ -18,6 +18,7 @@ import {
 } from "react-icons/hi2";
 import Sidebar from "./Sidebar";
 import useProductionDashboard from "../../hooks/usePartsProductionDashboard";
+import { exportProductionReportCSV } from "../../utils/exportProductionReport";
 
 // ==========================================================
 // THEME TOKENS — matches ReportsPage.jsx
@@ -287,34 +288,36 @@ function PeriodControl({ periodType, periodValue, onTypeChange, onValueChange })
   const displayLabel = formatPeriodLabel(periodType, periodValue);
 
   return (
-    <div ref={ref} className="relative flex h-7 items-stretch overflow-hidden rounded-[2px] border border-white/15">
-      <div className="flex items-center bg-white/5">
-        {modes.map((m) => (
-          <button
-            key={m.key}
-            onClick={() => {
-              onTypeChange(m.key);
-              setOpen(true);
-            }}
-            className={`h-7 px-2.5 text-[10.5px] font-bold transition-colors duration-100 ${
-              periodType === m.key ? "bg-[#FDC94D] text-[#0F1D24]" : "text-white/60 hover:text-white"
-            }`}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+    <div ref={ref} className="relative">
+      <div className="flex h-7 items-stretch overflow-hidden rounded-[2px] border border-white/15">
+        <div className="flex items-center bg-white/5">
+          {modes.map((m) => (
+            <button
+              key={m.key}
+              onClick={() => {
+                onTypeChange(m.key);
+                setOpen(true);
+              }}
+              className={`h-7 px-2.5 text-[10.5px] font-bold transition-colors duration-100 ${
+                periodType === m.key ? "bg-[#FDC94D] text-[#0F1D24]" : "text-white/60 hover:text-white"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
 
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 border-l border-white/15 bg-white/5 px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
-      >
-        <HiOutlineCalendarDays className="h-3.5 w-3.5 shrink-0 text-white/60" />
-        <span className="whitespace-nowrap">{displayLabel}</span>
-        <HiOutlineChevronDown
-          className={`h-3 w-3 shrink-0 text-white/40 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
-        />
-      </button>
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="flex items-center gap-1.5 border-l border-white/15 bg-white/5 px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+        >
+          <HiOutlineCalendarDays className="h-3.5 w-3.5 shrink-0 text-white/60" />
+          <span className="whitespace-nowrap">{displayLabel}</span>
+          <HiOutlineChevronDown
+            className={`h-3 w-3 shrink-0 text-white/40 transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
 
       {open && (
         <div className="absolute left-0 top-[calc(100%+4px)] z-30 rounded-[2px] border border-[#C6C6C6] bg-white shadow-lg">
@@ -391,6 +394,7 @@ function CustomDropdown({ icon: Icon, label, value, onChange, options, placehold
 function DashboardHeader({
   refreshing,
   onRefresh,
+  onExport,
   periodType,
   periodValue,
   onPeriodTypeChange,
@@ -444,7 +448,10 @@ function DashboardHeader({
             <HiOutlineArrowPath className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} /> Refresh
           </button>
 
-          <button className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30">
+          <button
+            onClick={onExport}
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+          >
             <HiOutlineArrowDownTray className="h-3.5 w-3.5" /> Export
           </button>
         </div>
@@ -646,6 +653,16 @@ export default function PartProductionDashboard() {
   const yieldPct = pct(summary.good_qty, summary.actual_qty);
   const rejectPct = pct(summary.reject_qty, summary.actual_qty);
 
+  const handleExport = () => {
+    exportProductionReportCSV({
+      periodLabel,
+      category,
+      customer,
+      rows: parts,
+      totals: summary,
+    });
+  };
+
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-[#EFEFEF]">
       <Sidebar />
@@ -656,6 +673,7 @@ export default function PartProductionDashboard() {
             <DashboardHeader
               refreshing={loading}
               onRefresh={refresh}
+              onExport={handleExport}
               periodType={periodType}
               periodValue={periodValue}
               onPeriodTypeChange={setPeriodType}

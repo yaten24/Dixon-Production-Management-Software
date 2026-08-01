@@ -30,14 +30,14 @@ const COLLAPSED_WIDTH = 64;
 const menuItems = [
   {
     id: 1,
-    title: "Overall Dashboard",
-    path: "/management/overall/dashboard",
+    title: "Production",
+    path: "/management/parts/production",
     icon: <FaTachometerAlt size={14} />,
   },
   {
     id: 1,
-    title: "Parts Produced",
-    path: "/management/parts/produced",
+    title: "Dashboard",
+    path: "/management/overall/dashboard",
     icon: <FaTachometerAlt size={14} />,
   },
   {

@@ -96,7 +96,7 @@ const AppRoutes = () => {
       />
 
       <Route
-        path="/management/parts/produced"
+        path="/management/parts/production"
         element={
           <ManagementRoute>
             <PartProductionDashboard />
