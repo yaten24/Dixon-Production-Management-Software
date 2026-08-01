@@ -48,11 +48,17 @@ const SLOT_MINUTES = 60;
 // slot. Target Qty is also now a normal editable field (see `targetSource
 // === "manual"` below) — the operator can type over the calculated value,
 // and once they do, this auto-calc backs off and leaves their number alone.
-const computeCalcTarget = (actualCycleTime) => {
+const computeCalcTarget = (actualCycleTime, slotMinutes = SLOT_MINUTES) => {
   const act = Number(actualCycleTime) || 0;
   if (!act) return "";
-  return String(Math.floor((SLOT_MINUTES * 60) / act));
+  return String(Math.floor((slotMinutes * 60) / act));
 };
+
+// Once a mould change is active, the 60-minute slot is split in half:
+// the old part runs the first half, the new part runs the second half.
+// Both parts' auto-calculated targets should therefore be based on a
+// 30-minute slot instead of the full 60.
+const HALF_SLOT_MINUTES = SLOT_MINUTES / 2;
 
 const baseFormData = {
   date: "",
@@ -95,6 +101,9 @@ const baseFormData = {
   mouldStandardCycleTime: "",
   mouldActualCycleTime: "",
   mouldTarget: "",
+  // Same "plan" / "calc" / "manual" pattern as targetSource, but for the
+  // new part's Target Qty — see the half-slot auto-calc effect below.
+  mouldTargetSource: null,
   mouldActual: "",
 
   plan_id: null,
@@ -432,6 +441,7 @@ const useProductionEntry = () => {
         mouldStandardCycleTime: mouldStdCT,
         mouldActualCycleTime: mouldActualCT,
         mouldTarget: mouldTargetQty,
+        mouldTargetSource: mouldTargetQty ? "plan" : null,
 
         plan_id: resolvedPlanId,
         plan_detail_id: resolvedPlanDetailId,
@@ -476,12 +486,35 @@ const useProductionEntry = () => {
   useEffect(() => {
     if (formData.targetSource === "plan" || formData.targetSource === "manual") return;
 
-    const calc = computeCalcTarget(formData.actualCycleTime);
+    const slot = formData.mouldChange ? HALF_SLOT_MINUTES : SLOT_MINUTES;
+    const calc = computeCalcTarget(formData.actualCycleTime, slot);
     if (calc && calc !== formData.target) {
       setFormData((prev) => ({ ...prev, target: calc, targetSource: calc ? "calc" : prev.targetSource }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.actualCycleTime, formData.targetSource]);
+  }, [formData.actualCycleTime, formData.targetSource, formData.mouldChange]);
+
+  // ==========================================================
+  // NEW PART (mould) TARGET QTY — same auto-calc pattern as the main
+  // Target Qty above, but always against the half-slot (30 min), since
+  // the new part only runs for the second half of the slot once a
+  // mould change happens. Only active while mould change is on; a
+  // plan-provided or manually-typed mould target is left alone.
+  // ==========================================================
+  useEffect(() => {
+    if (!formData.mouldChange) return;
+    if (formData.mouldTargetSource === "plan" || formData.mouldTargetSource === "manual") return;
+
+    const calc = computeCalcTarget(formData.mouldActualCycleTime, HALF_SLOT_MINUTES);
+    if (calc && calc !== formData.mouldTarget) {
+      setFormData((prev) => ({
+        ...prev,
+        mouldTarget: calc,
+        mouldTargetSource: calc ? "calc" : prev.mouldTargetSource,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.mouldActualCycleTime, formData.mouldTargetSource, formData.mouldChange]);
 
   const progress = useMemo(() => {
     if (!filteredMachines.length) return 0;
@@ -513,30 +546,48 @@ const useProductionEntry = () => {
 
   // ==========================================================
   // MOULD CHANGE DURATION
-  // slot = 60 minutes.
-  // old_time = old part actual qty * old part actual cycle time (sec) / 60
-  // new_time = new part actual qty * new part actual cycle time (sec) / 60
-  // duration = 60 - (old_time + new_time)  -> leftover time = mould change downtime
+  //
+  // Example: old part's target was 45, only 30 got made before the
+  // change — 15 parts never got made, so we add the time it WOULD have
+  // taken to make those 15 (at the old part's actual cycle time). Same
+  // for the new part: target 55, only 20 made after the change — 35
+  // parts short, add the time those 35 would have taken (at the new
+  // part's actual cycle time). The two shortfall-times added together
+  // is the mould change duration.
+  //
+  //   old_remaining = max(old target − old actual, 0)
+  //   new_remaining = max(new target − new actual, 0)
+  //   old_time (min) = old_remaining × old actual cycle time (sec) / 60
+  //   new_time (min) = new_remaining × new actual cycle time (sec) / 60
+  //   duration = old_time + new_time
   // ==========================================================
   const mouldDurationCalc = useMemo(() => {
     if (!formData.mouldChange) return "";
 
-    const oldQty = Number(formData.actual) || 0;
+    const oldTarget = Number(formData.target) || 0;
+    const oldActual = Number(formData.actual) || 0;
     const oldCT = Number(formData.actualCycleTime) || 0;
-    const newQty = Number(formData.mouldActual) || 0;
+
+    const newTarget = Number(formData.mouldTarget) || 0;
+    const newActual = Number(formData.mouldActual) || 0;
     const newCT = Number(formData.mouldActualCycleTime) || 0;
 
     if (!oldCT && !newCT) return "";
 
-    const oldMinutes = (oldQty * oldCT) / 60;
-    const newMinutes = (newQty * newCT) / 60;
-    const duration = 60 - (oldMinutes + newMinutes);
+    const oldRemaining = Math.max(oldTarget - oldActual, 0);
+    const newRemaining = Math.max(newTarget - newActual, 0);
+
+    const oldMinutes = (oldRemaining * oldCT) / 60;
+    const newMinutes = (newRemaining * newCT) / 60;
+    const duration = oldMinutes + newMinutes;
 
     return Number(Math.max(duration, 0).toFixed(1));
   }, [
     formData.mouldChange,
+    formData.target,
     formData.actual,
     formData.actualCycleTime,
+    formData.mouldTarget,
     formData.mouldActual,
     formData.mouldActualCycleTime,
   ]);
@@ -610,7 +661,17 @@ const useProductionEntry = () => {
 
   const handleMouldToggle = () => {
     setShowMouldSection((prev) => !prev);
-    setFormData((prev) => ({ ...prev, mouldChange: !prev.mouldChange }));
+    setFormData((prev) => {
+      const turningOn = !prev.mouldChange;
+      return {
+        ...prev,
+        mouldChange: turningOn,
+        // Turning off: clear the new part's target so a stale half-slot
+        // value doesn't linger. Turning on: leave it — the half-slot
+        // effect above fills it in once mouldActualCycleTime is set.
+        ...(turningOn ? {} : { mouldTarget: "", mouldTargetSource: null }),
+      };
+    });
   };
 
   const customReasonCache = useRef({});

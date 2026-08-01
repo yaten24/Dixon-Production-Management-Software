@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+} from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import {
@@ -1051,9 +1057,31 @@ const AdvProductionEntry = () => {
     const actual = Number(formData.actual) || 0;
     const cycleTimeSec = Number(formData.actualCycleTime) || 0;
     const shortfall = target - actual;
-    if (shortfall <= 0 || cycleTimeSec <= 0) return 0;
-    return Math.round(((shortfall * cycleTimeSec) / 60) * 10) / 10;
-  }, [formData.target, formData.actual, formData.actualCycleTime]);
+    const oldLoss = shortfall > 0 && cycleTimeSec > 0 ? (shortfall * cycleTimeSec) / 60 : 0;
+
+    // Once a mould change is on, the new part also ran part of the slot —
+    // its own shortfall against ITS target adds to the loss the same way.
+    let newLoss = 0;
+    if (formData.mouldChange) {
+      const newTarget = Number(formData.mouldTarget) || 0;
+      const newActual = Number(formData.mouldActual) || 0;
+      const newCycleTimeSec = Number(formData.mouldActualCycleTime) || 0;
+      const newShortfall = newTarget - newActual;
+      if (newShortfall > 0 && newCycleTimeSec > 0) {
+        newLoss = (newShortfall * newCycleTimeSec) / 60;
+      }
+    }
+
+    return Math.round((oldLoss + newLoss) * 10) / 10;
+  }, [
+    formData.target,
+    formData.actual,
+    formData.actualCycleTime,
+    formData.mouldChange,
+    formData.mouldTarget,
+    formData.mouldActual,
+    formData.mouldActualCycleTime,
+  ]);
 
   const roundedRequiredLossMinutes = Math.round(calculatedLossMinutes);
   // A loss is "unaccounted for" until the Loss Time Breakup rows add up
@@ -1601,24 +1629,99 @@ const AdvProductionEntry = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <Field label="New Part Actual Cycle Time" suffix="Sec">
+                      <input
+                        type="number"
+                        name="mouldActualCycleTime"
+                        value={formData.mouldActualCycleTime || ""}
+                        onChange={handleChange}
+                        className={numInputClass}
+                      />
+                    </Field>
+                    {/* Target Qty auto-calculates against a HALF slot (30
+                        min instead of 60) once mould change is on — the
+                        old part gets the first half of the slot, the new
+                        part gets the second half (see the half-slot effect
+                        in useProductionEntry.js). Still editable: typing
+                        over it flips mouldTargetSource to "manual" and the
+                        auto-calc backs off, same pattern as the main
+                        Target Qty field. */}
+                    <Field label="New Part Target Qty" suffix="Nos">
+                      <input
+                        type="number"
+                        name="mouldTarget"
+                        value={formData.mouldTarget || ""}
+                        onChange={(e) => {
+                          handleChange(e);
+                          handleChange({ target: { name: "mouldTargetSource", value: "manual" } });
+                        }}
+                        className={numInputClass}
+                      />
+                    </Field>
+                    <Field label="New Part Actual Qty" suffix="Nos">
+                      <input
+                        type="number"
+                        name="mouldActual"
+                        value={formData.mouldActual || ""}
+                        onChange={handleChange}
+                        className={numInputClass}
+                      />
+                    </Field>
                     <Field label="Mould Reject Qty" suffix="Nos">
                       <input type="number" name="mouldReject" value={formData.mouldReject || ""} onChange={handleChange} className={numInputClass} />
                     </Field>
                   </div>
 
-                  <ReasonBreakup
-                    title={`Mould Reject Breakup (${totalMouldRejectQty})`}
-                    rows={activeMouldRejectRows}
-                    reasonOptions={[...new Set(mouldRejectReasons.filter((r) => !r.custom).map((r) => r.reason))]}
-                    updateRow={(visIdx, field, val) => updateMouldRejectReason(activeMouldRejectRows[visIdx].__idx, field, val)}
-                    addRow={addCustomMouldRejectReason}
-                    removeRow={(visIdx) => removeCustomMouldRejectReason(activeMouldRejectRows[visIdx].__idx)}
-                    unitLabel="Qty"
-                    totalLabel="Total Mould Reject"
-                    valueField="qty"
-                    matchMode="equal"
-                    matchAgainst={formData.mouldReject}
-                  />
+                  {/* Mould change duration — the time it would have taken
+                      to make the parts left unmade on the old part PLUS
+                      the parts left unmade on the new part (see the
+                      formula comment on mouldDurationCalc in
+                      useProductionEntry.js). Read-only: it's derived
+                      straight from the target/actual/cycle-time fields
+                      above. */}
+                  <div className="flex items-center justify-between border border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
+                    <span className="text-[11px] font-semibold text-[#0F1D24]">Mould Change Duration</span>
+                    <span className="font-mono text-[13px] font-extrabold text-[#0F1D24]">
+                      {formData.mould_duration || 0} min
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <ReasonBreakup
+                      title={`Mould Reject Breakup (${totalMouldRejectQty})`}
+                      rows={activeMouldRejectRows}
+                      reasonOptions={[...new Set(mouldRejectReasons.filter((r) => !r.custom).map((r) => r.reason))]}
+                      updateRow={(visIdx, field, val) => updateMouldRejectReason(activeMouldRejectRows[visIdx].__idx, field, val)}
+                      addRow={addCustomMouldRejectReason}
+                      removeRow={(visIdx) => removeCustomMouldRejectReason(activeMouldRejectRows[visIdx].__idx)}
+                      unitLabel="Qty"
+                      totalLabel="Total Mould Reject"
+                      valueField="qty"
+                      matchMode="equal"
+                      matchAgainst={formData.mouldReject}
+                    />
+
+                    {/* Same Loss Time Breakup as the Production Entry tab
+                        — same rows/total (lossReasons/totalLossMinutes),
+                        now validated against calculatedLossMinutes which
+                        includes the new part's shortfall too. Editing here
+                        or in the Production Entry tab updates the same
+                        underlying total. */}
+                    <ReasonBreakup
+                      title={`Loss Time Breakup (${totalLossMinutes})`}
+                      rows={activeLossRows}
+                      reasonOptions={lossReasonNames}
+                      updateRow={updateLossRow}
+                      addRow={addLossRow}
+                      removeRow={removeLossRow}
+                      unitLabel="Min"
+                      totalLabel="Total Loss"
+                      valueField="minutes"
+                      matchMode="equal"
+                      matchAgainst={roundedRequiredLossMinutes}
+                      highlight
+                    />
+                  </div>
                 </div>
               ) : (
                 <p className="border border-dashed border-[#C6C6C6] bg-[#FAFAFA] py-5 text-center text-[11.5px] text-[#9B9B9B]">

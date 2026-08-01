@@ -467,11 +467,8 @@ function StatCard({ icon: Icon, label, value, unit, sub, trend }) {
   return (
     <div className="rounded-[2px] border border-white/10 bg-[#0F1D24] p-3">
       <div className="flex items-center gap-2.5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] bg-[#FDC94D]/15 text-[#FDC94D]">
-          <Icon className="h-4 w-4" />
-        </span>
         <div className="min-w-0">
-          <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-white/40">{label}</p>
+          <p className="truncate text-[16px] font-bold uppercase tracking-wide text-white/90">{label}</p>
           <p className="text-[18px] font-extrabold leading-tight tracking-tight text-white">
             {value}
             {unit && <span className="ml-1 text-[10.5px] font-semibold text-white/40">{unit}</span>}
@@ -479,7 +476,7 @@ function StatCard({ icon: Icon, label, value, unit, sub, trend }) {
         </div>
       </div>
       <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
-        <span className="truncate text-white/40">{sub}</span>
+        <span className="truncate text-white/60">{sub}</span>
         {trend && (
           <span className={`shrink-0 font-bold ${trend.up ? "text-emerald-400" : "text-rose-400"}`}>
             {trend.up ? "\u2191" : "\u2193"} {trend.value}
