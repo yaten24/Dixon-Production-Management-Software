@@ -137,7 +137,7 @@ const useCloseOnOtherDropdownOpen = (id, setOpen) => {
 // CustomDatePicker) so it's never clipped by the scrollable <main>,
 // and only one dropdown across the whole page can be open at once.
 // ============================================================
-function ThemedSelect({ value, onChange, options, icon: Icon, placeholder = "Select", disabled = false, className = "" }) {
+function ThemedSelect({ value, onChange, options, icon: Icon, placeholder = "Select", disabled = false, className = "", dark = false }) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState(null);
   const idRef = useRef(nextDropdownId());
@@ -190,22 +190,32 @@ function ThemedSelect({ value, onChange, options, icon: Icon, placeholder = "Sel
         type="button"
         disabled={disabled}
         onClick={toggleOpen}
-        className={`flex h-9 w-full items-center gap-2 border px-2.5 text-[12.5px] font-semibold text-[#0F1D24] outline-none transition-colors duration-100 ${
-          disabled ? "cursor-not-allowed border-[#C6C6C6] bg-[#F5F5F5] text-[#9B9B9B]" : open ? "border-[#0F1D24] bg-white" : "border-[#C6C6C6] bg-white hover:border-[#0F1D24]"
+        className={`flex h-9 w-full items-center gap-2 rounded-[2px] border px-2.5 text-[12.5px] font-semibold outline-none transition-colors duration-100 ${
+          dark
+            ? disabled
+              ? "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30"
+              : open
+                ? "border-[#FDC94D] bg-white/5 text-white"
+                : "border-white/15 bg-white/5 text-white hover:border-white/30"
+            : disabled
+              ? "cursor-not-allowed border-[#C6C6C6] bg-[#F5F5F5] text-[#9B9B9B]"
+              : open
+                ? "border-[#0F1D24] bg-white text-[#0F1D24]"
+                : "border-[#C6C6C6] bg-white text-[#0F1D24] hover:border-[#0F1D24]"
         }`}
       >
-        {Icon && <Icon className="flex-shrink-0 text-[12px] text-[#0F1D24]/70" />}
-        <span className={`min-w-0 flex-1 truncate text-left ${!selected ? "font-medium text-[#9B9B9B]" : ""}`}>
+        {Icon && <Icon className={`flex-shrink-0 text-[12px] ${dark ? "text-white/60" : "text-[#0F1D24]/70"}`} />}
+        <span className={`min-w-0 flex-1 truncate text-left ${!selected ? (dark ? "font-medium text-white/40" : "font-medium text-[#9B9B9B]") : ""}`}>
           {selected?.label || placeholder}
         </span>
-        <FaChevronDown className={`flex-shrink-0 text-[9px] text-[#9B9B9B] transition-transform duration-100 ${open ? "rotate-180" : ""}`} />
+        <FaChevronDown className={`flex-shrink-0 text-[9px] transition-transform duration-100 ${dark ? "text-white/40" : "text-[#9B9B9B]"} ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && !disabled && coords && createPortal(
         <div
           ref={panelRef}
           style={{ position: "fixed", top: coords.top, left: coords.left, width: coords.width }}
-          className="z-[9999] max-h-56 overflow-y-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.15)]"
+          className="z-[9999] max-h-56 overflow-y-auto rounded-[2px] border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.15)]"
         >
           {options.length === 0 && <div className="px-2.5 py-2 text-[11.5px] text-[#9B9B9B]">No options</div>}
           {options.map((o) => (
@@ -235,7 +245,7 @@ function ThemedSelect({ value, onChange, options, icon: Icon, placeholder = "Sel
 // scrollable <main> panel this field sits inside. Also participates
 // in the shared "only one dropdown open" coordination.
 // ============================================================
-function CustomDatePicker({ value, onChange, disabled = false }) {
+function CustomDatePicker({ value, onChange, disabled = false, dark = false }) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => parseDateKey(value));
   const [coords, setCoords] = useState(null);
@@ -308,11 +318,21 @@ function CustomDatePicker({ value, onChange, disabled = false }) {
         type="button"
         disabled={disabled}
         onClick={toggleOpen}
-        className={`flex h-9 w-full items-center gap-2 border px-2.5 text-[12.5px] font-semibold outline-none transition-colors duration-100 ${
-          disabled ? "cursor-not-allowed border-[#C6C6C6] bg-[#F5F5F5] text-[#9B9B9B]" : open ? "border-[#0F1D24] bg-white text-[#0F1D24]" : "border-[#C6C6C6] bg-white text-[#0F1D24] hover:border-[#0F1D24]"
+        className={`flex h-9 w-full items-center gap-2 rounded-[2px] border px-2.5 text-[12.5px] font-semibold outline-none transition-colors duration-100 ${
+          dark
+            ? disabled
+              ? "cursor-not-allowed border-white/10 bg-white/[0.03] text-white/30"
+              : open
+                ? "border-[#FDC94D] bg-white/5 text-white"
+                : "border-white/15 bg-white/5 text-white hover:border-white/30"
+            : disabled
+              ? "cursor-not-allowed border-[#C6C6C6] bg-[#F5F5F5] text-[#9B9B9B]"
+              : open
+                ? "border-[#0F1D24] bg-white text-[#0F1D24]"
+                : "border-[#C6C6C6] bg-white text-[#0F1D24] hover:border-[#0F1D24]"
         }`}
       >
-        <FaCalendarAlt className="flex-shrink-0 text-[11px] text-[#0F1D24]/70" />
+        <FaCalendarAlt className={`flex-shrink-0 text-[11px] ${dark ? "text-white/60" : "text-[#0F1D24]/70"}`} />
         <span className="min-w-0 flex-1 truncate text-left">{formatDateDisplay(selectedKey)}</span>
       </button>
 
@@ -320,7 +340,7 @@ function CustomDatePicker({ value, onChange, disabled = false }) {
         <div
           ref={panelRef}
           style={{ position: "fixed", top: coords.top, left: coords.left }}
-          className="z-[9999] w-60 border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.15)]"
+          className="z-[9999] w-60 rounded-[2px] border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.15)]"
         >
           <div className="flex items-center justify-between bg-[#0F1D24] px-2 py-1.5">
             <button type="button" onClick={() => changeMonth(-1)} className="flex h-5 w-5 items-center justify-center text-[#FDC94D] transition-colors duration-100 hover:bg-white/10">
@@ -382,7 +402,7 @@ function Field({ label, required, suffix, children }) {
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {suffix ? (
-        <div className="flex border border-[#C6C6C6] bg-white">
+        <div className="flex rounded-[2px] border border-[#C6C6C6] bg-white">
           <div className="flex-1">{children}</div>
           <span className="flex items-center border-l border-[#C6C6C6] bg-[#FAFAFA] px-2 text-[11px] font-semibold text-[#9B9B9B]">
             {suffix}
@@ -398,11 +418,11 @@ function Field({ label, required, suffix, children }) {
 const numInputClass =
   "h-9 w-full border-0 bg-transparent px-2.5 text-[12.5px] font-mono font-semibold text-[#0F1D24] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 const plainInputClass =
-  "h-9 w-full border border-[#C6C6C6] bg-white px-2.5 text-[12.5px] font-mono font-semibold text-[#0F1D24] outline-none transition-colors duration-100 focus:border-[#0F1D24] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  "h-9 w-full rounded-[2px] border border-[#C6C6C6] bg-white px-2.5 text-[12.5px] font-mono font-semibold text-[#0F1D24] outline-none transition-colors duration-100 focus:border-[#0F1D24] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 const readonlyBoxClass =
-  "flex h-9 items-center border border-[#C6C6C6] bg-[#FAFAFA] px-2.5 text-[12.5px] font-mono font-semibold text-[#0F1D24]";
+  "flex h-9 items-center rounded-[2px] border border-[#C6C6C6] bg-[#FAFAFA] px-2.5 text-[12.5px] font-mono font-semibold text-[#0F1D24]";
 const textInputClass =
-  "h-9 w-full border border-[#C6C6C6] bg-white px-2.5 text-[12.5px] font-semibold text-[#0F1D24] outline-none transition-colors duration-100 focus:border-[#0F1D24]";
+  "h-9 w-full rounded-[2px] border border-[#C6C6C6] bg-white px-2.5 text-[12.5px] font-semibold text-[#0F1D24] outline-none transition-colors duration-100 focus:border-[#0F1D24]";
 
 // ============================================================
 // ReasonBreakup — shared row-based dropdown breakup used for
@@ -431,7 +451,7 @@ function ReasonBreakup({ title, rows, reasonOptions, updateRow, addRow, removeRo
     : matchValue > 0 && total > matchValue;
 
   return (
-    <div className={`flex flex-col border bg-white ${highlight && isMismatched ? "border-red-400 ring-1 ring-red-300" : "border-[#C6C6C6]"}`}>
+    <div className={`flex flex-col rounded-[2px] border bg-white ${highlight && isMismatched ? "border-red-400 ring-1 ring-red-300" : "border-[#C6C6C6]"}`}>
       <div className={`flex items-center justify-between border-b px-3 py-2 ${highlight && isMismatched ? "border-red-300 bg-red-50" : "border-[#C6C6C6] bg-[#FAFAFA]"}`}>
         <h3 className={`text-[12.5px] font-bold ${highlight && isMismatched ? "text-red-700" : "text-[#0F1D24]"}`}>{title}</h3>
         <button
@@ -446,7 +466,7 @@ function ReasonBreakup({ title, rows, reasonOptions, updateRow, addRow, removeRo
 
       <div className="flex flex-1 flex-col p-2.5">
         {rows.length === 0 ? (
-          <p className="border border-dashed border-[#C6C6C6] bg-[#FAFAFA] py-3 text-center text-[11px] text-[#9B9B9B]">
+          <p className="rounded-[2px] border border-dashed border-[#C6C6C6] bg-[#FAFAFA] py-3 text-center text-[11px] text-[#9B9B9B]">
             No reasons added — click "Add Reason".
           </p>
         ) : (
@@ -474,7 +494,7 @@ function ReasonBreakup({ title, rows, reasonOptions, updateRow, addRow, removeRo
                 <button
                   type="button"
                   onClick={() => removeRow(idx)}
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center border border-red-300 bg-red-50 text-red-600 transition-colors duration-100 hover:bg-red-600 hover:text-white"
+                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[2px] border border-red-300 bg-red-50 text-red-600 transition-colors duration-100 hover:bg-red-600 hover:text-white"
                 >
                   <FaTrash className="text-[11px]" />
                 </button>
@@ -484,18 +504,18 @@ function ReasonBreakup({ title, rows, reasonOptions, updateRow, addRow, removeRo
         )}
 
         <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5">
-          <div className={`border px-3 py-1.5 font-mono text-[11.5px] font-bold ${highlight && isMismatched ? "border-red-300 bg-red-50 text-red-700" : "border-[#C6C6C6] bg-[#FAFAFA] text-[#0F1D24]"}`}>
+          <div className={`rounded-[2px] border px-3 py-1.5 font-mono text-[11.5px] font-bold ${highlight && isMismatched ? "border-red-300 bg-red-50 text-red-700" : "border-[#C6C6C6] bg-[#FAFAFA] text-[#0F1D24]"}`}>
             {totalLabel}: {total}
           </div>
           {isMismatched && (
-            <span className="border border-red-300 bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-700">
+            <span className="rounded-[2px] border border-red-300 bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-700">
               {isEqualMode
                 ? `Mismatch: required (${matchValue}) ≠ breakup (${total})`
                 : `Breakup (${total}) exceeds the limit (${matchValue})`}
             </span>
           )}
           {isMatched && (
-            <span className="border border-emerald-300 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">
+            <span className="rounded-[2px] border border-emerald-300 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">
               <FaCheck className="mr-1 inline text-[9px]" />Matched
             </span>
           )}
@@ -513,7 +533,7 @@ function ReasonBreakup({ title, rows, reasonOptions, updateRow, addRow, removeRo
 // ============================================================
 function InfoCell({ label, value, icon: Icon, highlight = false }) {
   return (
-    <div className="flex items-center gap-2 border border-[#C6C6C6] bg-white px-2.5 py-1.5">
+    <div className="flex items-center gap-2 rounded-[2px] border border-[#C6C6C6] bg-white px-2.5 py-1.5">
       {Icon && <Icon className="flex-shrink-0 text-[13px] text-[#0F1D24]/60" />}
       <div className="min-w-0 leading-tight">
         <p className="text-[9px] font-bold uppercase tracking-wide text-[#9B9B9B]">{label}</p>
@@ -577,7 +597,7 @@ function GoodQtyCelebration({ goodQty, actual, reject, onClose }) {
 // ============================================================
 function OeeCard({ label, value, formula, tone = "#0F1D24" }) {
   return (
-    <div className="relative border border-[#C6C6C6] bg-white p-3">
+    <div className="relative rounded-[2px] border border-[#C6C6C6] bg-white p-3">
       <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: tone }} />
       <p className="text-[9px] font-bold uppercase leading-none tracking-wider text-[#9B9B9B]">{label}</p>
       <p className="mt-1.5 font-mono text-[22px] font-extrabold leading-none tabular-nums text-[#0F1D24]">{value}%</p>
@@ -1149,7 +1169,7 @@ const AdvProductionEntry = () => {
         />
         <div className="flex min-h-0 flex-1 items-center justify-center">
           <div className="flex flex-col items-center gap-3 text-[#0F1D24]">
-            <div className="flex h-12 w-12 items-center justify-center border border-[#0F1D24] bg-[#0F1D24]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[2px] border border-[#0F1D24] bg-[#0F1D24]">
               <FaIndustry className="text-lg text-[#FDC94D]" />
             </div>
             <p className="text-sm font-medium text-[#9B9B9B]">Loading machines and reasons...</p>
@@ -1168,15 +1188,41 @@ const AdvProductionEntry = () => {
       />
 
       <div className="flex h-screen min-h-0 flex-1 flex-col overflow-hidden">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden p-1">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2px] border border-[#C6C6C6]">
+        {/* ================= HEADER — dark navy bar: title + the four
+            filters (Date / Shift / Hall / Time Slot) ================= */}
+        <header className="flex-shrink-0 bg-[#0F1D24] px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
+            <h1 className="whitespace-nowrap text-[18px] font-extrabold uppercase tracking-wide text-white">
+              Production Entry
+            </h1>
+
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="w-36">
+                <CustomDatePicker dark value={formData.date} onChange={(v) => handleChange({ target: { name: "date", value: v } })} />
+              </div>
+              <div className="w-40">
+                <ThemedSelect dark value={formData.shift} onChange={(v) => handleShiftChange({ target: { name: "shift", value: v } })} options={SHIFTS} />
+              </div>
+              <div className="w-28">
+                <ThemedSelect dark value={formData.hall} onChange={(v) => handleHallChange({ target: { name: "hall", value: v } })} icon={FaIndustry} options={HALLS.map((h) => ({ value: h, label: h }))} />
+              </div>
+              <div className="w-40">
+                <ThemedSelect dark value={formData.timeSlot} onChange={(v) => handleChange({ target: { name: "timeSlot", value: v } })} icon={FaClock} options={timeSlotOptions} placeholder="Select Time Slot" />
+              </div>
+            </div>
+          </div>
+        </header>
 
       {/* ================= BODY — fills remaining screen height ================= */}
-      <div className="flex min-h-0 flex-1 gap-2 p-2 md:flex-row flex-col">
+      <div className="flex min-h-0 flex-1 gap-2 p-2 md:flex-row flex-col overflow-hidden">
         {/* ---------- SIDEBAR: machine list (only this scrolls independently) ---------- */}
-        <aside className={`${sidebarOpen ? "flex" : "hidden"} min-h-0 w-full flex-shrink-0 flex-col border border-[#C6C6C6] bg-white md:flex md:w-[250px] lg:w-[270px]`}>
+        <aside className={`${sidebarOpen ? "flex" : "hidden"} min-h-0 w-full flex-shrink-0 flex-col rounded-[2px] border border-[#C6C6C6] bg-white md:flex md:w-[250px] lg:w-[270px]`}>
           <div className="flex-shrink-0 border-b border-[#C6C6C6] bg-[#FAFAFA] px-2.5 py-1.5">
             <div className="flex items-center justify-between">
               <h2 className="text-[11.5px] font-bold text-[#0F1D24]">Machines {formData.hall ? `· ${formData.hall}` : ""}</h2>
-              <span className="border border-[#C6C6C6] bg-white px-1.5 py-0.5 text-[9.5px] font-bold text-[#0F1D24]">
+              <span className="rounded-[2px] border border-[#C6C6C6] bg-white px-1.5 py-0.5 text-[9.5px] font-bold text-[#0F1D24]">
                 {filteredMachines.length}
               </span>
             </div>
@@ -1189,7 +1235,7 @@ const AdvProductionEntry = () => {
                 value={machineSearch}
                 onChange={(e) => setMachineSearch(e.target.value)}
                 placeholder="Search machine..."
-                className="h-8 w-full border border-[#C6C6C6] bg-white pl-6 pr-2 text-[11.5px] outline-none transition-colors duration-100 focus:border-[#0F1D24]"
+                className="h-8 w-full rounded-[2px] border border-[#C6C6C6] bg-white pl-6 pr-2 text-[11.5px] outline-none transition-colors duration-100 focus:border-[#0F1D24]"
               />
             </div>
           </div>
@@ -1230,7 +1276,7 @@ const AdvProductionEntry = () => {
               <span>Entry Progress</span>
               <span className="font-mono">{progress}%</span>
             </div>
-            <div className="h-1.5 w-full overflow-hidden border border-[#C6C6C6] bg-white">
+            <div className="h-1.5 w-full overflow-hidden rounded-[2px] border border-[#C6C6C6] bg-white">
               <div className="h-full bg-[#0F1D24] transition-[width] duration-300 ease-out" style={{ width: `${progress}%` }} />
             </div>
           </div>
@@ -1239,34 +1285,14 @@ const AdvProductionEntry = () => {
         {/* ---------- MAIN PANEL — its own internal scroll ---------- */}
         <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto">
           {/* Selected-machine header strip — everything lives inside this
-              single 1px-bordered box now. Top row: exactly the four
-              filters (Date / Shift / Hall / Time Slot). Below: the
-              selected machine name + progress, then every other field
-              (Hall, Operator, Part, etc.) as its own bordered cell, with
-              Selected Machine and Hall highlighted in gold. */}
-          <div className="flex-shrink-0 border border-[#C6C6C6] bg-white">
-            <div className="grid grid-cols-2 gap-2 border-b border-[#C6C6C6] p-2 sm:grid-cols-4">
-              <div>
-                <label className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">Date</label>
-                <CustomDatePicker value={formData.date} onChange={(v) => handleChange({ target: { name: "date", value: v } })} />
-              </div>
-              <div>
-                <label className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">Shift</label>
-                <ThemedSelect value={formData.shift} onChange={(v) => handleShiftChange({ target: { name: "shift", value: v } })} options={SHIFTS} />
-              </div>
-              <div>
-                <label className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">Hall</label>
-                <ThemedSelect value={formData.hall} onChange={(v) => handleHallChange({ target: { name: "hall", value: v } })} icon={FaIndustry} options={HALLS.map((h) => ({ value: h, label: h }))} />
-              </div>
-              <div>
-                <label className="mb-1 block text-[9.5px] font-bold uppercase tracking-wide text-[#9B9B9B]">Time Slot</label>
-                <ThemedSelect value={formData.timeSlot} onChange={(v) => handleChange({ target: { name: "timeSlot", value: v } })} icon={FaClock} options={timeSlotOptions} placeholder="Select Time Slot" />
-              </div>
-            </div>
-
+              single 1px-bordered box now. The selected machine name +
+              progress, then every other field (Hall, Operator, Part, etc.)
+              as its own bordered cell, with Selected Machine and Hall
+              highlighted in gold. */}
+          <div className="flex-shrink-0 rounded-[2px] border border-[#C6C6C6] bg-white">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#C6C6C6] px-2.5 py-2">
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center border border-[#C6C6C6] bg-[#FAFAFA] text-[#0F1D24]">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[2px] border border-[#C6C6C6] bg-[#FAFAFA] text-[#0F1D24]">
                   <FaIndustry className="text-[15px]" />
                 </div>
                 <div>
@@ -1296,10 +1322,10 @@ const AdvProductionEntry = () => {
             {(isFromPlan || !hasRealPlan) && (
               <div className="flex flex-wrap gap-1.5 border-t border-[#C6C6C6] px-2.5 py-1.5">
                 {isFromPlan && (
-                  <span className="border border-[#FDC94D] bg-[#FDC94D]/20 px-2 py-0.5 text-[9.5px] font-bold text-[#0F1D24]">Pre-filled from Plan</span>
+                  <span className="rounded-[2px] border border-[#FDC94D] bg-[#FDC94D]/20 px-2 py-0.5 text-[9.5px] font-bold text-[#0F1D24]">Pre-filled from Plan</span>
                 )}
                 {!hasRealPlan && (
-                  <span className="border border-amber-400 bg-amber-50 px-2 py-0.5 text-[9.5px] font-bold text-amber-800">
+                  <span className="rounded-[2px] border border-amber-400 bg-amber-50 px-2 py-0.5 text-[9.5px] font-bold text-amber-800">
                     Manual entry (no plan link)
                   </span>
                 )}
@@ -1311,7 +1337,7 @@ const AdvProductionEntry = () => {
               the Selected Machine strip so it's always visible regardless of
               which tab is active (see the formula comment above `oee` for
               exactly what's used and why). */}
-          <div className="flex-shrink-0 border border-[#C6C6C6] bg-white">
+          <div className="flex-shrink-0 rounded-[2px] border border-[#C6C6C6] bg-white">
             <div className="flex flex-wrap items-center gap-2 border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
               <div className="flex h-6 w-6 items-center justify-center bg-[#0F1D24] text-[#FDC94D]">
                 <FaTachometerAlt className="text-[11px]" />
@@ -1330,7 +1356,7 @@ const AdvProductionEntry = () => {
           </div>
 
           {/* Tabs */}
-          <div className="flex flex-shrink-0 overflow-x-auto border border-[#C6C6C6] bg-white">
+          <div className="flex flex-shrink-0 overflow-x-auto rounded-[2px] border border-[#C6C6C6] bg-white">
             {TABS.map((t) => {
               const Icon = t.icon;
               const isActive = activeTab === t.key;
@@ -1355,7 +1381,7 @@ const AdvProductionEntry = () => {
           {/* ============ Tab: Production Entry ============ */}
           {activeTab === "entry" && (
             <>
-              <div className="flex-shrink-0 border border-[#C6C6C6] bg-white p-2.5">
+              <div className="flex-shrink-0 rounded-[2px] border border-[#C6C6C6] bg-white p-2.5">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-9">
                   {/* OPERATOR */}
                   <div className="relative col-span-2">
@@ -1368,7 +1394,7 @@ const AdvProductionEntry = () => {
                     </div>
 
                     {operatorSuggestions.length > 0 && (
-                      <div className="absolute left-0 right-0 z-30 mt-1 max-h-52 overflow-y-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
+                      <div className="absolute left-0 right-0 z-30 mt-1 max-h-52 overflow-y-auto rounded-[2px] border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
                         {operatorSuggestions.map((op) => (
                           <button key={op.id} type="button" onClick={() => selectOperator(op)} className="block w-full border-b border-[#C6C6C6] px-2.5 py-1.5 text-left last:border-b-0 hover:bg-[#FDC94D]/20">
                             <div className="text-[11.5px] font-bold text-[#0F1D24]">{op.operator_name}</div>
@@ -1379,7 +1405,7 @@ const AdvProductionEntry = () => {
                     )}
 
                     {(operatorNotFound || noOperatorResults) && !operatorDetails && operatorSuggestions.length === 0 && (
-                      <div className="mt-1.5 border border-[#FDC94D] bg-[#FDC94D]/10 p-1.5">
+                      <div className="mt-1.5 rounded-[2px] border border-[#FDC94D] bg-[#FDC94D]/10 p-1.5">
                         {!showAddOperator ? (
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-[10.5px] font-semibold text-[#0F1D24]">Not found.</span>
@@ -1402,7 +1428,7 @@ const AdvProductionEntry = () => {
                               <button type="button" onClick={handleAddOperator} disabled={addingOperator} className="h-7 flex-1 bg-emerald-600 text-[10.5px] font-bold text-white disabled:opacity-50">
                                 {addingOperator ? "Saving..." : "Save & Use"}
                               </button>
-                              <button type="button" onClick={() => setShowAddOperator(false)} className="h-7 border border-[#C6C6C6] bg-white px-2 text-[10.5px] font-semibold text-[#0F1D24]">Cancel</button>
+                              <button type="button" onClick={() => setShowAddOperator(false)} className="h-7 rounded-[2px] border border-[#C6C6C6] bg-white px-2 text-[10.5px] font-semibold text-[#0F1D24]">Cancel</button>
                             </div>
                           </div>
                         )}
@@ -1416,7 +1442,7 @@ const AdvProductionEntry = () => {
                     <input type="text" name="part" value={formData.part} onChange={handlePartChange} autoComplete="off" placeholder="Search part..." className={textInputClass} />
 
                     {partSuggestions.length > 0 && (
-                      <div className="absolute left-0 right-0 z-30 mt-1 max-h-52 overflow-y-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
+                      <div className="absolute left-0 right-0 z-30 mt-1 max-h-52 overflow-y-auto rounded-[2px] border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
                         {partSuggestions.map((part) => (
                           <button key={part.id} type="button" onClick={() => selectPart(part)} className="block w-full border-b border-[#C6C6C6] px-2.5 py-1.5 text-left last:border-b-0 hover:bg-[#FDC94D]/20">
                             <div className="text-[11.5px] font-bold text-[#0F1D24]">{part.part_name}</div>
@@ -1427,7 +1453,7 @@ const AdvProductionEntry = () => {
                     )}
 
                     {noPartResults && !formData.part_id && (
-                      <div className="absolute left-0 right-0 z-30 mt-1 border border-[#FDC94D] bg-white p-1.5 shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
+                      <div className="absolute left-0 right-0 z-30 mt-1 rounded-[2px] border border-[#FDC94D] bg-white p-1.5 shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
                         {!showAddPart ? (
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-[10.5px] font-semibold text-[#0F1D24]">Not found.</span>
@@ -1442,7 +1468,7 @@ const AdvProductionEntry = () => {
                               <button type="button" onClick={handleAddPart} disabled={addingPart} className="h-7 flex-1 bg-emerald-600 text-[10.5px] font-bold text-white disabled:opacity-50">
                                 {addingPart ? "Saving..." : "Save & Use"}
                               </button>
-                              <button type="button" onClick={() => setShowAddPart(false)} className="h-7 border border-[#C6C6C6] bg-white px-2 text-[10.5px] font-semibold text-[#0F1D24]">Cancel</button>
+                              <button type="button" onClick={() => setShowAddPart(false)} className="h-7 rounded-[2px] border border-[#C6C6C6] bg-white px-2 text-[10.5px] font-semibold text-[#0F1D24]">Cancel</button>
                             </div>
                           </div>
                         )}
@@ -1536,7 +1562,7 @@ const AdvProductionEntry = () => {
                   highlight
                 />
 
-                <div className="flex flex-col border border-[#C6C6C6] bg-white">
+                <div className="flex flex-col rounded-[2px] border border-[#C6C6C6] bg-white">
                   <div className="flex items-center justify-between border-b border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
                     <h3 className="text-[12.5px] font-bold text-[#0F1D24]">Remarks</h3>
                   </div>
@@ -1548,7 +1574,7 @@ const AdvProductionEntry = () => {
                       placeholder="Add any additional notes here..."
                       value={formData.remarks}
                       onChange={handleChange}
-                      className="h-full min-h-[120px] w-full flex-1 resize-none border border-[#C6C6C6] bg-white px-2.5 py-1.5 text-[11.5px] text-[#0F1D24] outline-none transition-colors duration-100 placeholder:text-[#9B9B9B] focus:border-[#0F1D24]"
+                      className="h-full min-h-[120px] w-full flex-1 resize-none rounded-[2px] border border-[#C6C6C6] bg-white px-2.5 py-1.5 text-[11.5px] text-[#0F1D24] outline-none transition-colors duration-100 placeholder:text-[#9B9B9B] focus:border-[#0F1D24]"
                     />
                   </div>
                 </div>
@@ -1558,7 +1584,7 @@ const AdvProductionEntry = () => {
 
           {/* ============ Tab: Mould Change ============ */}
           {activeTab === "mould" && (
-            <div className="flex-shrink-0 border border-[#C6C6C6] bg-white p-2.5">
+            <div className="flex-shrink-0 rounded-[2px] border border-[#C6C6C6] bg-white p-2.5">
               <label className="mb-2 flex cursor-pointer select-none items-center gap-2">
                 <input type="checkbox" checked={showMouldSection} onChange={handleMouldToggle} className="h-4 w-4 accent-[#FDC94D]" />
                 <span className="text-[12px] font-bold text-[#0F1D24]">Enable Mould Change Entry</span>
@@ -1581,7 +1607,7 @@ const AdvProductionEntry = () => {
                       />
 
                       {mouldPartSuggestions.length > 0 && (
-                        <div className="absolute left-0 right-0 z-30 mt-1 max-h-52 overflow-y-auto border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
+                        <div className="absolute left-0 right-0 z-30 mt-1 max-h-52 overflow-y-auto rounded-[2px] border border-[#C6C6C6] bg-white shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
                           {mouldPartSuggestions.map((part) => (
                             <button key={part.id} type="button" onClick={() => selectMouldPart(part)} className="block w-full border-b border-[#C6C6C6] px-2.5 py-1.5 text-left last:border-b-0 hover:bg-[#FDC94D]/20">
                               <div className="text-[11.5px] font-bold text-[#0F1D24]">{part.part_name}</div>
@@ -1592,7 +1618,7 @@ const AdvProductionEntry = () => {
                       )}
 
                       {noMouldPartResults && !formData.new_part_id && (
-                        <div className="absolute left-0 right-0 z-30 mt-1 border border-[#FDC94D] bg-white p-1.5 shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
+                        <div className="absolute left-0 right-0 z-30 mt-1 rounded-[2px] border border-[#FDC94D] bg-white p-1.5 shadow-[0_4px_10px_rgba(15,29,36,0.12)]">
                           {!showAddMouldPart ? (
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-[10.5px] font-semibold text-[#0F1D24]">Not found.</span>
@@ -1613,7 +1639,7 @@ const AdvProductionEntry = () => {
                                 <button type="button" onClick={submitAddMouldPart} disabled={addingMouldPart} className="h-7 flex-1 bg-emerald-600 text-[10.5px] font-bold text-white disabled:opacity-50">
                                   {addingMouldPart ? "Saving..." : "Save & Use"}
                                 </button>
-                                <button type="button" onClick={() => setShowAddMouldPart(false)} className="h-7 border border-[#C6C6C6] bg-white px-2 text-[10.5px] font-semibold text-[#0F1D24]">Cancel</button>
+                                <button type="button" onClick={() => setShowAddMouldPart(false)} className="h-7 rounded-[2px] border border-[#C6C6C6] bg-white px-2 text-[10.5px] font-semibold text-[#0F1D24]">Cancel</button>
                               </div>
                             </div>
                           )}
@@ -1679,7 +1705,7 @@ const AdvProductionEntry = () => {
                       useProductionEntry.js). Read-only: it's derived
                       straight from the target/actual/cycle-time fields
                       above. */}
-                  <div className="flex items-center justify-between border border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
+                  <div className="flex items-center justify-between rounded-[2px] border border-[#C6C6C6] bg-[#FAFAFA] px-3 py-2">
                     <span className="text-[11px] font-semibold text-[#0F1D24]">Mould Change Duration</span>
                     <span className="font-mono text-[13px] font-extrabold text-[#0F1D24]">
                       {formData.mould_duration || 0} min
@@ -1724,7 +1750,7 @@ const AdvProductionEntry = () => {
                   </div>
                 </div>
               ) : (
-                <p className="border border-dashed border-[#C6C6C6] bg-[#FAFAFA] py-5 text-center text-[11.5px] text-[#9B9B9B]">
+                <p className="rounded-[2px] border border-dashed border-[#C6C6C6] bg-[#FAFAFA] py-5 text-center text-[11.5px] text-[#9B9B9B]">
                   Mould change is off for this machine. Toggle the checkbox above to record a mould change.
                 </p>
               )}
@@ -1738,7 +1764,7 @@ const AdvProductionEntry = () => {
         <button
           onClick={previousMachine}
           disabled={isFirstMachine || submitting}
-          className="flex h-8 items-center justify-center gap-1.5 border border-[#C6C6C6] bg-white px-3 text-[11.5px] font-bold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#FAFAFA] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-8 items-center justify-center gap-1.5 rounded-[2px] border border-[#C6C6C6] bg-white px-3 text-[11.5px] font-bold text-[#0F1D24] transition-colors duration-100 hover:border-[#0F1D24] hover:bg-[#FAFAFA] disabled:cursor-not-allowed disabled:opacity-40"
         >
           <FaChevronLeft className="text-[9px]" />
           Previous
@@ -1758,7 +1784,7 @@ const AdvProductionEntry = () => {
               onClick={nextMachine}
               disabled={submitting || lossTimeMismatch}
               title={lossTimeMismatch ? `Add ${roundedRequiredLossMinutes} min in Loss Time Breakup to continue` : undefined}
-              className="flex h-8 items-center justify-center gap-1.5 border border-[#0F1D24] bg-[#0F1D24] px-3.5 text-[11.5px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:border-red-300 disabled:bg-red-50 disabled:text-red-400"
+              className="flex h-8 items-center justify-center gap-1.5 rounded-[2px] border border-[#0F1D24] bg-[#0F1D24] px-3.5 text-[11.5px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-white hover:text-[#0F1D24] disabled:cursor-not-allowed disabled:border-red-300 disabled:bg-red-50 disabled:text-red-400"
             >
               Save & Next
               <FaChevronRight className="text-[9px]" />
@@ -1768,7 +1794,7 @@ const AdvProductionEntry = () => {
               onClick={handleFinalSubmit}
               disabled={submitting || lossTimeMismatch}
               title={lossTimeMismatch ? `Add ${roundedRequiredLossMinutes} min in Loss Time Breakup to continue` : undefined}
-              className="flex h-8 items-center justify-center gap-1.5 border border-emerald-700 bg-emerald-600 px-3.5 text-[11.5px] font-bold text-white transition-colors duration-100 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:border-red-300 disabled:bg-red-50 disabled:text-red-400"
+              className="flex h-8 items-center justify-center gap-1.5 rounded-[2px] border border-emerald-700 bg-emerald-600 px-3.5 text-[11.5px] font-bold text-white transition-colors duration-100 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:border-red-300 disabled:bg-red-50 disabled:text-red-400"
             >
               <FaSave className="text-[10px]" />
               {submitting ? "Saving..." : "Save Entry"}
@@ -1781,6 +1807,8 @@ const AdvProductionEntry = () => {
           )}
         </div>
       </div>
+      </div>
+      </main>
       </div>
 
       {showGoodQtyPopup && (
