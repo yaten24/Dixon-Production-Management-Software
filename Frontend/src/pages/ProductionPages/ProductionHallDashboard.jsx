@@ -186,7 +186,7 @@ const CustomDatePicker = ({ value, onChange }) => {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+        className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
       >
         <HiOutlineCalendarDays className="h-3.5 w-3.5" />
         {formatDisplayDate(selectedKey)}
@@ -200,13 +200,13 @@ const CustomDatePicker = ({ value, onChange }) => {
             className="z-[9999] w-58 overflow-hidden rounded-[2px] border border-[#E2E8F0] bg-white shadow-lg"
           >
             <div className="flex items-center justify-between bg-[#0F1D24] px-2.5 py-2">
-              <button type="button" onClick={() => changeMonth(-1)} className="flex h-5 w-5 items-center justify-center text-[#FDC94D] hover:bg-white/10">
+              <button type="button" onClick={() => changeMonth(-1)} className="flex h-5 w-5 items-center justify-center rounded-[2px] text-[#FDC94D] hover:bg-white/10">
                 <HiOutlineChevronLeft className="h-3 w-3" />
               </button>
               <span className="text-[11px] font-bold text-white">
                 {MONTH_NAMES[viewDate.getMonth()]} {viewDate.getFullYear()}
               </span>
-              <button type="button" onClick={() => changeMonth(1)} className="flex h-5 w-5 items-center justify-center text-[#FDC94D] hover:bg-white/10">
+              <button type="button" onClick={() => changeMonth(1)} className="flex h-5 w-5 items-center justify-center rounded-[2px] text-[#FDC94D] hover:bg-white/10">
                 <HiOutlineChevronRight className="h-3 w-3" />
               </button>
             </div>
@@ -226,7 +226,7 @@ const CustomDatePicker = ({ value, onChange }) => {
                     type="button"
                     key={key}
                     onClick={() => handleSelect(date)}
-                    className={`h-6 bg-white text-[10px] font-semibold transition-colors duration-100 hover:bg-[#FDC94D]/25
+                    className={`h-6 rounded-[2px] bg-white text-[10px] font-semibold transition-colors duration-100 hover:bg-[#FDC94D]/25
                     ${isSelected ? "bg-[#0F1D24] text-[#FDC94D] hover:bg-[#0F1D24]" : "text-[#0F172A]"}
                     ${isToday && !isSelected ? "font-bold underline decoration-[#FDC94D] decoration-2 underline-offset-2" : ""}`}
                   >
@@ -307,7 +307,7 @@ const CustomSelect = ({ value, onChange, options = [], maxWidth = 190 }) => {
         type="button"
         onClick={() => setOpen((o) => !o)}
         style={{ maxWidth }}
-        className="flex h-7 min-w-[100px] items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+        className="flex h-7 min-w-[100px] items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
       >
         <span className="min-w-0 flex-1 truncate text-left">{displayLabel}</span>
         <HiOutlineChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-100 ${open ? "rotate-180" : ""}`} />
@@ -368,37 +368,36 @@ function ControlBox({
 
   return (
     <header className="flex-shrink-0 bg-[#0F1D24] px-4 py-3">
-      <div className="flex flex-nowrap items-center gap-3 overflow-x-auto">
+      <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
         <div className="flex flex-shrink-0 items-center gap-2.5">
           <button
             onClick={onBack}
             title="Back"
-            className="flex h-7 w-7 items-center justify-center border border-white/15 text-white transition-colors duration-100 hover:border-white/30 hover:bg-white/5"
+            className="flex h-7 w-7 items-center justify-center rounded-[2px] border border-white/15 text-white transition-colors duration-100 hover:border-white/30 hover:bg-white/5"
           >
             <HiOutlineArrowLeft className="h-3.5 w-3.5" />
           </button>
           <div className="min-w-0">
-            <h1 className="whitespace-nowrap text-[16px] font-extrabold uppercase leading-none tracking-wide text-white">
+            <h1 className="whitespace-nowrap text-[14px] sm:text-[15px] lg:text-[16px] font-extrabold uppercase leading-none tracking-wide text-white">
               {hallCode} Dashboard
             </h1>
-            <p className="mt-1 whitespace-nowrap font-mono text-[9px] leading-none text-white/50">
+            <p className="mt-1 whitespace-nowrap font-mono text-[8.5px] sm:text-[9px] leading-none text-white/50">
               {formatDisplayDate(draft.date)}
             </p>
           </div>
         </div>
 
-        <div className="h-6 w-px flex-shrink-0 bg-white/10" />
-
-        <div className="flex flex-shrink-0 items-center gap-2">
+        {/* filters + all action buttons grouped together on one side */}
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <CustomDatePicker value={draft.date} onChange={(date) => setDraft((p) => ({ ...p, date }))} />
           <CustomSelect value={draft.machine} onChange={(machine) => setDraft((p) => ({ ...p, machine }))} options={machineOptions} maxWidth={190} />
           <CustomSelect value={draft.shift} onChange={(shift) => setDraft((p) => ({ ...p, shift }))} options={shiftOptions} />
-        </div>
 
-        <div className="flex flex-shrink-0 items-center gap-2">
+          <div className="h-6 w-px flex-shrink-0 bg-white/10" />
+
           <button
             onClick={onApply}
-            className="flex h-7 items-center gap-1.5 bg-[#FDC94D] px-3 text-[10.5px] font-extrabold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/90"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] bg-[#FDC94D] px-3 text-[10.5px] font-extrabold text-[#0F1D24] transition-colors duration-100 hover:bg-[#FDC94D]/90"
           >
             <HiOutlineCheck className="h-3.5 w-3.5" /> Apply
           </button>
@@ -406,14 +405,14 @@ function ControlBox({
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30 disabled:opacity-50"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30 disabled:opacity-50"
           >
             <HiOutlineArrowPath className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} /> Refresh
           </button>
 
           <button
             onClick={onReset}
-            className="flex h-7 items-center gap-1.5 border border-red-400/40 bg-red-500/10 px-2.5 text-[10.5px] font-semibold text-red-300 transition-colors duration-100 hover:bg-red-500/20"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-red-400/40 bg-red-500/10 px-2.5 text-[10.5px] font-semibold text-red-300 transition-colors duration-100 hover:bg-red-500/20"
           >
             <HiOutlineXMark className="h-3.5 w-3.5" /> Reset
           </button>
@@ -423,34 +422,32 @@ function ControlBox({
               Unapplied changes
             </span>
           )}
-        </div>
 
-        {/* message shows inline, same row — grows to fill remaining space */}
-        {message ? (
-          <div className="flex h-7 min-w-0 flex-1 shrink items-center gap-1.5 border border-amber-400/30 bg-amber-500/10 px-2.5 text-[10.5px] font-semibold text-amber-300">
-            <HiOutlineExclamationTriangle className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{message}</span>
-          </div>
-        ) : (
-          <div className="min-w-[8px] flex-1" />
-        )}
+          <div className="h-6 w-px flex-shrink-0 bg-white/10" />
 
-        <div className="flex flex-shrink-0 items-center gap-2">
           <button
             onClick={onHeatmap}
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
           >
             <HiOutlineSquares2X2 className="h-3.5 w-3.5" /> Heatmap
           </button>
 
           <button
             onClick={onExport}
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
+            className="flex h-7 items-center gap-1.5 rounded-[2px] border border-white/15 bg-transparent px-2.5 text-[10.5px] font-semibold text-white transition-colors duration-100 hover:border-white/30"
           >
             <HiOutlineArrowDownTray className="h-3.5 w-3.5" /> Export
           </button>
         </div>
       </div>
+
+      {/* message shown as its own full-width row so it never forces a scrollbar */}
+      {message && (
+        <div className="mt-2 flex items-center gap-1.5 rounded-[2px] border border-amber-400/30 bg-amber-500/10 px-2.5 py-1.5 text-[10.5px] font-semibold text-amber-300">
+          <HiOutlineExclamationTriangle className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{message}</span>
+        </div>
+      )}
     </header>
   );
 }
@@ -492,49 +489,100 @@ const useCountUp = (value, duration = 700) => {
 };
 
 // ==========================================================
-// KPI cards row — 5 compact cards (Actual / Target / Rejects / Achievement / OEE)
+// KPI cards row — 5 cards (Actual / Target / Rejects / Achievement / OEE)
+// Styled to match SummaryCard from ProductionDashboard.jsx: flat rounded-[2px]
+// card, icon badge top-right, big mono number, two-stat footer, efficiency bar.
 // ==========================================================
-const KpiCard = ({ title, subtitle, value, target, showBar, badgeColor, icon: Icon }) => {
+const KpiCard = ({
+  title,
+  subtitle,
+  icon: Icon,
+  value,
+  badgeColor,
+  footerLeftLabel,
+  footerLeftValue,
+  footerRightLabel,
+  footerRightValue,
+  barValue,
+  barColor,
+}) => {
   const display = useCountUp(value);
-  const efficiency = showBar
-    ? Math.max(0, Math.min(100, target > 0 ? Math.round((Number(value) / target) * 1000) / 10 : 0))
-    : null;
+  const resolvedBarColor = barColor || effColor(barValue ?? 0);
 
   return (
-    <div
-      className={`flex min-w-[150px] flex-1 flex-col p-2.5 ${CARD}`}
-      style={{ borderLeftWidth: 4, borderLeftColor: badgeColor, borderLeftStyle: "solid" }}
-    >
+    <div className="group flex min-w-[168px] flex-1 flex-col rounded-[2px] border border-[#1E2E38] bg-[#0F1D24] p-2 text-left shadow-sm transition-all duration-150 hover:-translate-y-[2px] hover:shadow-md">
       <div className="mb-1 flex items-start justify-between gap-1">
         <div className="min-w-0">
           <h3
-            className="inline-block truncate rounded-md px-1.5 py-0.5 text-[11px] font-bold uppercase leading-tight tracking-wide"
-            style={{ background: `${badgeColor}1A`, color: badgeColor }}
+            className="inline-block truncate rounded-[2px] px-1.5 py-0.5 text-[10px] sm:text-[11px] md:text-[12px] font-extrabold uppercase leading-tight tracking-wide"
+            style={{ background: `${badgeColor}33`, color: badgeColor }}
           >
             {title}
           </h3>
+          <p className="mt-1 truncate text-[7.5px] sm:text-[8px] md:text-[8.5px] font-bold uppercase tracking-wide text-[#8A97A3]">
+            {subtitle}
+          </p>
         </div>
         {Icon && (
           <div
-            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md"
-            style={{ background: `${badgeColor}1A`, color: badgeColor }}
+            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-[2px]"
+            style={{ background: `${badgeColor}33`, color: badgeColor }}
           >
             <Icon className="h-3.5 w-3.5" />
           </div>
         )}
       </div>
 
-      <p className="mt-1 font-mono text-[22px] font-extrabold leading-none text-[#0F172A]">{display}</p>
+      <p className="mt-1 font-mono text-[20px] sm:text-[22px] md:text-[24px] lg:text-[26px] font-extrabold leading-none text-white">
+        {display}
+      </p>
 
-      <p className="mt-1.5 truncate text-[9px] font-semibold leading-none text-[#94A3B8]">{subtitle}</p>
-
-      {showBar && (
-        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[#EEF2F6]">
-          <div
-            className="h-full rounded-full transition-[width] duration-500 ease-out"
-            style={{ width: `${efficiency}%`, background: effColor(efficiency) }}
-          />
+      {(footerLeftLabel || footerRightLabel) && (
+        <div className="mt-2.5 flex items-center gap-4 border-t border-white/10 pt-2">
+          {footerLeftLabel && (
+            <div className="leading-none">
+              <p className="text-[7px] sm:text-[7.5px] font-bold uppercase tracking-wide text-[#8A97A3]">
+                {footerLeftLabel}
+              </p>
+              <p className="mt-0.5 font-mono text-[11px] sm:text-[12px] font-bold text-white">
+                {footerLeftValue}
+              </p>
+            </div>
+          )}
+          {footerRightLabel && (
+            <div className="leading-none">
+              <p className="text-[7px] sm:text-[7.5px] font-bold uppercase tracking-wide text-[#8A97A3]">
+                {footerRightLabel}
+              </p>
+              <p className="mt-0.5 font-mono text-[11px] sm:text-[12px] font-bold text-white">
+                {footerRightValue}
+              </p>
+            </div>
+          )}
         </div>
+      )}
+
+      {barValue !== undefined && barValue !== null && (
+        <>
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-[9px] sm:text-[10px] font-bold text-[#CBD5E1]">Efficiency</span>
+            <span
+              className="font-mono text-[12px] sm:text-[13px] font-extrabold"
+              style={{ color: resolvedBarColor }}
+            >
+              {barValue}%
+            </span>
+          </div>
+          <div className="mt-1 h-1.5 w-full overflow-hidden rounded-[2px] bg-white/10">
+            <div
+              className="h-full rounded-[2px] transition-[width] duration-500 ease-out"
+              style={{
+                width: `${Math.min(Math.max(barValue, 0), 100)}%`,
+                background: resolvedBarColor,
+              }}
+            />
+          </div>
+        </>
       )}
     </div>
   );
@@ -546,55 +594,84 @@ const KpiCardsRow = ({ stats, hallCode, loading }) => {
   const reject = Number(stats?.reject) || 0;
   const achievement = stats?.achievement ?? pct(actual, target);
   const oee = stats?.oee ?? 0;
+  const rejectPct = pct(reject, actual);
+  const rejectColor = rejectPct <= 5 ? SUCCESS : rejectPct <= 15 ? WARNING : DANGER;
 
   if (loading && !stats) {
     return (
-      <div className="flex flex-shrink-0 gap-2">
+      <div className="flex flex-shrink-0 gap-2 overflow-x-auto p-1">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className={`h-[88px] flex-1 animate-pulse ${CARD}`} />
+          <div
+            key={i}
+            className="h-[150px] min-w-[168px] flex-1 animate-pulse rounded-[2px] border border-[#1E2E38] bg-[#0F1D24] shadow-sm"
+          />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-shrink-0 gap-2 overflow-x-auto">
+    <div className="flex flex-shrink-0 gap-2 overflow-x-auto p-1">
       <KpiCard
         title="Total Actual"
-        subtitle={`Target: ${fmt(target)}`}
-        value={actual}
-        target={target}
-        showBar
+        subtitle="Production Output"
         icon={HiOutlineArrowsPointingOut}
+        value={actual}
         badgeColor={ACCENT_BLUE}
+        footerLeftLabel="Target"
+        footerLeftValue={fmt(target)}
+        footerRightLabel="Reject"
+        footerRightValue={fmt(reject)}
+        barValue={achievement}
       />
       <KpiCard
         title="Target"
         subtitle={`Hall ${hallCode}`}
-        value={target}
         icon={HiOutlineSquares2X2}
+        value={target}
         badgeColor="#B08A2E"
+        footerLeftLabel="Actual"
+        footerLeftValue={fmt(actual)}
+        footerRightLabel="Achv %"
+        footerRightValue={`${achievement}%`}
+        barValue={achievement}
       />
       <KpiCard
         title="Rejects"
-        subtitle={`${pct(reject, actual)}% of actual output`}
-        value={reject}
+        subtitle="Quality Loss"
         icon={HiOutlineExclamationTriangle}
+        value={reject}
         badgeColor={DANGER}
+        footerLeftLabel="Actual"
+        footerLeftValue={fmt(actual)}
+        footerRightLabel="Reject %"
+        footerRightValue={`${rejectPct}%`}
+        barValue={rejectPct}
+        barColor={rejectColor}
       />
       <KpiCard
         title="Achievement"
         subtitle="Target vs Actual"
-        value={`${achievement}%`}
         icon={HiOutlineCube}
+        value={`${achievement}%`}
         badgeColor={SUCCESS}
+        footerLeftLabel="Target"
+        footerLeftValue={fmt(target)}
+        footerRightLabel="Actual"
+        footerRightValue={fmt(actual)}
+        barValue={achievement}
       />
       <KpiCard
         title="OEE"
-        subtitle="Overall Equipment Effectiveness"
-        value={`${oee}%`}
+        subtitle="Equipment Effectiveness"
         icon={HiOutlineRectangleStack}
+        value={`${oee}%`}
         badgeColor="#7C3AED"
+        footerLeftLabel="Target"
+        footerLeftValue={fmt(target)}
+        footerRightLabel="Actual"
+        footerRightValue={fmt(actual)}
+        barValue={oee}
       />
     </div>
   );
@@ -627,7 +704,7 @@ const MachineWiseTable = ({ rows, loading }) => {
       <div className="flex flex-shrink-0 items-center gap-2 border-b border-[#EEF2F6] px-4 py-2.5">
         <HiOutlineCube className="h-4 w-4 text-[#0F172A]" />
         <h2 className="text-[13px] font-extrabold text-[#0F172A]">Machine-wise Breakdown</h2>
-        <span className="rounded-full bg-[#F1F5F9] px-1.5 py-[1px] text-[10px] font-bold text-[#475569]">
+        <span className="rounded-[2px] bg-[#F1F5F9] px-1.5 py-[1px] text-[10px] font-bold text-[#475569]">
           {safeRows.length}
         </span>
       </div>
@@ -650,7 +727,7 @@ const MachineWiseTable = ({ rows, loading }) => {
               <tr>
                 <td colSpan={6} className="px-3 py-10">
                   <div className="flex flex-col items-center justify-center gap-2 text-center">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-[#E2E8F0] text-[#94A3B8]">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-[2px] border-2 border-[#E2E8F0] text-[#94A3B8]">
                       <HiOutlineCalendarDateRange className="h-4.5 w-4.5" />
                     </div>
                     <p className="text-[11.5px] font-semibold text-[#94A3B8]">No machine data for this selection.</p>
@@ -672,7 +749,7 @@ const MachineWiseTable = ({ rows, loading }) => {
                   >
                     <td className="px-3 py-2">
                       <span className="inline-flex items-center gap-1.5 border border-[#E2E8F0] bg-[#F8FAFC] px-2 py-1">
-                        <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: GOLD }} />
+                        <span className="h-1.5 w-1.5 flex-shrink-0 rounded-[2px]" style={{ background: GOLD }} />
                         <span className="font-mono text-[11px] font-extrabold tracking-wide text-[#0F172A]">{machineLabel}</span>
                       </span>
                     </td>
@@ -807,12 +884,12 @@ function LegendBadge({ label, swatch, filled, active = true, onClick }) {
       type="button"
       onClick={onClick}
       disabled={!clickable}
-      className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold transition-colors duration-100 ${
+      className={`flex items-center gap-1.5 rounded-[2px] border px-2 py-0.5 text-[10px] font-bold transition-colors duration-100 ${
         active ? "border-[#E2E8F0] text-[#0F172A]" : "border-[#EEF2F6] text-[#B0B7C3]"
       } ${clickable ? "cursor-pointer hover:border-[#CBD5E1]" : "cursor-default"}`}
       style={{ background: active && filled ? `${swatch}22` : "#fff" }}
     >
-      <span className="h-2 w-2 rounded-full" style={{ background: active ? swatch : "#CBD5E1" }} />
+      <span className="h-2 w-2 rounded-[2px]" style={{ background: active ? swatch : "#CBD5E1" }} />
       {label}
     </button>
   );
@@ -866,9 +943,27 @@ const Chart = ({ chartData }) => {
       <div ref={containerRef} className="relative min-h-0 flex-1">
         <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" preserveAspectRatio="none">
           {chartData.map((d, i) => (
-            <rect key={`bg-${i}`} x={pad.left + i * slot} y={pad.top} width={slot} height={chartH}
-              fill={d.shift === "A" ? SHIFT_A_BG : SHIFT_B_BG} />
+            <rect
+              key={`bg-${i}`}
+              x={pad.left + i * slot}
+              y={pad.top}
+              width={slot}
+              height={chartH}
+              fill={d.shift === "A" ? SHIFT_A_BG : SHIFT_B_BG}
+              stroke="#D8E0E8"
+              strokeWidth={1}
+            />
           ))}
+
+          <rect
+            x={pad.left}
+            y={pad.top}
+            width={chartW}
+            height={chartH}
+            fill="none"
+            stroke="#CBD5E1"
+            strokeWidth={1.5}
+          />
 
           {yTicks.map((tick, i) => (
             <g key={i}>
@@ -904,11 +999,21 @@ const Chart = ({ chartData }) => {
                 <rect x={pad.left + i * slot} y={pad.top} width={slot} height={chartH} fill="transparent" />
                 {showTarget && (
                   <rect x={gx} y={yFor(d.target)} width={barW} height={Math.max(chartH - (yFor(d.target) - pad.top), 0)}
-                    fill={isHover ? "#94A3B8" : "#CBD5E1"} rx={1.5} />
+                    fill={isHover ? "#94A3B8" : "#CBD5E1"} rx={2} />
                 )}
                 {showActual && (
                   <rect x={gx + barW + 3} y={yFor(d.actual)} width={barW} height={Math.max(chartH - (yFor(d.actual) - pad.top), 0)}
-                    fill={isHover ? ACCENT_BLUE : NAVY} rx={1.5} />
+                    fill={isHover ? ACCENT_BLUE : NAVY} rx={2} />
+                )}
+                {showTarget && d.target > 0 && (
+                  <text x={gx + barW / 2} y={yFor(d.target) - 4} textAnchor="middle" fontSize="7" fontWeight="700" fill="#94A3B8">
+                    {d.target}
+                  </text>
+                )}
+                {showActual && d.actual > 0 && (
+                  <text x={gx + barW + 3 + barW / 2} y={yFor(d.actual) - 4} textAnchor="middle" fontSize="7" fontWeight="700" fill={NAVY}>
+                    {d.actual}
+                  </text>
                 )}
                 {isHover && (
                   <line x1={pad.left + i * slot + slot / 2} x2={pad.left + i * slot + slot / 2} y1={pad.top} y2={pad.top + chartH}
@@ -937,7 +1042,7 @@ const Chart = ({ chartData }) => {
 
         {hovered && (
           <div
-            className="pointer-events-none absolute z-10 border border-[#E2E8F0] bg-white px-2.5 py-2 text-[10px] shadow-lg"
+            className="pointer-events-none absolute z-10 rounded-[2px] border border-[#E2E8F0] bg-white px-2.5 py-2 text-[10px] shadow-lg"
             style={{
               left: `${Math.min(Math.max((hoverIdx / (n - 1 || 1)) * 100, 8), 92)}%`,
               top: 4,
@@ -1004,7 +1109,7 @@ const HourlyChartCard = ({ chartData, loading }) => {
             </div>
             <button
               onClick={() => setIsZoomed(true)}
-              className="flex h-7 items-center gap-1 bg-[#0F1D24] px-2.5 text-[9px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90"
+              className="flex h-7 items-center gap-1 rounded-[2px] bg-[#0F1D24] px-2.5 text-[9px] font-bold text-[#FDC94D] transition-colors duration-100 hover:bg-[#0F1D24]/90"
             >
               <HiOutlineArrowsPointingOut className="h-3 w-3" /> Zoom
             </button>
@@ -1017,7 +1122,7 @@ const HourlyChartCard = ({ chartData, loading }) => {
           ) : (
             <div className="flex h-full min-h-0 flex-col">
               {!hasData && (
-                <div className="mb-2 flex-shrink-0 border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[10px] font-semibold text-amber-700">
+                <div className="mb-2 flex-shrink-0 rounded-[2px] border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[10px] font-semibold text-amber-700">
                   No production recorded for this date — showing 0 for every hour.
                 </div>
               )}
@@ -1064,8 +1169,8 @@ const HourlyChartCard = ({ chartData, loading }) => {
 
           <div className="flex flex-shrink-0 items-center justify-between border-t border-[#EEF2F6] bg-[#F8FAFC] px-6 py-2.5">
             <div className="flex items-center gap-3 text-[10px]">
-              <span className="flex items-center gap-1 text-[#94A3B8]"><span className="h-2 w-2 rounded-full bg-[#CBD5E1]" /> Target</span>
-              <span className="flex items-center gap-1 text-[#94A3B8]"><span className="h-2 w-2 rounded-full" style={{ background: NAVY }} /> Actual</span>
+              <span className="flex items-center gap-1 text-[#94A3B8]"><span className="h-2 w-2 rounded-[2px] bg-[#CBD5E1]" /> Target</span>
+              <span className="flex items-center gap-1 text-[#94A3B8]"><span className="h-2 w-2 rounded-[2px]" style={{ background: NAVY }} /> Actual</span>
             </div>
             <span className="text-[10px] font-semibold text-[#94A3B8]">
               Target: <span className="text-[#0F172A]">{totalTarget}</span> · Actual: <span className="text-[#0F172A]">{totalActual}</span>
@@ -1160,7 +1265,7 @@ const HallDashboard = () => {
   };
   const handleExport = () => exportHallDashboardToExcel({ hallCode, filters, stats, machineWise });
   const handleBack = () => navigate(-1);
-  const handleHeatmap = () => navigate(`/production/halls/${hallId}/heatmap`);
+  const handleHeatmap = () => navigate(`/management/halls/${hallId}/heatmap`);
 
   const chartData = useMemo(() => buildHourlyChartData(hourlyTrend), [hourlyTrend]);
 
