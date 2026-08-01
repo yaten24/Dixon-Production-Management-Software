@@ -30,6 +30,8 @@ import useDashboardOverview from "../../hooks/useMonthelyDashboardOverview";
 // THEME TOKENS (unchanged brand palette)
 // ============================================================
 const NAVY = "#0F1D24";
+const GOLD = "#FDC94D";
+const GRID = "#E2E8F0"; // 1px table grid line colour, matches CardShell border
 
 const STATUS_COLORS = {
   Running: { dot: "bg-emerald-500", text: "text-emerald-600", bg: "bg-emerald-500", pill: "bg-emerald-500 text-white" },
@@ -49,14 +51,18 @@ const CardShell = ({ className = "", children }) => (
   </div>
 );
 
-const CardLabel = ({ icon: Icon, children, tone = "text-[#94A3B8]" }) => (
-  <div className={`flex flex-shrink-0 items-center gap-1.5 text-[9px] font-bold uppercase tracking-wide ${tone}`}>
-    {Icon && (
-      <span className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-[2px] bg-[#0F1D24]/[0.06]">
-        <Icon size={10} />
-      </span>
-    )}
-    {children}
+// Highlighted section header — used above every table AND the trend
+// chart so both get the same strong, consistent title treatment:
+// navy icon chip + bold uppercase title + a clear rule underneath.
+const SectionHeader = ({ icon: Icon, title, subtitle, action }) => (
+  <div className="flex flex-shrink-0 items-center justify-between gap-2 border-[#0F1D24] pb-1">
+    <div className="flex items-center gap-2 min-w-0">
+      <div className="min-w-0">
+        <h3 className="truncate text-[12.5px] font-extrabold uppercase tracking-wide text-[#0F1D24]">{title}</h3>
+        {subtitle && <p className="truncate text-[10px] font-medium text-[#94A3B8]">{subtitle}</p>}
+      </div>
+    </div>
+    {action}
   </div>
 );
 
@@ -232,7 +238,7 @@ const TrendChart = ({ data = [] }) => {
 };
 
 /* ==========================================================
-   HALL WISE PERFORMANCE TABLE
+   HALL WISE PERFORMANCE TABLE — full 1px grid on every cell
 ========================================================== */
 const StatusDot = ({ status }) => {
   const c = STATUS_COLORS[status] || STATUS_COLORS.Idle;
@@ -241,36 +247,36 @@ const StatusDot = ({ status }) => {
 
 const PerformanceTable = ({ rows = [] }) => (
   <div className="h-full overflow-auto">
-    <table className="w-full min-w-[820px] border-collapse text-left">
-      <thead className="sticky top-0 z-10 bg-white">
-        <tr className="border-b border-[#EEF2F6] text-[9.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
-          <th className="px-2 py-2">Hall</th>
-          <th className="px-2 py-2">Target (Units)</th>
-          <th className="px-2 py-2">Actual (Units)</th>
-          <th className="px-2 py-2">Good (Units)</th>
-          <th className="px-2 py-2">Reject (Units)</th>
-          <th className="px-2 py-2">Efficiency (%)</th>
-          <th className="px-2 py-2">OEE (%)</th>
-          <th className="px-2 py-2">Running</th>
-          <th className="px-2 py-2">Breakdown</th>
-          <th className="px-2 py-2">Status</th>
-          <th className="px-2 py-2"></th>
+    <table className="w-full min-w-[820px] border-collapse text-left" style={{ borderColor: GRID }}>
+      <thead className="sticky top-0 z-10">
+        <tr className="bg-[#F8FAFC] text-[9.5px] font-bold uppercase tracking-wide text-[#475569]">
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Hall</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Target (Units)</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Actual (Units)</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Good (Units)</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Reject (Units)</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Efficiency (%)</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>OEE (%)</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Running</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Breakdown</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Status</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}></th>
         </tr>
       </thead>
       <tbody>
         {rows.map((r) => (
-          <tr key={r.hall} className="border-b border-[#EEF2F6] text-[11px] font-semibold text-[#0F1D24] hover:bg-[#F8FAFC]">
-            <td className="px-2 py-2 font-bold">{r.hall}</td>
-            <td className="px-2 py-2">{r.target.toLocaleString("en-IN")}</td>
-            <td className="px-2 py-2">{r.actual.toLocaleString("en-IN")}</td>
-            <td className="px-2 py-2">{r.good.toLocaleString("en-IN")}</td>
-            <td className="px-2 py-2">{r.reject.toLocaleString("en-IN")}</td>
-            <td className={`px-2 py-2 ${r.efficiency >= 90 ? "text-emerald-600" : "text-red-500"}`}>{r.efficiency}%</td>
-            <td className={`px-2 py-2 ${r.oee >= 90 ? "text-emerald-600" : "text-red-500"}`}>{r.oee}%</td>
-            <td className="px-2 py-2">{r.running} / {r.total}</td>
-            <td className="px-2 py-2">{r.breakdown}</td>
-            <td className="px-2 py-2"><StatusDot status={r.status} /></td>
-            <td className="px-2 py-2">
+          <tr key={r.hall} className="text-[11px] font-semibold text-[#0F1D24] hover:bg-[#F8FAFC]">
+            <td className="border px-2.5 py-2 font-bold" style={{ borderColor: GRID }}>{r.hall}</td>
+            <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{r.target.toLocaleString("en-IN")}</td>
+            <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{r.actual.toLocaleString("en-IN")}</td>
+            <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{r.good.toLocaleString("en-IN")}</td>
+            <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{r.reject.toLocaleString("en-IN")}</td>
+            <td className={`border px-2.5 py-2 ${r.efficiency >= 90 ? "text-emerald-600" : "text-red-500"}`} style={{ borderColor: GRID }}>{r.efficiency}%</td>
+            <td className={`border px-2.5 py-2 ${r.oee >= 90 ? "text-emerald-600" : "text-red-500"}`} style={{ borderColor: GRID }}>{r.oee}%</td>
+            <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{r.running} / {r.total}</td>
+            <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{r.breakdown}</td>
+            <td className="border px-2.5 py-2" style={{ borderColor: GRID }}><StatusDot status={r.status} /></td>
+            <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>
               <button className="flex items-center gap-1 text-[10px] font-bold text-[#2563EB] hover:underline">
                 <Eye size={11} /> View
               </button>
@@ -283,49 +289,49 @@ const PerformanceTable = ({ rows = [] }) => (
 );
 
 /* ==========================================================
-   LIVE MACHINE PRODUCTION TABLE (now shows totals for the
-   selected month, not just today — see backend fix)
+   LIVE MACHINE PRODUCTION TABLE — full 1px grid on every cell
+   (shows totals for the selected month, not just today)
 ========================================================== */
 const LiveMachineTable = ({ machines = [] }) => (
   <div className="h-full overflow-auto">
-    <table className="w-full min-w-[1000px] border-collapse text-left">
-      <thead className="sticky top-0 z-10 bg-white">
-        <tr className="border-b border-[#EEF2F6] text-[9.5px] font-bold uppercase tracking-wide text-[#94A3B8]">
-          <th className="px-2 py-2">Machine</th>
-          <th className="px-2 py-2">Hall</th>
-          <th className="px-2 py-2">Operator</th>
-          <th className="px-2 py-2">Part</th>
-          <th className="px-2 py-2">Latest Cycle Time (Sec)</th>
-          <th className="px-2 py-2">Target (Month)</th>
-          <th className="px-2 py-2">Actual (Month)</th>
-          <th className="px-2 py-2">Good</th>
-          <th className="px-2 py-2">Reject</th>
-          <th className="px-2 py-2">Efficiency (%)</th>
-          <th className="px-2 py-2">OEE (%)</th>
-          <th className="px-2 py-2">Status</th>
-          <th className="px-2 py-2">Last Update</th>
+    <table className="w-full min-w-[1000px] border-collapse text-left" style={{ borderColor: GRID }}>
+      <thead className="sticky top-0 z-10">
+        <tr className="bg-[#F8FAFC] text-[9.5px] font-bold uppercase tracking-wide text-[#475569]">
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Machine</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Hall</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Operator</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Part</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Latest Cycle Time (Sec)</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Target (Month)</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Actual (Month)</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Good</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Reject</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Efficiency (%)</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>OEE (%)</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Status</th>
+          <th className="border px-2.5 py-2" style={{ borderColor: GRID }}>Last Update</th>
         </tr>
       </thead>
       <tbody>
         {machines.map((m) => {
           const c = STATUS_COLORS[m.status] || STATUS_COLORS.Idle;
           return (
-            <tr key={m.machine} className="border-b border-[#EEF2F6] text-[11px] font-semibold text-[#0F1D24] hover:bg-[#F8FAFC]">
-              <td className="px-2 py-2 font-bold">{m.machine}</td>
-              <td className="px-2 py-2">{m.hall}</td>
-              <td className="px-2 py-2">{m.operator}</td>
-              <td className="px-2 py-2">{m.part}</td>
-              <td className="px-2 py-2">{m.cycleTime}</td>
-              <td className="px-2 py-2">{m.target.toLocaleString("en-IN")}</td>
-              <td className="px-2 py-2">{m.actual.toLocaleString("en-IN")}</td>
-              <td className="px-2 py-2">{m.good.toLocaleString("en-IN")}</td>
-              <td className="px-2 py-2">{m.reject.toLocaleString("en-IN")}</td>
-              <td className={`px-2 py-2 ${m.efficiency >= 90 ? "text-emerald-600" : "text-red-500"}`}>{m.efficiency}%</td>
-              <td className={`px-2 py-2 ${m.oee >= 90 ? "text-emerald-600" : "text-red-500"}`}>{m.oee}%</td>
-              <td className="px-2 py-2">
+            <tr key={m.machine} className="text-[11px] font-semibold text-[#0F1D24] hover:bg-[#F8FAFC]">
+              <td className="border px-2.5 py-2 font-bold" style={{ borderColor: GRID }}>{m.machine}</td>
+              <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{m.hall}</td>
+              <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{m.operator}</td>
+              <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{m.part}</td>
+              <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{m.cycleTime}</td>
+              <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{m.target.toLocaleString("en-IN")}</td>
+              <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{m.actual.toLocaleString("en-IN")}</td>
+              <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{m.good.toLocaleString("en-IN")}</td>
+              <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>{m.reject.toLocaleString("en-IN")}</td>
+              <td className={`border px-2.5 py-2 ${m.efficiency >= 90 ? "text-emerald-600" : "text-red-500"}`} style={{ borderColor: GRID }}>{m.efficiency}%</td>
+              <td className={`border px-2.5 py-2 ${m.oee >= 90 ? "text-emerald-600" : "text-red-500"}`} style={{ borderColor: GRID }}>{m.oee}%</td>
+              <td className="border px-2.5 py-2" style={{ borderColor: GRID }}>
                 <span className={`rounded-[2px] px-2 py-0.5 text-[9.5px] font-bold ${c.pill}`}>{m.status}</span>
               </td>
-              <td className="px-2 py-2 text-[#94A3B8]">{m.lastUpdate}</td>
+              <td className="border px-2.5 py-2 text-[#94A3B8]" style={{ borderColor: GRID }}>{m.lastUpdate}</td>
             </tr>
           );
         })}
@@ -378,9 +384,6 @@ const OverAllDashboard = () => {
           <header className="flex-shrink-0 rounded-t-[2px] bg-[#0F1D24] px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-3">
               <div className="flex items-center gap-2.5">
-                {/* <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[2px] bg-white/10">
-                  <Factory size={15} className="text-[#FDC94D]" />
-                </span> */}
                 <h1 className="whitespace-nowrap text-[15px] font-extrabold uppercase tracking-wide text-white sm:text-[16px]">
                   Overall Production Dashboard
                 </h1>
@@ -465,17 +468,21 @@ const OverAllDashboard = () => {
                 {/* TOP HALF */}
                 <div className="grid min-h-0 flex-1 basis-0 grid-cols-1 gap-2 sm:gap-2.5 lg:grid-cols-3 lg:gap-3">
                   <CardShell className="min-h-0 lg:col-span-2">
-                    <CardLabel icon={CalendarDays}><span className="text-[12px]">Hall Wise Performance</span></CardLabel>
+                    <SectionHeader icon={CalendarDays} title="Hall Wise Performance" subtitle="Live totals by hall" />
                     <div className="mt-2 min-h-0 flex-1">
                       <PerformanceTable rows={hallPerformance} />
                     </div>
                   </CardShell>
 
                   <CardShell className="min-h-0 lg:col-span-1">
-                    <div className="flex flex-shrink-0 items-center justify-between">
-                      <CardLabel icon={Bell}><span className="text-[12px]">Production Trend</span></CardLabel>
-                      <button className="text-[10px] font-bold text-[#2563EB] hover:underline">View All</button>
-                    </div>
+                    <SectionHeader
+                      icon={Bell}
+                      title="Production Trend"
+                      subtitle="Target vs actual"
+                      action={
+                        <button className="text-[10px] font-bold text-[#2563EB] hover:underline">View All</button>
+                      }
+                    />
                     <div className="mt-2 min-h-0 flex-1">
                       <TrendChart data={monthlyTrend} />
                     </div>
@@ -484,10 +491,14 @@ const OverAllDashboard = () => {
 
                 {/* BOTTOM HALF — Live Machine Production Overview, monthly totals */}
                 <CardShell className="min-h-0 flex-1 basis-0">
-                  <div className="flex flex-shrink-0 items-center justify-between">
-                    <CardLabel icon={Cog}><span className="text-[12px]">Live Machine Production Overview — {month}</span></CardLabel>
-                    <button className="text-[10px] font-bold text-[#2563EB] hover:underline">View All Machines</button>
-                  </div>
+                  <SectionHeader
+                    icon={Cog}
+                    title={`Live Machine Production Overview — ${month}`}
+                    subtitle="Monthly totals per machine"
+                    action={
+                      <button className="text-[10px] font-bold text-[#2563EB] hover:underline">View All Machines</button>
+                    }
+                  />
                   <div className="mt-2 min-h-0 flex-1">
                     <LiveMachineTable machines={liveMachines} />
                   </div>

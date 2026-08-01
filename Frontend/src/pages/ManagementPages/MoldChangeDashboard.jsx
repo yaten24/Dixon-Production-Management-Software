@@ -744,6 +744,7 @@ function TopMachinesPanel({ rows }) {
 function HourlyDowntimeTrendPanel({ points }) {
   const [activeShift, setActiveShift] = useState("both");
   const [viewMode, setViewMode] = useState("chart"); // 'chart' | 'table'
+  const [hoverIdx, setHoverIdx] = useState(null);
 
   const series = useMemo(() => {
     const byHour = new Map();
@@ -764,12 +765,24 @@ function HourlyDowntimeTrendPanel({ points }) {
   const peak = series.reduce((a, b) => (b.qty > (a?.qty ?? -1) ? b : a), series[0]);
   const totalQty = series.reduce((s, p) => s + p.qty, 0);
 
-  const width = 900, height = 220, pad = { top: 10, right: 10, bottom: 26, left: 30 };
+  const width = 900, height = 220, pad = { top: 34, right: 10, bottom: 26, left: 30 };
   const chartW = width - pad.left - pad.right;
   const chartH = height - pad.top - pad.bottom;
   const slot = chartW / series.length;
   const barW = Math.max(slot * 0.5, 4);
   const yFor = (v) => pad.top + chartH - (v / niceMax) * chartH;
+
+  const shiftSegments = useMemo(() => {
+    const segs = [];
+    series.forEach((p, i) => {
+      const last = segs[segs.length - 1];
+      if (last && last.shift === p.shift) last.count += 1;
+      else segs.push({ shift: p.shift, startIdx: i, count: 1 });
+    });
+    return segs;
+  }, [series]);
+
+  const hovered = hoverIdx !== null ? series[hoverIdx] : null;
 
   return (
     <div className={`flex min-h-0 h-full flex-1 flex-col ${RADIUS} overflow-hidden ${SURFACE}`}>
@@ -828,11 +841,31 @@ function HourlyDowntimeTrendPanel({ points }) {
       </div>
 
       {viewMode === "chart" ? (
-        <div className="min-h-0 flex-1 p-2">
+        <div className="relative min-h-0 flex-1 p-2">
           <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" preserveAspectRatio="none">
             {series.map((p, i) => (
-              <rect key={`bg-${p.hour}`} x={pad.left + i * slot} y={pad.top} width={slot} height={chartH} fill={p.shift === "A" ? "#FFF9EA" : "#F4F4F5"} />
+              <rect
+                key={`bg-${p.hour}`}
+                x={pad.left + i * slot}
+                y={pad.top}
+                width={slot}
+                height={chartH}
+                fill={p.shift === "A" ? "#FFF9EA" : "#F4F4F5"}
+                stroke="#D8D8D8"
+                strokeWidth={1}
+              />
             ))}
+
+            <rect
+              x={pad.left}
+              y={pad.top}
+              width={chartW}
+              height={chartH}
+              fill="none"
+              stroke="#0F1D24"
+              strokeOpacity="0.18"
+              strokeWidth={1.5}
+            />
 
             {yTicks.map((tick, i) => (
               <g key={i}>
@@ -843,32 +876,109 @@ function HourlyDowntimeTrendPanel({ points }) {
               </g>
             ))}
 
+            {shiftSegments.map((seg, i) => {
+              const segX = pad.left + seg.startIdx * slot;
+              const segW = seg.count * slot;
+              const cx = segX + segW / 2;
+              const pillW = 58, pillH = 16;
+              return (
+                <g key={`seg-${i}`}>
+                  <rect x={cx - pillW / 2} y={pad.top - 26} width={pillW} height={pillH}
+                    fill={seg.shift === "A" ? GOLD : NAVY} />
+                  <text x={cx} y={pad.top - 26 + pillH / 2 + 3} textAnchor="middle" fontSize="9" fontWeight="800"
+                    fill={seg.shift === "A" ? NAVY : "#fff"}>
+                    Shift {seg.shift}
+                  </text>
+                </g>
+              );
+            })}
+
             <line x1={pad.left + 12 * slot} x2={pad.left + 12 * slot} y1={pad.top} y2={pad.top + chartH} stroke="#0F1D24" strokeWidth={1.5} />
 
             {series.map((p, i) => {
               const dimmed = activeShift !== "both" && p.shift !== activeShift;
               const isPeak = peak && p.hour === peak.hour && p.qty > 0;
+              const isHover = hoverIdx === i;
               const h = (p.qty / niceMax) * chartH;
               const barX = pad.left + i * slot + (slot - barW) / 2;
               const barY = pad.top + chartH - h;
               return (
-                <g key={`bar-${p.hour}`}>
-                  <rect x={barX} y={barY} width={barW} height={h} fill={dimmed ? "#F3B4B4" : isPeak ? DANGER : DANGER_SOFT} opacity={dimmed ? 0.35 : 1} />
+                <g
+                  key={`bar-${p.hour}`}
+                  onMouseEnter={() => setHoverIdx(i)}
+                  onMouseLeave={() => setHoverIdx(null)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <rect x={pad.left + i * slot} y={pad.top} width={slot} height={chartH} fill="transparent" />
+                  <rect
+                    x={barX}
+                    y={barY}
+                    width={barW}
+                    height={h}
+                    rx={2}
+                    fill={dimmed ? "#F3B4B4" : isHover ? "#F87171" : isPeak ? DANGER : DANGER_SOFT}
+                    opacity={dimmed ? 0.35 : 1}
+                  />
                   {p.qty > 0 && (
-                    <text x={barX + barW / 2} y={Math.max(barY - 4, pad.top + 8)} textAnchor="middle" fontSize="8" fontWeight="700" fill={dimmed ? "#C9C9C9" : "#0F1D24"} fontFamily="ui-monospace, monospace">
+                    <text
+                      x={barX + barW / 2}
+                      y={Math.max(barY - 4, pad.top + 8)}
+                      textAnchor="middle"
+                      fontSize="8"
+                      fontWeight="700"
+                      fill={dimmed ? "#C9C9C9" : "#0F1D24"}
+                      fontFamily="ui-monospace, monospace"
+                    >
                       {p.qty}
                     </text>
+                  )}
+                  {isHover && (
+                    <line
+                      x1={pad.left + i * slot + slot / 2}
+                      x2={pad.left + i * slot + slot / 2}
+                      y1={pad.top}
+                      y2={pad.top + chartH}
+                      stroke="#0F1D24"
+                      strokeOpacity="0.12"
+                      strokeWidth={1}
+                    />
                   )}
                 </g>
               );
             })}
 
             {series.map((p, i) => (
-              <text key={`lbl-${p.hour}`} x={pad.left + i * slot + slot / 2} y={height - 8} textAnchor="middle" fontSize="8" fontWeight="600" fill="#9B9B9B">
+              <text key={`lbl-${p.hour}`} x={pad.left + i * slot + slot / 2} y={height - 8} textAnchor="middle" fontSize="8"
+                fontWeight={hoverIdx === i ? 800 : 600} fill={hoverIdx === i ? "#0F1D24" : "#9B9B9B"}>
                 {String(p.hour).padStart(2, "0")}
               </text>
             ))}
           </svg>
+
+          {hovered && (
+            <div
+              className={`pointer-events-none absolute z-10 border border-[#C6C6C6] bg-white px-2.5 py-2 text-[10px] shadow-lg ${RADIUS}`}
+              style={{
+                left: `${Math.min(Math.max((hoverIdx / (series.length - 1 || 1)) * 100, 8), 92)}%`,
+                top: 4,
+                transform: "translateX(-50%)",
+              }}
+            >
+              <div className="mb-1 flex items-center justify-between gap-3">
+                <span className="font-semibold text-[#0F1D24]">
+                  {String(hovered.hour).padStart(2, "0")}:00 · Shift {hovered.shift}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[#9B9B9B]">Downtime (min)</span>
+                <span className="font-mono font-semibold text-[#0F1D24]">{fmt(hovered.qty)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[#9B9B9B]">Share</span>
+                <span className="font-mono font-semibold text-[#0F1D24]">{pct(hovered.qty, totalQty)}%</span>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="min-h-0 flex-1 overflow-auto">
